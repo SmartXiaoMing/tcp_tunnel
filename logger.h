@@ -32,7 +32,7 @@ public:
     Logger(LoggerManager* inputManager, int inputLevel): level(inputLevel), manage(inputManager), skip(0) {}
     ~Logger() {
       if (level <= manage->level) {
-        *manage->out << "\n";
+        *manage->out << endl;
       }
     }
     template<typename T> Logger&  operator << (T t) {
@@ -84,23 +84,32 @@ public:
     } else {
       ios_base::openmode mode = ios_base::out;
       if (append) {
-        mode |= ios_base::trunc;
-      } else {
         mode |= ios_base::app;
+      } else {
+        mode |= ios_base::trunc;
       }
-      ofstream fout;
-      fout.open(outputFile.c_str(), mode);
-      if (!fout.is_open()) {
+      ofstream* fout = new ofstream;
+      fout->open(outputFile.c_str(), mode);
+      if (!fout->is_open()) {
         instance.out = &cout;
         log_warn << "no output file provided for log, use stdout default";
+        delete fout;
+      } else {
+        instance.out = fout;
       }
     }
   }
 
 private:
-  LoggerManager() {};
+  LoggerManager(): level(INFO), skip(0), out(NULL) {};
   LoggerManager(const Logger& logger);
   LoggerManager& operator = (const Logger& logger);
+  ~LoggerManager() {
+    if (out != NULL && out != &cout) {
+      delete out;
+      out = NULL;
+    }
+  }
   static LoggerManager instance;
   int level;
   int skip;

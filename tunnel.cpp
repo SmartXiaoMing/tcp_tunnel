@@ -26,20 +26,24 @@ void showUsage(string name) {
 }
 
 int main(int argc, char * argv[]) {
-  map<string, string> paramMap;
-  Common::parseCommandLine(paramMap, argc, argv);
-  string confFile = Common::optValue(paramMap, "conf");
+  map<string, string> inputParamMap;
+  Common::parseCommandLine(inputParamMap, argc, argv);
+	string help = Common::optValue(inputParamMap, "help", "false");
+	if (help != "false") {
+    showUsage(argv[0]);
+    exit(EXIT_SUCCESS);
+	}
+  string confFile = Common::optValue(inputParamMap, "conf");
   if (confFile.empty()) {
     confFile = "tunnel.conf";
   }
+  map<string, string> paramMap;
 	if (!Common::parseFile(paramMap, confFile)) {
 		log_warn << "cannot open config file: " << confFile;
-	}
-
-	string help = Common::optValue(paramMap, "help", "false");
-	if (help != "false") {
-		showUsage(argv[0]);
-		exit(EXIT_SUCCESS);
+	} else { // merge param with inputParam
+		for (map<string, string>::iterator it = inputParamMap.begin(); it != inputParamMap.end(); ++it) {
+			paramMap[it->first] = it->second;
+		}
 	}
 
   LoggerManager::init(
