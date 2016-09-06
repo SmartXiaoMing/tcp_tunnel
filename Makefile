@@ -1,17 +1,8 @@
-AR=/usr/bin/ar
-CC=/usr/bin/gcc
-CXX=/usr/bin/g++
-LINK=/usr/bin/link
-LD=/usr/bin/ld
+install: tunnel build
+	cp tunnel tunnel.conf build/
 
-install: tcp_client.cpp tcp_server.cpp main.cpp common.cpp logger.cpp
-	$(CC) tcp_client.cpp tcp_server.cpp main.cpp common.cpp logger.cpp -o main -lstdc++
+build:
+	mkdir -p build
 
-tcp_server.o: tcp_server.cpp
-	$(CC) -c tcp_server.cpp -o tcp_server.o
-
-tcp_client.o: tcp_client.cpp
-	$(CC) -c tcp_client.cpp -o tcp_client.o
-
-main.o: main.cpp
-	$(CC) -c main.cpp -o main.o
+tunnel: tcp_client.cpp tcp_server.cpp tunnel.cpp common.cpp logger.cpp
+	$(CC) tcp_client.cpp tcp_server.cpp tunnel.cpp common.cpp logger.cpp -o tunnel -lstdc++

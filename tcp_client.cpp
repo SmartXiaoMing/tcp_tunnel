@@ -8,7 +8,7 @@
 #include "tunnel_package.h"
 
 #include <arpa/inet.h>
-#include <linux/tcp.h>
+
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -88,7 +88,6 @@ TcpClient::prepare(const string& ip, uint16_t port) {
     return fd;
   }
   int v;
-  setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &v, sizeof(v));
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;

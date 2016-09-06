@@ -1,4 +1,4 @@
-# traffic.downstream <-> [server.tunnel.traffic.port -> server.tunnel.port] <-> client.tunnel <-> traffic.upstream
+# test: terminal <-> client.traffic <-> [server.tunnel.traffic.port -> server.tunnel.port] <-> client.tunnel <-> server.echo
 
 mode=server # options: server. client
 
@@ -10,7 +10,7 @@ server.tunnel.connection=10 # default 1
 server.traffic.ip=0.0.0.0 # default
 server.traffic.port=20004
 
-client.tunnel.ip=127.0.0.1
+client.tunnel.ip=209.9.106.108
 client.tunnel.port=8121
 client.tunnel.retry.interval=2 # seconds
 

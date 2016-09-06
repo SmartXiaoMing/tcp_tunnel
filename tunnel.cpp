@@ -7,18 +7,40 @@
 
 using namespace std;
 
+void showUsage(string name) {
+	cout << "usage: " << name << " --mode=server|client --tunnel.port=number [OPTION]" << endl;
+	cout << "options with mode=server:" << endl;
+	cout << "\t--server.tunnel.ip=ip\ttunnel server bind ip, default 0.0.0.0" << endl;
+	cout << "\t--server.tunnel.port=number\ttunnel server bind port, default use tunnel.port" << endl;
+	cout << "\t--server.tunnel.connection=connection\tallow client connection count, default 10" << endl;
+	cout << "\t--server.traffic.ip=ip\ttraffic downstream bind ip, default 0.0.0.0" << endl;
+	cout << "\t--server.traffic.port=number\ttraffic downstream bind port" << endl;
+	cout << "options with mode=client:" << endl;
+	cout << "\t--client.tunnel.ip=ip\ttunnel server's ip" << endl;
+	cout << "\t--client.tunnel.port=number\ttunnel server's port, default use tunnel.port" << endl;
+	cout << "\t--client.traffic.ip=ip\ttraffic upstream's ip" << endl;
+	cout << "\t--client.traffic.port=number\ttraffic upstream's port" << endl;
+	cout << endl;
+	cout << "version 0.0.1" << endl;
+	cout << "Report tcptunnel bugs to 95813422@qq.com" << endl;
+}
+
 int main(int argc, char * argv[]) {
-  if (argc < 2) {
-    cout << "usage " << argv[0] << " client|server" << endl;
-  }
   map<string, string> paramMap;
   Common::parseCommandLine(paramMap, argc, argv);
   string confFile = Common::optValue(paramMap, "conf");
-  if (!confFile.empty()) {
-    if (!Common::parseFile(paramMap, confFile)) {
-      log_warn << "cannot open file: " << confFile;
-    }
+  if (confFile.empty()) {
+    confFile = "tunnel.conf";
   }
+	if (!Common::parseFile(paramMap, confFile)) {
+		log_warn << "cannot open config file: " << confFile;
+	}
+
+	string help = Common::optValue(paramMap, "help", "false");
+	if (help != "false") {
+		showUsage(argv[0]);
+		exit(EXIT_SUCCESS);
+	}
 
   LoggerManager::init(
     Common::optValue(paramMap, "log.level", "INFO"),
@@ -29,15 +51,15 @@ int main(int argc, char * argv[]) {
 
   string mode = Common::optValue(paramMap, "mode");
   if (mode.empty()) {
-    log_error << "mode is unset";
+    log_error << "param mode is unset";
     exit(EXIT_FAILURE);
   }
-  // options: server, client
+  string tunnelPort = Common::optValue(paramMap, "tunnel.port");
   if (mode == "server") {
     string tunnelIp = Common::optValue(paramMap, "server.tunnel.ip", "0.0.0.0");
-    string tunnelPortStr = Common::optValue(paramMap, "server.tunnel.port");
+    string tunnelPortStr = Common::optValue(paramMap, "server.tunnel.port", tunnelPort);
     if (tunnelPortStr.empty()) {
-      log_error << "server.tunnel.port is unset";
+      log_error << "server.tunnel.port is unset" << endl;
       exit(EXIT_FAILURE);
     }
     uint16_t tunnelPort = Common::stringToInt(tunnelPortStr);
@@ -63,15 +85,15 @@ int main(int argc, char * argv[]) {
       exit(EXIT_FAILURE);
     }
     int trafficConnection = Common::stringToInt(Common::optValue(paramMap, "server.traffic.connection", "1"));
-    log_info << "server.tunnel.ip: " << tunnelIp << ", server.tunnel.port: " << tunnelPort << ", tunnelConnection: " << tunnelConnection;
-    log_info << "server.traffic.ip: " << trafficIp << ", server.traffic.port: " << trafficPortStr << ", trafficConnection: " << trafficConnection;
+    log_info << "listen tunnel(" << tunnelConnection << "): " << tunnelIp << ":" << tunnelPort;
+    log_info << "listen traffic(" << trafficConnection << "): " << trafficIp << ":" << trafficPortStr;
 
     TcpServer tcpServer;
     tcpServer.init(tunnelIp, tunnelPort, tunnelConnection, trafficIp, trafficPortList, trafficConnection);
     tcpServer.run();
   } else if (mode == "client") {
     string tunnelIp = Common::optValue(paramMap, "client.tunnel.ip", "127.0.0.1");
-    string tunnelPortStr = Common::optValue(paramMap, "client.tunnel.port");
+    string tunnelPortStr = Common::optValue(paramMap, "client.tunnel.port", tunnelPort);
     uint16_t tunnelPort = Common::stringToInt(tunnelPortStr);
     if (tunnelPort <= 0) {
       log_error << "client.tunnel.port is unset or invalid: " << tunnelPortStr;
@@ -86,8 +108,8 @@ int main(int argc, char * argv[]) {
       log_error << "client.traffic.port is unset or invalid: " << trafficPortStr;
       exit(EXIT_FAILURE);
     }
-    log_info << "client.tunnel.ip: " << tunnelIp << ", client.tunnel.port: " << tunnelPort;
-    log_info << "client.traffic.ip: " << trafficIp << ", client.traffic.port: " << trafficPort;
+    log_info << "connect tunnel: " << tunnelIp << ":" << tunnelPort;
+    log_info << "traffic upstream: " << trafficIp << ":" << trafficPort;
     TcpClient tcpClient;
     tcpClient.init(tunnelIp, tunnelPort, retryInterval, trafficIp, trafficPort);
     tcpClient.run();

@@ -9,7 +9,6 @@
 #include "tunnel_package.h"
 
 #include <arpa/inet.h>
-#include <linux/tcp.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,7 +93,6 @@ TcpServer::prepare(int serverType, const string& ip, uint16_t port, int connecti
     exit(EXIT_FAILURE);
   }
   int v;
-  setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &v, sizeof(v));
   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &v, sizeof(v)) < 0) {
     log_error << "failed to setsockopt: " << SO_REUSEADDR;
     close(fd);

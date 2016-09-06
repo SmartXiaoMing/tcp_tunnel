@@ -9,10 +9,10 @@
 #include <fstream>
 #include <iostream>
 
-#define log_error LoggerManager::getLogger(LoggerManager::ERROR) << "[ERROR] " << __FILE__ << ":" << __LINE__ << " " << __func__ << ": "
-#define log_warn LoggerManager::getLogger(LoggerManager::WARN) << "[WARN] " << __FILE__ << ":" << __LINE__ << " " << __func__ << ": "
-#define log_info LoggerManager::getLogger(LoggerManager::INFO) << "[INFO] " << __FILE__ << ":" << __LINE__ << " " << __func__ << ": "
-#define log_debug LoggerManager::getLogger(LoggerManager::DEBUG) << "[DEBUG] " << __FILE__ << ":" << __LINE__ << " " << __func__ << ": "
+#define log_error LoggerManager::getLogger(LoggerManager::ERROR) << "[ERROR] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
+#define log_warn LoggerManager::getLogger(LoggerManager::WARN) << "[WARN] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
+#define log_info LoggerManager::getLogger(LoggerManager::INFO) << "[INFO] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
+#define log_debug LoggerManager::getLogger(LoggerManager::DEBUG) << "[DEBUG] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
 
 using namespace std;
 
@@ -38,7 +38,9 @@ public:
     template<typename T> Logger&  operator << (T t) {
       if (skip < manage->skip) {
         ++skip;
-        return *this;
+        if (skip > 1) {
+          return *this;
+        }
       }
       if (level <= manage->level) {
         *manage->out << t;
