@@ -24,6 +24,7 @@ public:
   static const uint8_t STATE_CREATE_SUCCESS = 2;
   static const uint8_t STATE_CREATE_FAILURE = 3;
   static const uint8_t STATE_CLOSE = 4;
+  static const uint8_t STATE_HEARTBEAT = 5;
 
   uint32_t fd;
   uint8_t state;
@@ -34,12 +35,14 @@ public:
     static string create = "create";
     static string create_failure = "create_failure";
     static string close = "close";
+    static string heartbeat = "heartbeat";
     static string unknown = "unknown";
     switch(state) {
       case STATE_TRAFFIC : return traffic;
       case STATE_CREATE : return create;
       case STATE_CREATE_FAILURE : return create_failure;
-      case STATE_CLOSE : return close;
+      case STATE_CLOSE : return heartbeat;
+      case STATE_HEARTBEAT : return close;
       default : return unknown;
     }
   }

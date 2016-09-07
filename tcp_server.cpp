@@ -194,6 +194,7 @@ TcpServer::handleTunnelClient(const struct epoll_event& event) {
               << ",state=" << package.getState() << ",length=" << package.message.size()
               << "]-> *tunnelServer(" << event.data.fd << ") --> trafficClient";
     switch (package.state) {
+			case TunnelPackage::STATE_HEARTBEAT: break;
       case TunnelPackage::STATE_CREATE_FAILURE:
       case TunnelPackage::STATE_CLOSE: cleanUpTrafficClient(package.fd); break;
       case TunnelPackage::STATE_TRAFFIC: {

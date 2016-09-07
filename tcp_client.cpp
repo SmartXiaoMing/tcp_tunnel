@@ -205,16 +205,18 @@ void
 TcpClient::run() {
   while(true) {
     struct epoll_event events[Common::MAX_EVENTS];
-    log_debug << "wait event... ";
-    int nfds = epoll_wait(epollFd, events, Common::MAX_EVENTS, -1);
-    log_debug << "nfds: " << nfds;
-    if(nfds == -1) {
-      log_error << "failed to epoll_wait";
-      exit(EXIT_FAILURE);
-    }
-    for(int i = 0; i < nfds; i++) {
-      handleTunnelClient(events[i]);
-      handleTrafficServer(events[i]);
+    int nfds = epoll_wait(epollFd, events, Common::MAX_EVENTS, 60000);
+    if (nfds == 0) {
+        sendTunnelState(tunnelServerInfo.fd, 0, TunnelPackage::STATE_HEARTBEAT);
+    } else {
+		    if(nfds == -1) {
+		      log_error << "failed to epoll_wait";
+		      exit(EXIT_FAILURE);
+		    }
+		    for(int i = 0; i < nfds; i++) {
+		      handleTunnelClient(events[i]);
+		      handleTrafficServer(events[i]);
+		    }
     }
   }
 }
