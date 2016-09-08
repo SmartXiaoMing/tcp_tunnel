@@ -41,8 +41,8 @@ public:
       case STATE_TRAFFIC : return traffic;
       case STATE_CREATE : return create;
       case STATE_CREATE_FAILURE : return create_failure;
-      case STATE_CLOSE : return heartbeat;
-      case STATE_HEARTBEAT : return close;
+      case STATE_CLOSE : return close;
+      case STATE_HEARTBEAT : return heartbeat;
       default : return unknown;
     }
   }
