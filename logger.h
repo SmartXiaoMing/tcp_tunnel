@@ -52,20 +52,20 @@ public:
       return *this;
     }
 
-		Logger&  operator << (ostream& endl(ostream&)) {
-		  return *this;
-		}
+    Logger&  operator << (ostream& endl(ostream&)) {
+      return *this;
+    }
 
-	private:
-		bool consumeSkip() {
-		  if (skip < manage->skip) {
-		    ++skip;
-		    if (skip > 3) {
-		      return true;
-		    }
-		  }
-		  return false;
-		}
+  private:
+    bool consumeSkip() {
+      if (skip < manage->skip) {
+        ++skip;
+        if (skip > 3) {
+          return true;
+        }
+      }
+      return false;
+    }
 
     string nowTime () {
       struct tm* ptr;

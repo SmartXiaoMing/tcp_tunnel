@@ -8,43 +8,43 @@
 using namespace std;
 
 void showUsage(string name) {
-	cout << "usage: " << name << " --mode=server|client --tunnel.port=number [OPTION]" << endl;
-	cout << "options with mode=server:" << endl;
-	cout << "\t--server.tunnel.ip=ip\ttunnel server bind ip, default 0.0.0.0" << endl;
-	cout << "\t--server.tunnel.port=number\ttunnel server bind port, default use tunnel.port" << endl;
-	cout << "\t--server.tunnel.connection=connection\tallow client connection count, default 10" << endl;
-	cout << "\t--server.traffic.ip=ip\ttraffic downstream bind ip, default 0.0.0.0" << endl;
-	cout << "\t--server.traffic.port=number\ttraffic downstream bind port" << endl;
-	cout << "options with mode=client:" << endl;
-	cout << "\t--client.tunnel.ip=ip\ttunnel server's ip" << endl;
-	cout << "\t--client.tunnel.port=number\ttunnel server's port, default use tunnel.port" << endl;
-	cout << "\t--client.traffic.ip=ip\ttraffic upstream's ip" << endl;
-	cout << "\t--client.traffic.port=number\ttraffic upstream's port" << endl;
-	cout << endl;
-	cout << "version 0.0.1" << endl;
-	cout << "Report tcptunnel bugs to 95813422@qq.com" << endl;
+  cout << "usage: " << name << " --mode=server|client --tunnel.port=number [OPTION]" << endl;
+  cout << "options with mode=server:" << endl;
+  cout << "\t--server.tunnel.ip=ip\ttunnel server bind ip, default 0.0.0.0" << endl;
+  cout << "\t--server.tunnel.port=number\ttunnel server bind port, default use tunnel.port" << endl;
+  cout << "\t--server.tunnel.connection=connection\tallow client connection count, default 10" << endl;
+  cout << "\t--server.traffic.ip=ip\ttraffic downstream bind ip, default 0.0.0.0" << endl;
+  cout << "\t--server.traffic.port=number\ttraffic downstream bind port" << endl;
+  cout << "options with mode=client:" << endl;
+  cout << "\t--client.tunnel.ip=ip\ttunnel server's ip" << endl;
+  cout << "\t--client.tunnel.port=number\ttunnel server's port, default use tunnel.port" << endl;
+  cout << "\t--client.traffic.ip=ip\ttraffic upstream's ip" << endl;
+  cout << "\t--client.traffic.port=number\ttraffic upstream's port" << endl;
+  cout << endl;
+  cout << "version 0.0.1" << endl;
+  cout << "Report tcptunnel bugs to 95813422@qq.com" << endl;
 }
 
 int main(int argc, char * argv[]) {
   map<string, string> inputParamMap;
   Common::parseCommandLine(inputParamMap, argc, argv);
-	string help = Common::optValue(inputParamMap, "help", "false");
-	if (help != "false") {
+  string help = Common::optValue(inputParamMap, "help", "false");
+  if (help != "false") {
     showUsage(argv[0]);
     exit(EXIT_SUCCESS);
-	}
+  }
   string confFile = Common::optValue(inputParamMap, "conf");
   if (confFile.empty()) {
     confFile = "tunnel.conf";
   }
   map<string, string> paramMap;
-	if (!Common::parseFile(paramMap, confFile)) {
-		log_warn << "cannot open config file: " << confFile;
-	} else { // merge param with inputParam
-		for (map<string, string>::iterator it = inputParamMap.begin(); it != inputParamMap.end(); ++it) {
-			paramMap[it->first] = it->second;
-		}
-	}
+  if (!Common::parseFile(paramMap, confFile)) {
+    log_warn << "cannot open config file: " << confFile;
+  } else { // merge param with inputParam
+    for (map<string, string>::iterator it = inputParamMap.begin(); it != inputParamMap.end(); ++it) {
+      paramMap[it->first] = it->second;
+    }
+  }
 
   LoggerManager::init(
     Common::optValue(paramMap, "log.level", "INFO"),

@@ -209,14 +209,14 @@ TcpClient::run() {
     if (nfds == 0) {
         sendTunnelState(tunnelServerInfo.fd, 0, TunnelPackage::STATE_HEARTBEAT);
     } else {
-		    if(nfds == -1) {
-		      log_error << "failed to epoll_wait";
-		      exit(EXIT_FAILURE);
-		    }
-		    for(int i = 0; i < nfds; i++) {
-		      handleTunnelClient(events[i]);
-		      handleTrafficServer(events[i]);
-		    }
+        if(nfds == -1) {
+          log_error << "failed to epoll_wait";
+          exit(EXIT_FAILURE);
+        }
+        for(int i = 0; i < nfds; i++) {
+          handleTunnelClient(events[i]);
+          handleTrafficServer(events[i]);
+        }
     }
   }
 }

@@ -36,7 +36,7 @@ public:
   bool handleTrafficServer(const struct epoll_event& event);
   void resetTunnelServer();
   void retryConnectTunnelServer();
-	void run();
+  void run();
   int prepare(const string& ip, uint16_t port);
 
 private:
