@@ -5,14 +5,16 @@
 #ifndef TCP_TUNNEL_LOGGER_H
 #define TCP_TUNNEL_LOGGER_H
 
-#include <string>
+#include <time.h>
+
 #include <fstream>
 #include <iostream>
+#include <string>
 
-#define log_error LoggerManager::getLogger(LoggerManager::ERROR) << "[ERROR] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
-#define log_warn LoggerManager::getLogger(LoggerManager::WARN) << "[WARN] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
-#define log_info LoggerManager::getLogger(LoggerManager::INFO) << "[INFO] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
-#define log_debug LoggerManager::getLogger(LoggerManager::DEBUG) << "[DEBUG] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
+#define log_error LoggerManager::getLogger(LoggerManager::ERROR) << "[ERROR " << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
+#define log_warn LoggerManager::getLogger(LoggerManager::WARN) << "[WARN " << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
+#define log_info LoggerManager::getLogger(LoggerManager::INFO) << "[INFO " << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
+#define log_debug LoggerManager::getLogger(LoggerManager::DEBUG) << "[DEBUG " << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
 
 using namespace std;
 
@@ -35,20 +37,44 @@ public:
         *manage->out << endl;
       }
     }
+
     template<typename T> Logger&  operator << (T t) {
-      if (skip < manage->skip) {
-        ++skip;
-        if (skip > 1) {
-          return *this;
-        }
-      }
-      if (level <= manage->level) {
+      if (!consumeSkip() && level <= manage->level) {
         *manage->out << t;
       }
       return *this;
     }
-    Logger&  operator << (ostream& endl(ostream&)) {
+
+    Logger&  operator << (string (Logger::*fun)()) {
+      if (!consumeSkip() && level <= manage->level) {
+        *manage->out << (this->*fun)();
+      }
       return *this;
+    }
+
+		Logger&  operator << (ostream& endl(ostream&)) {
+		  return *this;
+		}
+
+	private:
+		bool consumeSkip() {
+		  if (skip < manage->skip) {
+		    ++skip;
+		    if (skip > 3) {
+		      return true;
+		    }
+		  }
+		  return false;
+		}
+
+    string nowTime () {
+      struct tm* ptr;
+      time_t lt;
+      time_t ts = time(NULL);
+      struct tm* localTimePtr = localtime(&ts);
+      char timeStr[80];
+      strftime(timeStr, 80, "%F %T", localTimePtr);
+      return string(timeStr);
     }
   };
 
@@ -78,7 +104,7 @@ public:
 
   static void init(int level, const string& outputFile, bool append, bool debug) {
     instance.level = level;
-    instance.skip = debug ? 0 : 7;
+    instance.skip = debug ? 0 : 9;
     if (outputFile.empty() || outputFile == "stdout") {
       instance.out = &cout;
     } else {
