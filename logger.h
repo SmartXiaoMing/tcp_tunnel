@@ -56,6 +56,16 @@ public:
       return *this;
     }
 
+    string nowTime () {
+      struct tm* ptr;
+      time_t lt;
+      time_t ts = time(NULL);
+      struct tm* localTimePtr = localtime(&ts);
+      char timeStr[80];
+      strftime(timeStr, 80, "%F %T", localTimePtr);
+      return string(timeStr);
+    }
+
   private:
     bool consumeSkip() {
       if (skip < manage->skip) {
@@ -65,16 +75,6 @@ public:
         }
       }
       return false;
-    }
-
-    string nowTime () {
-      struct tm* ptr;
-      time_t lt;
-      time_t ts = time(NULL);
-      struct tm* localTimePtr = localtime(&ts);
-      char timeStr[80];
-      strftime(timeStr, 80, "%F %T", localTimePtr);
-      return string(timeStr);
     }
   };
 
