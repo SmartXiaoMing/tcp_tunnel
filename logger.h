@@ -11,10 +11,18 @@
 #include <iostream>
 #include <string>
 
-#define log_error LoggerManager::getLogger(LoggerManager::ERROR) << "[ERROR " << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
-#define log_warn LoggerManager::getLogger(LoggerManager::WARN) << "[WARN " << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
-#define log_info LoggerManager::getLogger(LoggerManager::INFO) << "[INFO " << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
-#define log_debug LoggerManager::getLogger(LoggerManager::DEBUG) << "[DEBUG " << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ << ":" << __LINE__ << ") "
+#define log_error LoggerManager::getLogger(LoggerManager::ERROR) << "[ERROR " \
+    << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ \
+    << ":" << __LINE__ << ") "
+#define log_warn LoggerManager::getLogger(LoggerManager::WARN) << "[WARN " \
+    << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ \
+    << ":" << __LINE__ << ") "
+#define log_info LoggerManager::getLogger(LoggerManager::INFO) << "[INFO " \
+    << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ \
+    << ":" << __LINE__ << ") "
+#define log_debug LoggerManager::getLogger(LoggerManager::DEBUG) << "[DEBUG " \
+    << &LoggerManager::Logger::nowTime << "] " << __func__ << "(" << __FILE__ \
+    << ":" << __LINE__ << ") "
 
 using namespace std;
 
@@ -31,7 +39,8 @@ public:
     int level;
     int skip;
   public:
-    Logger(LoggerManager* inputManager, int inputLevel): level(inputLevel), manage(inputManager), skip(0) {}
+    Logger(LoggerManager* manage_, int level_)
+        : level(level_), manage(manage_), skip(0) {}
     ~Logger() {
       if (level <= manage->level) {
         *manage->out << endl;
@@ -56,7 +65,7 @@ public:
       return *this;
     }
 
-    string nowTime () {
+    string nowTime () const {
       struct tm* ptr;
       time_t lt;
       time_t ts = time(NULL);
@@ -88,7 +97,8 @@ public:
     return logger;
   }
 
-  static void init(const string& level, const string& outputFile, bool append, bool debug) {
+  static void init(const string& level, const string& file, bool append,
+      bool debug) {
     int l = INFO;
     if (level == "ERROR") {
       l = ERROR;
@@ -99,13 +109,13 @@ public:
     } else if (level == "DEBUG") {
       l = DEBUG;
     }
-    init(l, outputFile, append, debug);
+    init(l, file, append, debug);
   }
 
-  static void init(int level, const string& outputFile, bool append, bool debug) {
+  static void init(int level, const string& file, bool append, bool debug) {
     instance.level = level;
     instance.skip = debug ? 0 : 9;
-    if (outputFile.empty() || outputFile == "stdout") {
+    if (file.empty() || file == "stdout") {
       instance.out = &cout;
     } else {
       ios_base::openmode mode = ios_base::out;
@@ -115,7 +125,7 @@ public:
         mode |= ios_base::trunc;
       }
       ofstream* fout = new ofstream;
-      fout->open(outputFile.c_str(), mode);
+      fout->open(file.c_str(), mode);
       if (!fout->is_open()) {
         instance.out = &cout;
         log_warn << "no output file provided for log, use stdout default";

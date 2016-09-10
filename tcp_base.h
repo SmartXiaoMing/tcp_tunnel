@@ -8,26 +8,24 @@
 #include "logger.h"
 #include "tunnel_package.h"
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/epoll.h>
-#include <unistd.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 class TcpBase {
 public:
-  static const int SERVER_TUNNEL = 1;
-  static const int SERVER_TRAFFIC = 2;
-  static const int CLIENT_TUNNEL = 3;
-  static const int CLIENT_TRAFFIC = 4;
-
   struct TunnelServerInfo {
-      int fd;
-      string ip;
-      uint16_t port;
+    int fd;
+    string ip;
+    uint16_t port;
 
-      TunnelServerInfo() : fd(-1), ip(""), port(0) {}
-
-      TunnelServerInfo(int fd_, const char *ip_, uint16_t port_) : fd(fd_), ip(ip_), port(port_) {}
+    TunnelServerInfo() : fd(-1), ip(""), port(0) {}
+    TunnelServerInfo(int fd_, const char *ip_, uint16_t port_)
+        : fd(fd_), ip(ip_), port(port_) {}
   };
 
   struct TunnelClientInfo {
@@ -37,8 +35,8 @@ public:
       string buffer;
 
       TunnelClientInfo() : ip(""), port(0), count(0), buffer() {}
-
-      TunnelClientInfo(const char *ip_, uint16_t port_) : ip(ip_), port(port_), count(0), buffer() {}
+      TunnelClientInfo(const char *ip_, uint16_t port_)
+          : ip(ip_), port(port_), count(0), buffer() {}
   };
 
   TcpBase(): isServer(false) {
@@ -63,6 +61,44 @@ public:
     close(fd);
   }
 
+    int prepare(const string& ip, uint16_t port, int connection) {
+      int fd = socket(PF_INET, SOCK_STREAM, 0);
+      if(fd < 0) {
+        log_error << "failed to create socket!";
+        exit(EXIT_FAILURE);
+      }
+      int v;
+      if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &v, sizeof(v)) < 0) {
+        log_error << "failed to setsockopt: " << SO_REUSEADDR;
+        close(fd);
+        exit(EXIT_FAILURE);
+      }
+
+      struct sockaddr_in addr;
+      memset(&addr, 0, sizeof(addr));
+      addr.sin_family = AF_INET;
+      addr.sin_addr.s_addr = inet_addr(ip.c_str());
+      addr.sin_port = htons(port);
+      int result = bind(fd, (struct sockaddr *)&addr, sizeof(sockaddr));
+      if (result < 0) {
+        log_error << "failed to bind, port: " << port << "\n";
+        exit(EXIT_FAILURE);
+      }
+
+      result = listen(fd, connection);
+      if (result < 0) {
+        log_error << "failed to listen, port: " << port << ", connection: " << connection;
+        exit(EXIT_FAILURE);
+      }
+
+      if (registerFd(fd) < 0) {
+        log_error << "failed to registerFd: " <<  fd;
+        exit(EXIT_FAILURE);
+      }
+
+      return fd;
+    }
+
   int registerFd(int fd) {
     log_debug << " fd: " << fd;
     if (fd < 0) {
@@ -74,7 +110,7 @@ public:
     ev.data.fd = fd;
     int result = epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev);
     if (result < 0) {
-      log_error << "faild epoll_ctl add fd: " << fd << ", events: " << ev.events;
+      log_error << "failed epoll_ctl add event: " << fd << ", events: " << ev.events; // TODO
     }
     return result;
   }

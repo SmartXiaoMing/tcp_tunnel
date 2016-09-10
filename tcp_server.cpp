@@ -21,13 +21,15 @@
 #include <set>
 
 using namespace std;
+using namespace Common;
 
 void
 TcpServer::init(const string& tunnelIp, uint16_t tunnelPort, int tunnelConnection,
-  const string& trafficIp, const vector<uint16_t>& trafficPortList, int trafficConnection) {
-  prepare(SERVER_TUNNEL, tunnelIp, tunnelPort, tunnelConnection);
+    const string& trafficIp, const vector<uint16_t>& trafficPortList,
+    int trafficConnection) {
+  prepareTunnel(tunnelIp, tunnelPort, tunnelConnection);
   for (int i = 0; i < trafficPortList.size(); ++i) {
-    prepare(SERVER_TRAFFIC, trafficIp, trafficPortList[i], trafficConnection);
+    prepareTraffic(trafficIp, trafficPortList[i], trafficConnection);
   }
 }
 
@@ -44,11 +46,12 @@ TcpServer::assignTunnelClient(int trafficServerFd, int trafficClientFd) {
   }
 
   int avg = trafficServerMap.size() / tunnelClientMap.size();
-  for (map<int, TunnelClientInfo>::iterator it = tunnelClientMap.begin(); it != tunnelClientMap.end(); ++it) {
-    if (it->second.count <= avg) {
-      trafficServerMap[trafficServerFd] = it->first;
-      it->second.count++;
-      return it->first;
+  map<int, TunnelClientInfo>::iterator it2 = tunnelClientMap.begin();
+  for (; it2 != tunnelClientMap.end(); ++it2) {
+    if (it2->second.count <= avg) {
+      trafficServerMap[trafficServerFd] = it2->first;
+      it2->second.count++;
+      return it2->first;
     }
   }
   log_error << "cannot find one tunnelClient, it is impossible!!";
@@ -86,54 +89,21 @@ TcpServer::cleanUpTunnelClient(int fd) {
 }
 
 int
-TcpServer::prepare(int serverType, const string& ip, uint16_t port, int connection) {
-  int fd = socket(PF_INET, SOCK_STREAM, 0);
-  if(fd < 0) {
-    log_error << "failed to create socket!";
-    exit(EXIT_FAILURE);
-  }
-  int v;
-  if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &v, sizeof(v)) < 0) {
-    log_error << "failed to setsockopt: " << SO_REUSEADDR;
-    close(fd);
-    exit(EXIT_FAILURE);
-  }
-
-  struct sockaddr_in addr;
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = inet_addr(ip.c_str());
-  addr.sin_port = htons(port);
-  int result = bind(fd, (struct sockaddr *)&addr, sizeof(sockaddr));
-  if (result < 0) {
-    log_error << "failed to bind, port: " << port << "\n";
-    exit(EXIT_FAILURE);
-  }
-
-  result = listen(fd, connection);
-  if (result < 0) {
-    log_error << "failed to listen, port: " << port << ", connection: " << connection;
-    exit(EXIT_FAILURE);
-  }
-
-  if (registerFd(fd) < 0) {
-    log_error << "failed to registerFd: " <<  fd;
-    exit(EXIT_FAILURE);
-  }
-
-  if (serverType == SERVER_TUNNEL) {
-    tunnelServerFd = fd;
-  } else if (serverType == SERVER_TRAFFIC) {
-    trafficServerMap[fd] = -1;
-  } else {
-    log_error << "code bug, invalid type: " << serverType;
-    exit(EXIT_FAILURE);
-  }
+TcpServer::prepareTraffic(const string& ip, uint16_t port, int connection) {
+  int fd = prepare(ip, port, connection);
+  trafficServerMap[fd] = -1;
   return fd;
 }
 
 int
-TcpServer::acceptClient(int serverFd, int type) { // return tunnelClient or trafficClient
+TcpServer::prepareTunnel(const string& ip, uint16_t port, int connection) {
+  tunnelServerFd = prepare(ip, port, connection);
+  return tunnelServerFd;
+}
+
+
+int
+TcpServer::acceptTrafficClient(int serverFd) {
   struct sockaddr_in addr;
   socklen_t sin_size = sizeof(addr);
   int clientFd = accept(serverFd, (struct sockaddr *)&addr, &sin_size);
@@ -143,19 +113,30 @@ TcpServer::acceptClient(int serverFd, int type) { // return tunnelClient or traf
   }
   log_info << "accept client, ip: " << inet_ntoa(addr.sin_addr) << ", port: " << addr.sin_port;
 
-  if (type == CLIENT_TUNNEL) {
-    tunnelClientMap[clientFd] = TunnelClientInfo(inet_ntoa(addr.sin_addr), addr.sin_port);
-  } else if (type == CLIENT_TRAFFIC) {
-    int tunnelClientFd = assignTunnelClient(serverFd, clientFd);
-    if (tunnelClientFd < 0) {
-      cleanUpTrafficClient(clientFd);
-      return -1;
-    }
-    trafficClientMap[clientFd] = tunnelClientFd;
-    sendTunnelState(tunnelClientFd, clientFd, TunnelPackage::STATE_CREATE);
-  } else {
-    log_error << "code bug: invalid type: " << type;
+  int tunnelClientFd = assignTunnelClient(serverFd, clientFd);
+  if (tunnelClientFd < 0) {
+    cleanUpTrafficClient(clientFd);
+    return -1;
   }
+  trafficClientMap[clientFd] = tunnelClientFd;
+  sendTunnelState(tunnelClientFd, clientFd, TunnelPackage::STATE_CREATE);
+
+  registerFd(clientFd);
+  return clientFd;
+}
+
+int
+TcpServer::acceptTunnelClient(int serverFd) {
+  struct sockaddr_in addr;
+  socklen_t sin_size = sizeof(addr);
+  int clientFd = accept(serverFd, (struct sockaddr *)&addr, &sin_size);
+  if(clientFd < 0) {
+    log_error << "failed to accept client";
+    exit(EXIT_FAILURE);
+  }
+  log_info << "accept client, ip: " << inet_ntoa(addr.sin_addr) << ", port: " << addr.sin_port;
+
+  tunnelClientMap[clientFd] = TunnelClientInfo(inet_ntoa(addr.sin_addr), addr.sin_port);
 
   registerFd(clientFd);
   return clientFd;
@@ -174,8 +155,8 @@ TcpServer::handleTunnelClient(const struct epoll_event& event) {
   if ((event.events & EPOLLIN) == 0) {
     return true;
   }
-  char buf[Common::BUFFER_SIZE];
-  int len = recv(event.data.fd, buf, Common::BUFFER_SIZE, 0);
+  char buf[BUFFER_SIZE];
+  int len = recv(event.data.fd, buf, BUFFER_SIZE, 0);
   if (len <= 0) {
     cleanUpTunnelClient(event.data.fd);
     return true;
@@ -225,8 +206,8 @@ TcpServer::handleTrafficClient(const struct epoll_event& event) {
     return true;
   }
 
-  char buf[Common::BUFFER_SIZE];
-  int len = recv(event.data.fd, buf, Common::BUFFER_SIZE, 0);
+  char buf[BUFFER_SIZE];
+  int len = recv(event.data.fd, buf, BUFFER_SIZE, 0);
   log_debug << "recv, trafficServer <-- tunnelClient <-- *tunnelServer("
     << event.data.fd << ") <-[length=" << len << "]- trafficClient";
   if (len <= 0) {
@@ -240,19 +221,19 @@ TcpServer::handleTrafficClient(const struct epoll_event& event) {
 void
 TcpServer::run() {
   while(true) {
-    struct epoll_event events[Common::MAX_EVENTS];
-    int nfds = epoll_wait(epollFd, events, Common::MAX_EVENTS, -1);
+    struct epoll_event events[MAX_EVENTS];
+    int nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1);
     if(nfds == -1) {
       log_error << "failed to epoll_wait";
       exit(EXIT_FAILURE);
     }
     for(int i = 0; i < nfds; i++) {
-      if (events[i].data.fd == tunnelServerFd) { // tunnel client connect
-        acceptClient(tunnelServerFd, CLIENT_TUNNEL);
+      if (events[i].data.fd == tunnelServerFd) {
+        acceptTunnelClient(tunnelServerFd);
         continue;
       }
-      if (trafficServerMap.find(events[i].data.fd) != trafficServerMap.end()) { // traffic client connect
-        acceptClient(events[i].data.fd, CLIENT_TRAFFIC);
+      if (trafficServerMap.find(events[i].data.fd) != trafficServerMap.end()) {
+        acceptTrafficClient(events[i].data.fd);
         continue;
       }
       handleTunnelClient(events[i]) || handleTrafficClient(events[i]);

@@ -18,8 +18,10 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
+using namespace Common;
 
 class TcpClient: public TcpBase {
 public:
@@ -27,8 +29,8 @@ public:
     isServer = false;
   }
   void init(
-    const string& tunnelIp, uint16_t tunnelPort, int retryInterval,
-    const string& trafficIp_, uint16_t trafficPort_
+      const vector<Addr>& tunnelAddrList, int retryInterval,
+      const string& trafficIp_, uint16_t trafficPort_
   );
   void cleanUpTrafficClient(int fd);
   void cleanUpTrafficServer(int fd);
@@ -41,8 +43,9 @@ public:
 
 private:
   string tunnelBuffer;
-  int tunnelRetryInterval;
-  TunnelServerInfo tunnelServerInfo;
+  int tunnelServerFd;
+  vector<Addr> tunnelServerList;
+  int retryInterval;
   string trafficServerIp;
   uint16_t trafficServerPort;
   map<int, int> trafficServerMap; // trafficServer -> trafficClient

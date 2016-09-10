@@ -8,38 +8,48 @@
 #include "tunnel_package.h"
 
 #include <arpa/inet.h>
-
+#include <netdb.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 
 using namespace std;
+using namespace Common;
 
 void
-TcpClient::init(const string& tunnelIp, uint16_t tunnelPort, int tunnelRetryInterval_,
+TcpClient::init(const vector<Addr>& tunnelAddrList, int tunnelRetryInterval,
   const string& trafficIp_, uint16_t trafficPort_) {
+  if (tunnelAddrList.empty()) {
+    log_error << "tunnel addr list is empty!";
+    exit(EXIT_FAILURE);
+  }
+  tunnelServerList = tunnelAddrList;
   trafficServerIp = trafficIp_;
   trafficServerPort = trafficPort_;
-  tunnelServerInfo.ip = tunnelIp;
-  tunnelServerInfo.port = tunnelPort;
-  tunnelServerInfo.fd = -1;
-  tunnelRetryInterval = tunnelRetryInterval_;
+  tunnelServerFd = -1;
+  retryInterval = tunnelRetryInterval;
   retryConnectTunnelServer();
 }
 
 void
 TcpClient::retryConnectTunnelServer() {
-  while (tunnelServerInfo.fd < 0) {
-    tunnelServerInfo.fd = prepare(tunnelServerInfo.ip, tunnelServerInfo.port);
-    if (tunnelServerInfo.fd > 0) {
+  srand(time(0));
+  while (tunnelServerFd < 0) {
+    int index = rand() % tunnelServerList.size();
+    Addr& addr = tunnelServerList[index];
+    int fd = prepare(addr.ip, addr.port);
+    if (tunnelServerFd > 0) {
+      log_info << "use tunnel server addr(" << index << "/"
+          << tunnelServerList.size() << "): " << addr.ip << ":" << addr.port;
+      tunnelServerFd = fd;
       return;
     }
-    if (tunnelRetryInterval > 0) {
-      log_error << "failed to connect: " << tunnelServerInfo.ip << ":" << tunnelServerInfo.port
-                << ", retry after " << tunnelRetryInterval << "seconds";
-      sleep(tunnelRetryInterval);
+    if (retryInterval > 0) {
+      log_error << "failed to connect: " << addr.ip << ":" << addr.port
+          << ", retry after " << retryInterval << " seconds";
+      sleep(retryInterval);
     } else {
-      log_error << "failed to connect: " << tunnelServerInfo.ip << ":" << tunnelServerInfo.port << ", exit now";
+      log_error << "failed to connect: " << addr.ip << ":" << addr.port << ", exit now";
       exit(EXIT_FAILURE);
     }
   }
@@ -50,7 +60,7 @@ TcpClient::cleanUpTrafficClient(int fakeFd) {
   log_debug << "clean up trafficClient, fakeFd: " << fakeFd;
   map<int, int>::iterator it = trafficClientMap.find(fakeFd);
   if (it != trafficClientMap.end()) {
-    sendTunnelState(tunnelServerInfo.fd, fakeFd, TunnelPackage::STATE_CLOSE);
+    sendTunnelState(tunnelServerFd, fakeFd, TunnelPackage::STATE_CLOSE);
     cleanUpFd(it->second);
     trafficClientMap.erase(fakeFd);
     trafficServerMap.erase(it->second);
@@ -70,13 +80,15 @@ TcpClient::cleanUpTrafficServer(int fd) {
 
 void
 TcpClient::resetTunnelServer() {
-  for (map<int, int>::iterator it = trafficServerMap.begin(); it != trafficServerMap.end(); ++it) {
+  map<int, int>::iterator it = trafficServerMap.begin();
+  for (; it != trafficServerMap.end(); ++it) {
     cleanUpFd(it->first);
   }
   trafficServerMap.clear();
   trafficClientMap.clear();
-  cleanUpFd(tunnelServerInfo.fd);
-  tunnelServerInfo.fd = -1;
+  cleanUpFd(tunnelServerFd);
+  tunnelServerFd = -1;
+  tunnelBuffer.clear();
   retryConnectTunnelServer();
 }
 
@@ -106,7 +118,7 @@ TcpClient::prepare(const string& ip, uint16_t port) {
 bool
 TcpClient::handleTunnelClient(const struct epoll_event& event) {
   log_debug << "test, fd: " << event.data.fd << ", events: " << event.events;
-  if (event.data.fd != tunnelServerInfo.fd) { // traffic from tunnel
+  if (event.data.fd != tunnelServerFd) { // traffic from tunnel
     log_debug << "1";
     return false;
   }
@@ -119,11 +131,10 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
     log_debug << "not in";
     return true;
   }
-  char buf[Common::BUFFER_SIZE];
-  int len = recv(event.data.fd, buf, Common::BUFFER_SIZE, 0);
+  char buf[BUFFER_SIZE];
+  int len = recv(event.data.fd, buf, BUFFER_SIZE, 0);
   if (len <= 0) {
     resetTunnelServer();
-    log_debug << "reset";
     return true;
   }
   tunnelBuffer.append(buf, len);
@@ -132,6 +143,10 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
   while (offset < tunnelBuffer.length()) {
     TunnelPackage package;
     int decodeLength = package.decode(tunnelBuffer.c_str() + offset, totalLength - offset);
+    if (decodeLength < 0) {
+      resetTunnelServer();
+      return true;
+    }
     if (decodeLength == 0) { // wait next time to read
       break;
     }
@@ -181,33 +196,33 @@ TcpClient::handleTrafficServer(const struct epoll_event& event) {
     return false;
   }
   if ((event.events & EPOLLRDHUP) || (event.events & EPOLLERR)) {
-    sendTunnelState(tunnelServerInfo.fd, it->second, TunnelPackage::STATE_CLOSE);
+    sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
     cleanUpTrafficServer(event.data.fd);
     return true;
   }
   if ((event.events & EPOLLIN) == 0) {
     return true;
   }
-  char buf[Common::BUFFER_SIZE];
-  int len = recv(event.data.fd, buf, Common::BUFFER_SIZE, 0);
+  char buf[BUFFER_SIZE];
+  int len = recv(event.data.fd, buf, BUFFER_SIZE, 0);
   log_debug << "recv, trafficServer -[length=" << len
     << "]-> *tunnelClient(" << event.data.fd << ") --> tunnelServer --> trafficClient";
   if (len <= 0) {
-    sendTunnelState(tunnelServerInfo.fd, it->second, TunnelPackage::STATE_CLOSE);
+    sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
     cleanUpTrafficServer(event.data.fd);
     return true;
   }
-  sendTunnelTraffic(event.data.fd, tunnelServerInfo.fd, it->second, string(buf, len));
+  sendTunnelTraffic(event.data.fd, tunnelServerFd, it->second, string(buf, len));
   return true;
 }
 
 void
 TcpClient::run() {
   while(true) {
-    struct epoll_event events[Common::MAX_EVENTS];
-    int nfds = epoll_wait(epollFd, events, Common::MAX_EVENTS, 60000);
+    struct epoll_event events[MAX_EVENTS];
+    int nfds = epoll_wait(epollFd, events, MAX_EVENTS, 60000);
     if (nfds == 0) {
-        sendTunnelState(tunnelServerInfo.fd, 0, TunnelPackage::STATE_HEARTBEAT);
+        sendTunnelState(tunnelServerFd, 0, TunnelPackage::STATE_HEARTBEAT);
     } else {
         if(nfds == -1) {
           log_error << "failed to epoll_wait";

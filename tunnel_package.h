@@ -18,6 +18,7 @@ class TunnelPackage {
 public:
   static const uint8_t DefaultVersion = 1;
   static const int HeadLength = 10;
+  static const int MaxContentLength = 4096;
 
   static const uint8_t STATE_TRAFFIC = 0;
   static const uint8_t STATE_CREATE = 1;
@@ -59,11 +60,11 @@ public:
     decode(*this, result, size);
   }
 
-  static int encode(string& result, const TunnelPackage& tunnelPackage) {
-    return encode(result, tunnelPackage.fd, tunnelPackage.state, tunnelPackage.message);
+  static int encode(string& result, const TunnelPackage& package) {
+    return encode(result, package.fd, package.state, package.message);
   }
 
-  static int encode(string& result, uint32_t fd, uint8_t state, const string& message) {
+  static int encode(string& result, int32_t fd, uint8_t state, const string& message) {
     // 1byte version
     // 4bytes fd
     // 1byte state
@@ -95,23 +96,31 @@ public:
 
   static int decode(TunnelPackage& tunnelPackage, const char* result, int size) {
     if (size < HeadLength) {
-      log_error << "invalid length: " << size;
       return 0;
     }
     if (result[0] != DefaultVersion) {
       log_error << "invalid version: " << (int)DefaultVersion << endl;
-      return 0;
+      return -1;
     }
-    int length = ((result[6] & 0xff) << 24) | ((result[7] & 0xff) << 16) | ((result[8] & 0xff) << 8)  | (result[9] & 0xff);
+    int length = ((result[6] & 0xff) << 24)
+        | ((result[7] & 0xff) << 16)
+        | ((result[8] & 0xff) << 8)
+        | (result[9] & 0xff);
+    if (length < 0 || length > MaxContentLength) {
+      log_error << "invalid length: " << length;
+      return -1;
+    }
     int packageLength = HeadLength + length;
-    if (length < 0 || size < packageLength) {
-      log_error << "invalid length: " << length << ", expect: " << size;
-      log_error << "result[6~9] = {" << (int)result[6] << "," << (int)result[7] << "," << (int)result[8] << "," << (int)result[9] << " }";
+    if (size < packageLength) {
       return 0;
     }
-    tunnelPackage.fd = ((result[1] & 0xff)  << 24) | ((result[2] & 0xff)  << 16) | ((result[3] & 0xff)  << 8) | (result[4] & 0xff) ;
+    tunnelPackage.fd = ((result[1] & 0xff)  << 24)
+        | ((result[2] & 0xff)  << 16)
+        | ((result[3] & 0xff)  << 8)
+        | (result[4] & 0xff) ;
     tunnelPackage.state = result[5];
-    tunnelPackage.message.assign(result + HeadLength, length);return packageLength;
+    tunnelPackage.message.assign(result + HeadLength, length);
+    return packageLength;
   }
 };
 

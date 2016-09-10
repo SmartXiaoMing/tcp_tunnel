@@ -6,120 +6,128 @@
 #include <iostream>
 
 using namespace std;
+using namespace Common;
 
-void showUsage(string name) {
-  cout << "usage: " << name << " --mode=server|client --tunnel.port=number [OPTION]" << endl;
-  cout << "options with mode=server:" << endl;
-  cout << "\t--server.tunnel.ip=ip\ttunnel server bind ip, default 0.0.0.0" << endl;
-  cout << "\t--server.tunnel.port=number\ttunnel server bind port, default use tunnel.port" << endl;
-  cout << "\t--server.tunnel.connection=connection\tallow client connection count, default 10" << endl;
-  cout << "\t--server.traffic.ip=ip\ttraffic downstream bind ip, default 0.0.0.0" << endl;
-  cout << "\t--server.traffic.port=number\ttraffic downstream bind port" << endl;
-  cout << "options with mode=client:" << endl;
-  cout << "\t--client.tunnel.ip=ip\ttunnel server's ip" << endl;
-  cout << "\t--client.tunnel.port=number\ttunnel server's port, default use tunnel.port" << endl;
-  cout << "\t--client.traffic.ip=ip\ttraffic upstream's ip" << endl;
-  cout << "\t--client.traffic.port=number\ttraffic upstream's port" << endl;
-  cout << endl;
-  cout << "version 0.0.1" << endl;
-  cout << "Report tcptunnel bugs to 95813422@qq.com" << endl;
+void showUsage(int argc, char* argv[]) {
+  cout << "usage: " << argv[0] << " --mode=server|client [OPTION]\n";
+  cout << "options with mode=server:\n";
+  cout << "\t--server.tunnel.ip=ip\ttunnel server bind ip, default 0.0.0.0\n";
+  cout << "\t--server.tunnel.port=number\ttunnel bind port\n";
+  cout << "\t--server.tunnel.connection=connection\tclient count, default 10\n";
+  cout << "\t--server.traffic.ip=ip\ttraffic bind ip, default 0.0.0.0\n";
+  cout << "\t--server.traffic.port=number\ttraffic bind port\n";
+  cout << "options with mode=client:\n";
+  cout << "\t--client.tunnel.addr=host:port1[,port2][;]\ttunnel server addr\n";
+  cout << "\t--client.tunnel.retry.interval=number\tdefault 10 seconds\n";
+  cout << "\t--client.traffic.ip=ip\ttraffic ip, default 127.0.0.1\n";
+  cout << "\t--client.traffic.port=number\ttraffic port\n";
+  cout << "\n";
+  cout << "version 0.0.1\n";
+  cout << "Report tunnel bugs to 95813422@qq.com\n";
 }
 
 int main(int argc, char * argv[]) {
   map<string, string> inputParamMap;
-  Common::parseCommandLine(inputParamMap, argc, argv);
-  string help = Common::optValue(inputParamMap, "help", "false");
+  parseCommandLine(inputParamMap, argc, argv);
+  string help = optValue(inputParamMap, "help", "false");
   if (help != "false") {
-    showUsage(argv[0]);
+    showUsage(argc, argv);
     exit(EXIT_SUCCESS);
   }
-  string confFile = Common::optValue(inputParamMap, "conf");
+  string confFile = optValue(inputParamMap, "conf");
   if (confFile.empty()) {
     confFile = "tunnel.conf";
   }
   map<string, string> paramMap;
-  if (!Common::parseFile(paramMap, confFile)) {
+  if (!parseFile(paramMap, confFile)) {
     log_warn << "cannot open config file: " << confFile;
   } else { // merge param with inputParam
-    for (map<string, string>::iterator it = inputParamMap.begin(); it != inputParamMap.end(); ++it) {
+    map<string, string>::iterator it = inputParamMap.begin();
+    for (; it != inputParamMap.end(); ++it) {
       paramMap[it->first] = it->second;
     }
   }
 
+  string pifFile = optValue(paramMap, "pid.file", "tunnel.pid");
+  savePid(pifFile);
+
   LoggerManager::init(
-    Common::optValue(paramMap, "log.level", "INFO"),
-    Common::optValue(paramMap, "log.file", "stdout"),
-    Common::optValue(paramMap, "log.file.append", "true") == "true",
-    Common::optValue(paramMap, "log.debug", "false") == "true"
+      optValue(paramMap, "log.level", "INFO"),
+      optValue(paramMap, "log.file", "stdout"),
+      optValue(paramMap, "log.file.append", "true") == "true",
+      optValue(paramMap, "log.debug", "false") == "true"
   );
 
-  string mode = Common::optValue(paramMap, "mode");
+  string mode = optValue(paramMap, "mode");
   if (mode.empty()) {
     log_error << "param mode is unset";
     exit(EXIT_FAILURE);
   }
-  string tunnelPort = Common::optValue(paramMap, "tunnel.port");
+
   if (mode == "server") {
-    string tunnelIp = Common::optValue(paramMap, "server.tunnel.ip", "0.0.0.0");
-    string tunnelPortStr = Common::optValue(paramMap, "server.tunnel.port", tunnelPort);
+    string tunnelIp = optValue(paramMap, "server.tunnel.ip", "0.0.0.0");
+    string tunnelPortStr = optValue(paramMap, "server.tunnel.port");
     if (tunnelPortStr.empty()) {
-      log_error << "server.tunnel.port is unset" << endl;
+      log_error << "server.tunnel.port is unset\n";
       exit(EXIT_FAILURE);
     }
-    uint16_t tunnelPort = Common::stringToInt(tunnelPortStr);
+    uint16_t tunnelPort = stringToInt(tunnelPortStr);
     if (tunnelPort <= 0) {
       log_error << "server.tunnel.port is invalid: " << tunnelPort;
       exit(EXIT_FAILURE);
     }
-    int tunnelConnection = Common::stringToInt(Common::optValue(paramMap, "server.tunnel.connection", "1"));
-
-    string trafficIp = Common::optValue(paramMap, "server.traffic.ip", "0.0.0.0");
-    string trafficPortStr = Common::optValue(paramMap, "server.traffic.port");
+    int tunnelConnection
+        = stringToInt(optValue(paramMap, "server.tunnel.connection", "10"));
+    string trafficIp = optValue(paramMap, "server.traffic.ip", "0.0.0.0");
+    string trafficPortStr = optValue(paramMap, "server.traffic.port");
     vector<string> trafficPortStrList;
-    Common::split(trafficPortStrList, trafficPortStr, ',');
+    split(trafficPortStrList, trafficPortStr, ',');
     vector<uint16_t> trafficPortList;
     for (int i = 0; i < trafficPortStrList.size(); ++i) {
-      uint16_t port = Common::stringToInt(trafficPortStrList[i]);
+      uint16_t port = stringToInt(trafficPortStrList[i]);
       if (port > 0) {
         trafficPortList.push_back(port);
       }
     }
     if (trafficPortList.empty()) {
-      log_error << "server.traffic.port is unset or invalid: " << trafficPortStr;
+      log_error << "server.traffic.port is invalid: " << trafficPortStr;
       exit(EXIT_FAILURE);
     }
-    int trafficConnection = Common::stringToInt(Common::optValue(paramMap, "server.traffic.connection", "1"));
-    log_info << "listen tunnel(" << tunnelConnection << "): " << tunnelIp << ":" << tunnelPort;
-    log_info << "listen traffic(" << trafficConnection << "): " << trafficIp << ":" << trafficPortStr;
-
+    int trafficConnection
+        = stringToInt(optValue(paramMap, "server.traffic.connection", "1"));
+    log_info << "listen tunnel(" << tunnelConnection << "): "
+        << tunnelIp << ":" << tunnelPort;
+    log_info << "listen traffic(" << trafficConnection << "): "
+        << trafficIp << ":" << trafficPortStr;
     TcpServer tcpServer;
-    tcpServer.init(tunnelIp, tunnelPort, tunnelConnection, trafficIp, trafficPortList, trafficConnection);
+    tcpServer.init(
+        tunnelIp, tunnelPort, tunnelConnection,
+        trafficIp, trafficPortList, trafficConnection
+    );
     tcpServer.run();
   } else if (mode == "client") {
-    string tunnelIp = Common::optValue(paramMap, "client.tunnel.ip", "127.0.0.1");
-    string tunnelPortStr = Common::optValue(paramMap, "client.tunnel.port", tunnelPort);
-    uint16_t tunnelPort = Common::stringToInt(tunnelPortStr);
-    if (tunnelPort <= 0) {
-      log_error << "client.tunnel.port is unset or invalid: " << tunnelPortStr;
-      exit(EXIT_FAILURE);
+    string addrStr = optValue(paramMap, "client.tunnel.addr");
+    vector<Addr> addrList;
+    if (parseAddressList(addrList, addrStr)) {
+      log_error << "client.tunnel.port is invalid: " << addrStr;
     }
-    int retryInterval = Common::stringToInt(Common::optValue(paramMap, "client.tunnel.retry.interval", "1"));
-
-    string trafficIp = Common::optValue(paramMap, "client.traffic.ip", "127.0.0.1");
-    string trafficPortStr = Common::optValue(paramMap, "client.traffic.port");
-    uint16_t trafficPort = Common::stringToInt(trafficPortStr);
-    if (trafficPort <= 0) {
+    int retryInterval
+        = stringToInt(optValue(paramMap, "client.tunnel.retry.interval", "10"));
+    string trafficIp = optValue(paramMap, "client.traffic.ip", "127.0.0.1");
+    string trafficPortStr = optValue(paramMap, "client.traffic.port");
+    int trafficPort = stringToInt(trafficPortStr);
+    if (trafficPort <= 0 || trafficPort > 65535) {
       log_error << "client.traffic.port is unset or invalid: " << trafficPortStr;
       exit(EXIT_FAILURE);
     }
-    log_info << "connect tunnel: " << tunnelIp << ":" << tunnelPort;
-    log_info << "traffic upstream: " << trafficIp << ":" << trafficPort;
+    log_info << "traffic: " << trafficIp << ":" << trafficPort;
     TcpClient tcpClient;
-    tcpClient.init(tunnelIp, tunnelPort, retryInterval, trafficIp, trafficPort);
+    tcpClient.init(addrList, retryInterval, trafficIp, trafficPort);
     tcpClient.run();
   } else {
     log_error << "invalid mode: " << mode;
     exit(EXIT_FAILURE);
   }
+
   return EXIT_SUCCESS;
 }
