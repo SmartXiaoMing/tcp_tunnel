@@ -36,8 +36,8 @@ TcpServer::init(const string& tunnelIp, uint16_t tunnelPort, int tunnelConnectio
 
 int
 TcpServer::assignTunnelClient(int trafficServerFd, int trafficClientFd) {
-  if (tunnelClientMap.empty()) {
-    log_warn << "tunnelClientMap is empty to assign";
+  if (tunnelClientCount <= 0) {
+    log_warn << "no available tunnelClient";
     return -1;
   }
   map<int, int>::iterator it = trafficServerMap.find(trafficServerFd);
@@ -54,10 +54,10 @@ TcpServer::assignTunnelClient(int trafficServerFd, int trafficClientFd) {
     return -1;
   }
 
-  int avg = trafficServerMap.size() / tunnelClientMap.size();
+  int avg = trafficServerMap.size() / tunnelClientCount;
   map<int, TunnelClientInfo>::iterator it2 = tunnelClientMap.begin();
   for (; it2 != tunnelClientMap.end(); ++it2) {
-    if (it2->second.count <= avg) {
+    if (it2->second.verified && it2->second.count <= avg) {
       trafficServerMap[trafficServerFd] = it2->first;
       it2->second.count++;
       return it2->first;
@@ -93,7 +93,13 @@ TcpServer::cleanUpTunnelClient(int fd) {
     }
   }
   cleanUpFd(fd);
-  tunnelClientMap.erase(fd);
+  map<int, TunnelClientInfo>:: iterator it = tunnelClientMap.find(fd);
+  if (it != tunnelClientMap.end()) {
+    if (it->second.verified) {
+      tunnelClientCount -= 1;
+    }
+    tunnelClientMap.erase(it);
+  }
   log_debug << "clean up tunnelClient, fd: " << fd;
 }
 
@@ -109,7 +115,6 @@ TcpServer::prepareTunnel(const string& ip, uint16_t port, int connection) {
   tunnelServerFd = prepare(ip, port, connection);
   return tunnelServerFd;
 }
-
 
 int
 TcpServer::acceptTrafficClient(int serverFd) {
@@ -147,7 +152,9 @@ TcpServer::acceptTunnelClient(int serverFd) {
 
   if (!secret.empty()) {
     sendTunnelState(clientFd, 0, TunnelPackage::STATE_VERIFY_REQUEST);
-    tunnelClientMap[clientFd] = TunnelClientInfo(true); // TODO  } else {
+    tunnelClientMap[clientFd] = TunnelClientInfo(true); // TODO
+    tunnelClientCount += 1;
+  } else {
     tunnelClientMap[clientFd] = TunnelClientInfo(false);
   }
 
@@ -190,13 +197,16 @@ TcpServer::handleTunnelClient(const struct epoll_event& event) {
               << "]-> *tunnelServer(" << event.data.fd << ") --> trafficClient";
     switch (package.state) {
       case TunnelPackage::STATE_HEARTBEAT: break;
-      case TunnelPackage::STATE_VERIFY_RESPONSE:
+      case TunnelPackage::STATE_VERIFY_RESPONSE: {
         if (package.message == secret) {
-          it->second.verified = true;
+          if (!it->second.verified) {
+            it->second.verified = true;
+            tunnelClientCount += 1;
+          }
         } else {
           cleanUpTunnelClient(event.data.fd);
         }
-        break;
+      } break;
       case TunnelPackage::STATE_CREATE_FAILURE:
       case TunnelPackage::STATE_CLOSE: cleanUpTrafficClient(package.fd); break;
       case TunnelPackage::STATE_TRAFFIC: {

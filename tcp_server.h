@@ -26,7 +26,7 @@ using namespace std;
 class TcpServer: public TcpBase {
 public:
 
-  TcpServer() {
+  TcpServer(): tunnelClientCount(0) {
     isServer = true;
   }
 
@@ -51,6 +51,7 @@ public:
 private:
     string secret;
     map<int, TunnelClientInfo> tunnelClientMap; // count, buffer
+    int tunnelClientCount;
     int tunnelServerFd;
     map<int, int> trafficClientMap; // trafficClient -> tunnelClient
     map<int, int> trafficServerMap; // trafficServer -> tunnelClient
