@@ -144,7 +144,8 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
   int totalLength = tunnelBuffer.length();
   while (offset < tunnelBuffer.length()) {
     TunnelPackage package;
-    int decodeLength = package.decode(tunnelBuffer.c_str() + offset, totalLength - offset);
+    int decodeLength
+        = package.decode(tunnelBuffer.c_str() + offset, totalLength - offset);
     if (decodeLength < 0) {
       resetTunnelServer();
       return true;
@@ -153,22 +154,25 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
       break;
     }
     offset += decodeLength;
-    log_debug << "recv, trafficServer <-- *tunnelClient(" << event.data.fd << ") <-[fd=" << package.fd
-      << ",state=" << package.getState() << ",length=" << package.message.size()
-      << "]- tunnelServer <-- trafficClient";
+    log_debug << "recv, " << addrLocal(tunnelServerFd)
+        << " <-[fd=" << package.fd << ",state=" << package.getState()
+        << ",length=" << package.message.size() << "]- "
+        <<  addrRemote(tunnelServerFd);
     switch (package.state) {
       case TunnelPackage::STATE_CHALLENGE_REQUEST:
-        sendTunnelState(event.data.fd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE);
+        sendTunnelState(
+            tunnelServerFd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE
+        );
         break;
       case TunnelPackage::STATE_CREATE: {
         int trafficFd = prepare(trafficServerIp, trafficServerPort);
-        log_debug << "prepare fd: " << trafficFd << ", from package.fd: " << package.fd;
         if (trafficFd > 0) {
           trafficServerMap[trafficFd] = package.fd;
           trafficClientMap[package.fd] = trafficFd;
-          sendTunnelState(event.data.fd, package.fd, TunnelPackage::STATE_CREATE + 10);
         } else {
-          sendTunnelState(event.data.fd, package.fd, TunnelPackage::STATE_CREATE_FAILURE);
+          sendTunnelState(
+              tunnelServerFd, package.fd, TunnelPackage::STATE_CREATE_FAILURE
+          );
         }
       } break;
       case TunnelPackage::STATE_CLOSE: cleanUpTrafficClient(package.fd); break;
@@ -177,11 +181,12 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
         if (it == trafficClientMap.end()) {
           log_error << "no related fd for client: " << package.fd;
         } else {
-          send(it->second, package.message.c_str(), package.message.size(), 0);
-          log_debug << "send, trafficServer(" << it->second
-                    << ") <-[length=" << package.message.size()
-                    << "]- *tunnelClient(" << event.data.fd
-                    << ") <-- tunnelServer <-- trafficClient";
+          int n = send(
+              it->second, package.message.c_str(), package.message.size(), 0
+          );
+          log_debug << "send, " << addrLocal(it->second)
+              << " -[length=" << n << "]-> "
+              <<  addrRemote(it->second);
         }
       } break;
       default: log_warn << "ignore state: " << (int) package.state;
@@ -195,7 +200,6 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
 
 bool
 TcpClient::handleTrafficServer(const struct epoll_event& event) {
-  log_debug << "test, fd: " << event.data.fd << ", events: " << event.events;
   map<int, int>::iterator it = trafficServerMap.find(event.data.fd);
   if (it == trafficServerMap.end()) {
     return false;
@@ -210,14 +214,15 @@ TcpClient::handleTrafficServer(const struct epoll_event& event) {
   }
   char buf[BUFFER_SIZE];
   int len = recv(event.data.fd, buf, BUFFER_SIZE, 0);
-  log_debug << "recv, trafficServer -[length=" << len
-    << "]-> *tunnelClient(" << event.data.fd << ") --> tunnelServer --> trafficClient";
+  log_debug << "recv, " << addrLocal(it->first)
+      << " <-[length=" << len << "]- "
+      <<  addrRemote(it->first);
   if (len <= 0) {
     sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
     cleanUpTrafficServer(event.data.fd);
     return true;
   }
-  sendTunnelTraffic(event.data.fd, tunnelServerFd, it->second, string(buf, len));
+  sendTunnelTraffic(it->first, tunnelServerFd, it->second, string(buf, len));
   return true;
 }
 

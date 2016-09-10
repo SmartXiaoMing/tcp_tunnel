@@ -26,9 +26,7 @@ using namespace std;
 class TcpServer: public TcpBase {
 public:
 
-  TcpServer(): tunnelClientCount(0), monitorServerFd(-1) {
-    isServer = true;
-  }
+  TcpServer(): tunnelClientCount(0), monitorServerFd(-1) {}
 
   void init(
     const string& tunnelIp, uint16_t tunnelPort, int tunnelConnection,

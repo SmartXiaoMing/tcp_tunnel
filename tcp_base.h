@@ -18,16 +18,6 @@
 
 class TcpBase {
 public:
-  struct TunnelServerInfo {
-    int fd;
-    string ip;
-    uint16_t port;
-
-    TunnelServerInfo() : fd(-1), ip(""), port(0) {}
-    TunnelServerInfo(int fd_, const char *ip_, uint16_t port_)
-        : fd(fd_), ip(ip_), port(port_) {}
-  };
-
   struct TunnelClientInfo {
     int count;
     string buffer;
@@ -38,7 +28,7 @@ public:
         : count(0), buffer(), verified(verified_) {}
   };
 
-  TcpBase(): isServer(false) {
+  TcpBase() {
     epollFd = epoll_create1(0);
     if(epollFd < 0) {
       log_error << "failed to epoll_create1";
@@ -86,7 +76,7 @@ public:
 
       result = listen(fd, connection);
       if (result < 0) {
-        log_error << "failed to listen, port: " << port << ", connection: " << connection;
+        log_error << "failed to listen, port: " << port;
         exit(EXIT_FAILURE);
       }
 
@@ -99,7 +89,6 @@ public:
     }
 
   int registerFd(int fd) {
-    log_debug << " fd: " << fd;
     if (fd < 0) {
       log_warn << "invalid fd: " << fd;
       return -1;
@@ -109,7 +98,8 @@ public:
     ev.data.fd = fd;
     int result = epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev);
     if (result < 0) {
-      log_error << "failed epoll_ctl add event: " << fd << ", events: " << ev.events; // TODO
+      log_error << "failed epoll_ctl add fd: "
+          << fd << ", events: " << ev.events;
     }
     return result;
   }
@@ -123,15 +113,10 @@ public:
     string result;
     package.encode(result);
     int n = send(tunnelFd, result.c_str(), result.size(), 0);
-    if (!isServer) {
-      log_debug << "send, trafficServer --> *tunnelClient -[fd="
-                << trafficFd << ",state=" << package.getState() << ",length=" << n << "/" << package.message.size()
-                << "]-> tunnelServer(" << tunnelFd << ") --> trafficClient";
-    } else {
-      log_debug << "send, trafficServer <-- tunnelClient(" << tunnelFd << ") <-[fd="
-                << trafficFd << ",state=" << package.getState() << ",length=" << n << "/" << package.message.size()
-                << "]- *tunnelServer <-- trafficClient";
-    }
+    log_debug << "send, " << addrLocal(tunnelFd)
+        << " -[fd=" << trafficFd << ",state=" << package.getState()
+        << ",length=" << n << "/" << package.message.size() << "]-> "
+        <<  addrRemote(tunnelFd);
   }
 
   void sendTunnelState(int tunnelFd, int trafficFd, char state) {
@@ -148,7 +133,6 @@ public:
 
 protected:
   int epollFd;
-  bool isServer;
 };
 
 

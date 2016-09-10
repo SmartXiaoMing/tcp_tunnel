@@ -25,9 +25,7 @@ using namespace Common;
 
 class TcpClient: public TcpBase {
 public:
-  TcpClient(): heartbeat(60) {
-    isServer = false;
-  }
+  TcpClient(): heartbeat(60) {}
   void init(
       const vector<Addr>& tunnelAddrList, int retryInterval,
       const string& trafficIp_, uint16_t trafficPort_,
