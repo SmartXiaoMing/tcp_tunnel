@@ -64,6 +64,7 @@ int main(int argc, char * argv[]) {
     exit(EXIT_FAILURE);
   }
 
+  string tunnelSecret = optValue(paramMap, "tunnel.secret");
   if (mode == "server") {
     string tunnelIp = optValue(paramMap, "server.tunnel.ip", "0.0.0.0");
     string tunnelPortStr = optValue(paramMap, "server.tunnel.port");
@@ -95,6 +96,7 @@ int main(int argc, char * argv[]) {
     }
     int trafficConnection
         = stringToInt(optValue(paramMap, "server.traffic.connection", "1"));
+
     log_info << "listen tunnel(" << tunnelConnection << "): "
         << tunnelIp << ":" << tunnelPort;
     log_info << "listen traffic(" << trafficConnection << "): "
@@ -102,7 +104,8 @@ int main(int argc, char * argv[]) {
     TcpServer tcpServer;
     tcpServer.init(
         tunnelIp, tunnelPort, tunnelConnection,
-        trafficIp, trafficPortList, trafficConnection
+        trafficIp, trafficPortList, trafficConnection,
+        tunnelSecret
     );
     tcpServer.run();
   } else if (mode == "client") {
@@ -122,7 +125,9 @@ int main(int argc, char * argv[]) {
     }
     log_info << "traffic: " << trafficIp << ":" << trafficPort;
     TcpClient tcpClient;
-    tcpClient.init(addrList, retryInterval, trafficIp, trafficPort);
+    tcpClient.init(
+      addrList, retryInterval, trafficIp, trafficPort, tunnelSecret
+    );
     tcpClient.run();
   } else {
     log_error << "invalid mode: " << mode;

@@ -26,7 +26,8 @@ using namespace Common;
 void
 TcpServer::init(const string& tunnelIp, uint16_t tunnelPort, int tunnelConnection,
     const string& trafficIp, const vector<uint16_t>& trafficPortList,
-    int trafficConnection) {
+    int trafficConnection, const string& tunnelSecret) {
+  secret = tunnelSecret;
   prepareTunnel(tunnelIp, tunnelPort, tunnelConnection);
   for (int i = 0; i < trafficPortList.size(); ++i) {
     prepareTraffic(trafficIp, trafficPortList[i], trafficConnection);
@@ -41,8 +42,16 @@ TcpServer::assignTunnelClient(int trafficServerFd, int trafficClientFd) {
   }
   map<int, int>::iterator it = trafficServerMap.find(trafficServerFd);
   if (it != trafficServerMap.end() && it->second > 0) {
-    log_debug << "use assigned fd: " << it->second;
-    return it->second;
+    if (secret.empty()) {
+      log_debug << "use assigned fd: " << it->second;
+      return it->second;
+    }
+    map<int, TunnelClientInfo>:: iterator it2 = tunnelClientMap.find(it->second);
+    if (it2->second.verified) {
+      log_debug << "use assigned fd: " << it->second;
+      return it->second;
+    }
+    return -1;
   }
 
   int avg = trafficServerMap.size() / tunnelClientMap.size();
@@ -136,9 +145,14 @@ TcpServer::acceptTunnelClient(int serverFd) {
   }
   log_info << "accept client, ip: " << inet_ntoa(addr.sin_addr) << ", port: " << addr.sin_port;
 
-  tunnelClientMap[clientFd] = TunnelClientInfo(inet_ntoa(addr.sin_addr), addr.sin_port);
+  if (!secret.empty()) {
+    sendTunnelState(clientFd, 0, TunnelPackage::STATE_VERIFY_REQUEST);
+    tunnelClientMap[clientFd] = TunnelClientInfo(true); // TODO  } else {
+    tunnelClientMap[clientFd] = TunnelClientInfo(false);
+  }
 
   registerFd(clientFd);
+
   return clientFd;
 }
 
@@ -176,6 +190,13 @@ TcpServer::handleTunnelClient(const struct epoll_event& event) {
               << "]-> *tunnelServer(" << event.data.fd << ") --> trafficClient";
     switch (package.state) {
       case TunnelPackage::STATE_HEARTBEAT: break;
+      case TunnelPackage::STATE_VERIFY_RESPONSE:
+        if (package.message == secret) {
+          it->second.verified = true;
+        } else {
+          cleanUpTunnelClient(event.data.fd);
+        }
+        break;
       case TunnelPackage::STATE_CREATE_FAILURE:
       case TunnelPackage::STATE_CLOSE: cleanUpTrafficClient(package.fd); break;
       case TunnelPackage::STATE_TRAFFIC: {

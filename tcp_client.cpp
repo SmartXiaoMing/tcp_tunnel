@@ -18,11 +18,13 @@ using namespace Common;
 
 void
 TcpClient::init(const vector<Addr>& tunnelAddrList, int tunnelRetryInterval,
-  const string& trafficIp_, uint16_t trafficPort_) {
+    const string& trafficIp_, uint16_t trafficPort_,
+    const string& tunnelSecret) {
   if (tunnelAddrList.empty()) {
     log_error << "tunnel addr list is empty!";
     exit(EXIT_FAILURE);
   }
+  secret = tunnelSecret;
   tunnelServerList = tunnelAddrList;
   trafficServerIp = trafficIp_;
   trafficServerPort = trafficPort_;
@@ -155,6 +157,9 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
       << ",state=" << package.getState() << ",length=" << package.message.size()
       << "]- tunnelServer <-- trafficClient";
     switch (package.state) {
+      case TunnelPackage::STATE_VERIFY_REQUEST:
+        sendTunnelState(event.data.fd, 0, TunnelPackage::STATE_VERIFY_RESPONSE);
+        break;
       case TunnelPackage::STATE_CREATE: {
         int trafficFd = prepare(trafficServerIp, trafficServerPort);
         log_debug << "prepare fd: " << trafficFd << ", from package.fd: " << package.fd;

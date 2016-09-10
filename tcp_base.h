@@ -29,14 +29,13 @@ public:
   };
 
   struct TunnelClientInfo {
-      string ip;
-      uint16_t port;
-      int count;
-      string buffer;
+    int count;
+    string buffer;
+    bool verified;
 
-      TunnelClientInfo() : ip(""), port(0), count(0), buffer() {}
-      TunnelClientInfo(const char *ip_, uint16_t port_)
-          : ip(ip_), port(port_), count(0), buffer() {}
+    TunnelClientInfo() : count(0), buffer(), verified(false) {}
+    TunnelClientInfo(bool verified_)
+        : count(0), buffer(), verified(verified_) {}
   };
 
   TcpBase(): isServer(false) {

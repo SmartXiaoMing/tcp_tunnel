@@ -33,7 +33,8 @@ public:
   void init(
     const string& tunnelIp, uint16_t tunnelPort, int tunnelConnection,
     const string& trafficIp, const vector<uint16_t>& trafficPortList,
-    int trafficConnection
+    int trafficConnection,
+    const string& tunnelSecret
   );
 
   int acceptTrafficClient(int serverFd);
@@ -48,6 +49,7 @@ public:
   void run();
 
 private:
+    string secret;
     map<int, TunnelClientInfo> tunnelClientMap; // count, buffer
     int tunnelServerFd;
     map<int, int> trafficClientMap; // trafficClient -> tunnelClient

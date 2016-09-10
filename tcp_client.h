@@ -30,7 +30,8 @@ public:
   }
   void init(
       const vector<Addr>& tunnelAddrList, int retryInterval,
-      const string& trafficIp_, uint16_t trafficPort_
+      const string& trafficIp_, uint16_t trafficPort_,
+      const string& tunnelSecret
   );
   void cleanUpTrafficClient(int fd);
   void cleanUpTrafficServer(int fd);
@@ -42,6 +43,7 @@ public:
   int prepare(const string& ip, uint16_t port);
 
 private:
+  string secret;
   string tunnelBuffer;
   int tunnelServerFd;
   vector<Addr> tunnelServerList;
