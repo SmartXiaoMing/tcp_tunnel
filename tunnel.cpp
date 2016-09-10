@@ -1,4 +1,5 @@
 #include "tcp_client.h"
+#include "tcp_monitor.h"
 #include "tcp_server.h"
 #include "tunnel_package.h"
 
@@ -9,7 +10,7 @@ using namespace std;
 using namespace Common;
 
 void showUsage(int argc, char* argv[]) {
-  cout << "usage: " << argv[0] << " --mode=server|client [OPTION]\n";
+  cout << "usage: " << argv[0] << " --mode=server|client|monitor [OPTION]\n";
   cout << "\t--tunnel.secret=str\tsecret to verify, unset means no verify.\n";
   cout << "options with mode=server:\n";
   cout << "\t--server.tunnel.ip=ip\ttunnel server bind ip, default 0.0.0.0\n";
@@ -17,12 +18,15 @@ void showUsage(int argc, char* argv[]) {
   cout << "\t--server.tunnel.connection=connection\tclient count, default 10\n";
   cout << "\t--server.traffic.ip=ip\ttraffic bind ip, default 0.0.0.0\n";
   cout << "\t--server.traffic.port=number\ttraffic bind port\n";
+  cout << "\t--server.monitor.port=number\tserver monitor bind port\n";
   cout << "options with mode=client:\n";
   cout << "\t--client.tunnel.addr=host:port1[,port2][;]\ttunnel server addr\n";
   cout << "\t--client.tunnel.retry.interval=number\tdefault 10 seconds\n";
   cout << "\t--client.tunnel.heartbeat=number\tdefault 60 seconds\n";
   cout << "\t--client.traffic.ip=ip\ttraffic ip, default 127.0.0.1\n";
   cout << "\t--client.traffic.port=number\ttraffic port\n";
+  cout << "options with mode=monitor:\n";
+  cout << "\t--server.monitor.port=number\tserver monitor bind port\n";
   cout << "\n";
   cout << "version 0.0.1\n";
   cout << "Report tunnel bugs to 95813422@qq.com\n";
@@ -99,6 +103,13 @@ int main(int argc, char * argv[]) {
     int trafficConnection
         = stringToInt(optValue(paramMap, "server.traffic.connection", "1"));
 
+    string monitorPortStr = optValue(paramMap, "server.monitor.port");
+    if (monitorPortStr.empty()) {
+      log_error << "server.monitor.port is unset";
+      exit(EXIT_FAILURE);
+    }
+    uint16_t monitorPort = stringToInt(monitorPortStr);
+
     log_info << "listen tunnel(" << tunnelConnection << "): "
         << tunnelIp << ":" << tunnelPort;
     log_info << "listen traffic(" << trafficConnection << "): "
@@ -107,6 +118,7 @@ int main(int argc, char * argv[]) {
     tcpServer.init(
         tunnelIp, tunnelPort, tunnelConnection,
         trafficIp, trafficPortList, trafficConnection,
+        monitorPort,
         tunnelSecret
     );
     tcpServer.run();
@@ -133,6 +145,24 @@ int main(int argc, char * argv[]) {
       addrList, retryInterval, trafficIp, trafficPort, tunnelSecret, heartbeat
     );
     tcpClient.run();
+  } else if (mode == "monitor") {
+    string portStr = optValue(paramMap, "server.monitor.port");
+    if (portStr.empty()) {
+      log_error << "server.monitor.port is unset";
+      exit(EXIT_FAILURE);
+    }
+    int port = stringToInt(portStr);
+    if (port <= 0) {
+      log_error << "server.monitor.port is invalid: " << portStr;
+      exit(EXIT_FAILURE);
+    }
+    string cmd = optValue(paramMap, "server.monitor.cmd");
+    if (cmd.empty()) {
+      log_error << "server.monitor.cmd is unset";
+    }
+    TcpMonitor tcpMonitor;
+    tcpMonitor.init(port);
+    tcpMonitor.run(cmd);
   } else {
     log_error << "invalid mode: " << mode;
     exit(EXIT_FAILURE);

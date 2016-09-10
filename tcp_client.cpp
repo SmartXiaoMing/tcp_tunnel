@@ -124,18 +124,14 @@ TcpClient::prepare(const string& ip, uint16_t port) {
 
 bool
 TcpClient::handleTunnelClient(const struct epoll_event& event) {
-  log_debug << "test, fd: " << event.data.fd << ", events: " << event.events;
   if (event.data.fd != tunnelServerFd) { // traffic from tunnel
-    log_debug << "1";
     return false;
   }
   if ((event.events & EPOLLRDHUP) || (event.events & EPOLLERR)) {
-    log_debug << "error ";
     resetTunnelServer();
     return true;
   }
   if ((event.events & EPOLLIN) == 0) {
-    log_debug << "not in";
     return true;
   }
   char buf[BUFFER_SIZE];
@@ -162,8 +158,8 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
       << ",state=" << package.getState() << ",length=" << package.message.size()
       << "]- tunnelServer <-- trafficClient";
     switch (package.state) {
-      case TunnelPackage::STATE_VERIFY_REQUEST:
-        sendTunnelState(event.data.fd, 0, TunnelPackage::STATE_VERIFY_RESPONSE);
+      case TunnelPackage::STATE_CHALLENGE_REQUEST:
+        sendTunnelState(event.data.fd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE);
         break;
       case TunnelPackage::STATE_CREATE: {
         int trafficFd = prepare(trafficServerIp, trafficServerPort);

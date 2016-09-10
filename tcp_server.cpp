@@ -26,9 +26,14 @@ using namespace Common;
 void
 TcpServer::init(const string& tunnelIp, uint16_t tunnelPort, int tunnelConnection,
     const string& trafficIp, const vector<uint16_t>& trafficPortList,
-    int trafficConnection, const string& tunnelSecret) {
+    int trafficConnection,
+    int monitorPort,
+    const string& tunnelSecret) {
   secret = tunnelSecret;
   prepareTunnel(tunnelIp, tunnelPort, tunnelConnection);
+  if (monitorPort > 0 && monitorPort < 65536) {
+    prepareMonitor("127.0.0.1", monitorPort, 10);
+  }
   for (int i = 0; i < trafficPortList.size(); ++i) {
     prepareTraffic(trafficIp, trafficPortList[i], trafficConnection);
   }
@@ -78,6 +83,16 @@ TcpServer::cleanUpTrafficClient(int fd) {
 }
 
 void
+TcpServer::cleanUpMonitorClient(int fd) {
+  map<int, string>::iterator it = monitorClientMap.find(fd);
+  if (it != monitorClientMap.end()) {
+    monitorClientMap.erase(it);
+  }
+  cleanUpFd(fd);
+  log_debug << "clean up monitorClient, fd: " << fd;
+}
+
+void
 TcpServer::cleanUpTunnelClient(int fd) {
   for (map<int, int>::iterator it = trafficServerMap.begin(); it != trafficServerMap.end(); ++it) {
     if (it->second == fd) {
@@ -111,9 +126,36 @@ TcpServer::prepareTraffic(const string& ip, uint16_t port, int connection) {
 }
 
 int
+TcpServer::prepareMonitor(const string& ip, uint16_t port, int connection) {
+  int fd = prepare(ip, port, connection);
+  if (fd <= 0) {
+    log_error << "failed to prepareMonitor, addr: " << ip << ":" << port;
+  } else {
+    monitorServerFd = fd;
+  }
+  return fd;
+}
+
+int
 TcpServer::prepareTunnel(const string& ip, uint16_t port, int connection) {
   tunnelServerFd = prepare(ip, port, connection);
   return tunnelServerFd;
+}
+
+int
+TcpServer::acceptMonitorClient(int serverFd) {
+  struct sockaddr_in addr;
+  socklen_t sin_size = sizeof(addr);
+  int clientFd = accept(serverFd, (struct sockaddr *) &addr, &sin_size);
+  if (clientFd < 0) {
+    log_error << "failed to accept client";
+    exit(EXIT_FAILURE);
+  }
+  log_info << "accept client, ip: " << inet_ntoa(addr.sin_addr) << ", port: "
+           << addr.sin_port;
+  monitorClientMap[clientFd] = "";
+  registerFd(clientFd);
+  return clientFd;
 }
 
 int
@@ -151,7 +193,7 @@ TcpServer::acceptTunnelClient(int serverFd) {
   log_info << "accept client, ip: " << inet_ntoa(addr.sin_addr) << ", port: " << addr.sin_port;
 
   if (!secret.empty()) {
-    sendTunnelState(clientFd, 0, TunnelPackage::STATE_VERIFY_REQUEST);
+    sendTunnelState(clientFd, 0, TunnelPackage::STATE_CHALLENGE_REQUEST);
     tunnelClientMap[clientFd] = TunnelClientInfo(true); // TODO
     tunnelClientCount += 1;
   } else {
@@ -161,6 +203,51 @@ TcpServer::acceptTunnelClient(int serverFd) {
   registerFd(clientFd);
 
   return clientFd;
+}
+
+bool
+TcpServer::handleMonitorClient(const struct epoll_event& event) {
+  map<int, string>::iterator it = monitorClientMap.find(event.data.fd);
+  if (it == monitorClientMap.end()) {
+    return false;
+  }
+  if ((event.events & EPOLLRDHUP) || (event.events & EPOLLERR)) {
+    cleanUpMonitorClient(event.data.fd);
+    return true;
+  }
+  if ((event.events & EPOLLIN) == 0) {
+    return true;
+  }
+  char buf[BUFFER_SIZE];
+  int len = recv(event.data.fd, buf, BUFFER_SIZE, 0);
+  if (len <= 0) {
+    cleanUpMonitorClient(event.data.fd);
+    return true;
+  }
+  it->second.append(buf, len);
+  int offset = 0;
+  int totalLength = it->second.length();
+  while (offset < it->second.size()) {
+    TunnelPackage package;
+    int decodeLength = package.decode(it->second.c_str() + offset, totalLength - offset);
+    if (decodeLength == 0) { // wait next time to read
+      break;
+    }
+    offset += decodeLength;
+    log_debug << "recv, trafficServer --> tunnelClient -[fd=" << package.fd
+              << ",state=" << package.getState() << ",length=" << package.message.size()
+              << "]-> *tunnelServer(" << event.data.fd << ") --> trafficClient";
+    switch (package.state) {
+      case TunnelPackage::STATE_MONITOR_REQUEST: // TODO
+        cleanUpMonitorClient(it->first);
+      break;
+      default: log_warn << "ignore state: " << (int) package.state;
+    }
+  }
+  if (offset > 0) {
+    it->second.assign(it->second.begin() + offset, it->second.end());
+  }
+  return true;
 }
 
 bool
@@ -197,7 +284,7 @@ TcpServer::handleTunnelClient(const struct epoll_event& event) {
               << "]-> *tunnelServer(" << event.data.fd << ") --> trafficClient";
     switch (package.state) {
       case TunnelPackage::STATE_HEARTBEAT: break;
-      case TunnelPackage::STATE_VERIFY_RESPONSE: {
+      case TunnelPackage::STATE_CHALLENGE_RESPONSE: {
         if (package.message == secret) {
           if (!it->second.verified) {
             it->second.verified = true;
@@ -267,7 +354,13 @@ TcpServer::run() {
         acceptTrafficClient(events[i].data.fd);
         continue;
       }
-      handleTunnelClient(events[i]) || handleTrafficClient(events[i]);
+      if (monitorServerFd > 0 && events[i].data.fd == monitorServerFd) {
+        acceptMonitorClient(events[i].data.fd);
+        continue;
+      }
+      handleTunnelClient(events[i])
+          || handleTrafficClient(events[i])
+          || handleMonitorClient(events[i]);
     }
   }
 }

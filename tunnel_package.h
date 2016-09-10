@@ -18,16 +18,18 @@ class TunnelPackage {
 public:
   static const uint8_t DefaultVersion = 1;
   static const int HeadLength = 10;
-  static const int MaxContentLength = 4096;
+  static const int MaxContentLength = 512 * 1024;
 
-  static const uint8_t STATE_TRAFFIC = 0;
-  static const uint8_t STATE_CREATE = 1;
-  static const uint8_t STATE_CREATE_SUCCESS = 2;
-  static const uint8_t STATE_CREATE_FAILURE = 3;
-  static const uint8_t STATE_CLOSE = 4;
-  static const uint8_t STATE_HEARTBEAT = 5;
-  static const uint8_t STATE_VERIFY_REQUEST = 6;
-  static const uint8_t STATE_VERIFY_RESPONSE = 7;
+  static const uint8_t STATE_HEARTBEAT = 0;
+  static const uint8_t STATE_TRAFFIC = 1;
+  static const uint8_t STATE_CREATE = 2;
+  static const uint8_t STATE_CREATE_SUCCESS = 3;
+  static const uint8_t STATE_CREATE_FAILURE = 4;
+  static const uint8_t STATE_CLOSE = 5;
+  static const uint8_t STATE_CHALLENGE_REQUEST = 6;
+  static const uint8_t STATE_CHALLENGE_RESPONSE = 7;
+  static const uint8_t STATE_MONITOR_REQUEST = 8;
+  static const uint8_t STATE_MONITOR_RESPONSE = 9;
 
   uint32_t fd;
   uint8_t state;
@@ -39,18 +41,22 @@ public:
     static string create_failure = "create_failure";
     static string close = "close";
     static string heartbeat = "heartbeat";
-    static string verify_request = "verify_request";
-    static string verify_response = "verify_response";
+    static string challenge_request = "challenge_request";
+    static string challenge_response = "challenge_response";
+    static string monitor_request = "monitor_request";
+    static string monitor_response = "monitor_response";
 
     static string unknown = "unknown";
     switch(state) {
+      case STATE_HEARTBEAT : return heartbeat;
       case STATE_TRAFFIC : return traffic;
       case STATE_CREATE : return create;
       case STATE_CREATE_FAILURE : return create_failure;
       case STATE_CLOSE : return close;
-      case STATE_HEARTBEAT : return heartbeat;
-      case STATE_VERIFY_REQUEST : return verify_request;
-      case STATE_VERIFY_RESPONSE : return verify_response;
+      case STATE_CHALLENGE_REQUEST : return challenge_request;
+      case STATE_CHALLENGE_RESPONSE : return challenge_response;
+      case STATE_MONITOR_REQUEST : return monitor_request;
+      case STATE_MONITOR_RESPONSE : return monitor_response;
       default : return unknown;
     }
   }
