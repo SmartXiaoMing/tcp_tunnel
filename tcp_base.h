@@ -114,42 +114,36 @@ public:
     return result;
   }
 
-  void sendTunnelState(int tunnelFd, int trafficFd, char state) {
+  void sendTunnelMessage(int tunnelFd, int trafficFd, char state,
+      const string& message) {
     TunnelPackage package;
     package.fd = trafficFd;
     package.state = state;
-    package.message.clear();
-    string result;
-    package.encode(result);
-    int n = send(tunnelFd, result.c_str(), result.size(), 0);
-    if (!isServer) {
-      log_debug << "send, trafficServer --> *tunnelClient -[fd="
-        << trafficFd << ",state=" << package.getState() << ",length=" << "/" << n << package.message.size()
-        << "]-> tunnelServer(" << tunnelFd << ") --> trafficClient";
-    } else {
-      log_debug << "send, trafficServer <-- tunnelClient(" << tunnelFd << ") <-[fd="
-        << trafficFd << ",state=" << package.getState() << ",length=" << "/" << n << package.message.size()
-        << "]- *tunnelServer <-- trafficClient";
-    }
-  }
-
-  void sendTunnelTraffic(int eventFd, int tunnelFd, int trafficFd, const string& message) {
-    TunnelPackage package;
-    package.fd = trafficFd;
-    package.state = TunnelPackage::STATE_TRAFFIC;
     package.message.assign(message);
     string result;
     package.encode(result);
     int n = send(tunnelFd, result.c_str(), result.size(), 0);
     if (!isServer) {
-      log_debug << "send, trafficServer --> *tunnelClient(" << eventFd << ") -[fd="
-        << trafficFd << ",state=" << package.getState() << ",length=" << n << "/" << package.message.size()
-        << "]-> tunnelServer(" << tunnelFd << ") --> trafficClient";
+      log_debug << "send, trafficServer --> *tunnelClient -[fd="
+                << trafficFd << ",state=" << package.getState() << ",length=" << n << "/" << package.message.size()
+                << "]-> tunnelServer(" << tunnelFd << ") --> trafficClient";
     } else {
       log_debug << "send, trafficServer <-- tunnelClient(" << tunnelFd << ") <-[fd="
-        << trafficFd << ",state=" << package.getState() << ",length=" << n << "/" << package.message.size()
-        << "]- *tunnelServer(" << eventFd << ") <-- trafficClient";
+                << trafficFd << ",state=" << package.getState() << ",length=" << n << "/" << package.message.size()
+                << "]- *tunnelServer <-- trafficClient";
     }
+  }
+
+  void sendTunnelState(int tunnelFd, int trafficFd, char state) {
+    string result;
+    sendTunnelMessage(tunnelFd, trafficFd, state, result);
+  }
+
+  void sendTunnelTraffic(int eventFd, int tunnelFd, int trafficFd,
+      const string& message) {
+    sendTunnelMessage(
+        tunnelFd, trafficFd, TunnelPackage::STATE_TRAFFIC, message
+    );
   }
 
 protected:

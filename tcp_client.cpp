@@ -106,7 +106,6 @@ TcpClient::prepare(const string& ip, uint16_t port) {
     log_error << "failed to socket";
     return fd;
   }
-  int v;
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;

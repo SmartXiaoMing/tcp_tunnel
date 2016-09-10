@@ -29,7 +29,6 @@ TcpMonitor::prepare(const string& ip, uint16_t port) {
     log_error << "failed to socket";
     return fd;
   }
-  int v;
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
@@ -96,6 +95,7 @@ TcpMonitor::handleMonitor(const struct epoll_event& event) {
 
 void
 TcpMonitor::run(const string& cmd) {
+  sendTunnelMessage(serverFd, 0, TunnelPackage::STATE_MONITOR_REQUEST, cmd);
   while(true) {
     struct epoll_event events[MAX_EVENTS];
     int nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1);

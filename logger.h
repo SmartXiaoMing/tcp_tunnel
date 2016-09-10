@@ -5,6 +5,8 @@
 #ifndef TCP_TUNNEL_LOGGER_H
 #define TCP_TUNNEL_LOGGER_H
 
+#include "common.h"
+
 #include <time.h>
 
 #include <fstream>
@@ -25,6 +27,7 @@
     << ":" << __LINE__ << ") "
 
 using namespace std;
+using namespace Common;
 
 class LoggerManager {
 public:
@@ -54,7 +57,7 @@ public:
       return *this;
     }
 
-    Logger&  operator << (string (Logger::*fun)()) {
+    Logger&  operator << (string (Logger::*fun)() const) {
       if (!consumeSkip() && level <= manage->level) {
         *manage->out << (this->*fun)();
       }
@@ -62,6 +65,13 @@ public:
     }
 
     Logger&  operator << (ostream& endl(ostream&)) {
+      return *this;
+    }
+
+    Logger& operator << (const FdToAddr& fdToAddr) {
+      if (!consumeSkip() && level <= manage->level) {
+        *manage->out << fdToAddr.toAddr().toString();
+      }
       return *this;
     }
 

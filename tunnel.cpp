@@ -54,9 +54,6 @@ int main(int argc, char * argv[]) {
     }
   }
 
-  string pifFile = optValue(paramMap, "pid.file", "tunnel.pid");
-  savePid(pifFile);
-
   LoggerManager::init(
       optValue(paramMap, "log.level", "INFO"),
       optValue(paramMap, "log.file", "stdout"),
@@ -72,6 +69,9 @@ int main(int argc, char * argv[]) {
 
   string tunnelSecret = optValue(paramMap, "tunnel.secret");
   if (mode == "server") {
+    string pifFile = optValue(paramMap, "pid.file", "server.tunnel.pid");
+    savePid(pifFile);
+
     string tunnelIp = optValue(paramMap, "server.tunnel.ip", "0.0.0.0");
     string tunnelPortStr = optValue(paramMap, "server.tunnel.port");
     if (tunnelPortStr.empty()) {
@@ -110,10 +110,6 @@ int main(int argc, char * argv[]) {
     }
     uint16_t monitorPort = stringToInt(monitorPortStr);
 
-    log_info << "listen tunnel(" << tunnelConnection << "): "
-        << tunnelIp << ":" << tunnelPort;
-    log_info << "listen traffic(" << trafficConnection << "): "
-        << trafficIp << ":" << trafficPortStr;
     TcpServer tcpServer;
     tcpServer.init(
         tunnelIp, tunnelPort, tunnelConnection,
@@ -123,6 +119,9 @@ int main(int argc, char * argv[]) {
     );
     tcpServer.run();
   } else if (mode == "client") {
+    string pifFile = optValue(paramMap, "pid.file", "client.tunnel.pid");
+    savePid(pifFile);
+
     string addrStr = optValue(paramMap, "client.tunnel.addr");
     vector<Addr> addrList;
     if (parseAddressList(addrList, addrStr)) {
@@ -159,6 +158,7 @@ int main(int argc, char * argv[]) {
     string cmd = optValue(paramMap, "server.monitor.cmd");
     if (cmd.empty()) {
       log_error << "server.monitor.cmd is unset";
+      exit(EXIT_FAILURE);
     }
     TcpMonitor tcpMonitor;
     tcpMonitor.init(port);

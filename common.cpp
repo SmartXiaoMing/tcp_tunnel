@@ -21,14 +21,48 @@ using namespace std;
 
 namespace Common {
 string
-Addr::toString() {
-  char buffer[32];
-  sprintf(buffer, "%ud", port);
+Addr::toString() const {
   string result;
   result.assign(ip);
   result.append(":");
-  result.append(buffer);
+  result.append(intToString(port));
   return result;
+}
+
+Addr
+FdToAddr::toAddr() const {
+  if (fd <= 0) {
+    return Addr();
+  }
+  struct sockaddr_in sa;
+  socklen_t len = sizeof(sa);
+  if (local) {
+    if (getsockname(fd, (struct sockaddr *) &sa, &len) == 0) {
+      return Addr(inet_ntoa(sa.sin_addr), ntohs(sa.sin_port));
+    }
+  } else {
+    if (getpeername(fd, (struct sockaddr *) &sa, &len) == 0) {
+      return Addr(inet_ntoa(sa.sin_addr), ntohs(sa.sin_port));
+    }
+  }
+  return Addr();
+}
+
+FdToAddr
+addrLocal(int fd) {
+  return FdToAddr(fd, true);
+}
+
+FdToAddr
+addrRemote(int fd) {
+  return FdToAddr(fd, false);
+}
+
+string
+intToString(int n) {
+  char buffer[32];
+  sprintf(buffer, "%u", n);
+  return buffer;
 }
 
 bool
