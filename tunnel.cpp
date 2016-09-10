@@ -10,6 +10,7 @@ using namespace Common;
 
 void showUsage(int argc, char* argv[]) {
   cout << "usage: " << argv[0] << " --mode=server|client [OPTION]\n";
+  cout << "\t--tunnel.secret=str\tsecret to verify, unset means no verify.\n";
   cout << "options with mode=server:\n";
   cout << "\t--server.tunnel.ip=ip\ttunnel server bind ip, default 0.0.0.0\n";
   cout << "\t--server.tunnel.port=number\ttunnel bind port\n";
@@ -19,6 +20,7 @@ void showUsage(int argc, char* argv[]) {
   cout << "options with mode=client:\n";
   cout << "\t--client.tunnel.addr=host:port1[,port2][;]\ttunnel server addr\n";
   cout << "\t--client.tunnel.retry.interval=number\tdefault 10 seconds\n";
+  cout << "\t--client.tunnel.heartbeat=number\tdefault 60 seconds\n";
   cout << "\t--client.traffic.ip=ip\ttraffic ip, default 127.0.0.1\n";
   cout << "\t--client.traffic.port=number\ttraffic port\n";
   cout << "\n";
@@ -116,6 +118,8 @@ int main(int argc, char * argv[]) {
     }
     int retryInterval
         = stringToInt(optValue(paramMap, "client.tunnel.retry.interval", "10"));
+    int heartbeat
+        = stringToInt(optValue(paramMap, "client.tunnel.heartbeat", "60"));
     string trafficIp = optValue(paramMap, "client.traffic.ip", "127.0.0.1");
     string trafficPortStr = optValue(paramMap, "client.traffic.port");
     int trafficPort = stringToInt(trafficPortStr);
@@ -126,7 +130,7 @@ int main(int argc, char * argv[]) {
     log_info << "traffic: " << trafficIp << ":" << trafficPort;
     TcpClient tcpClient;
     tcpClient.init(
-      addrList, retryInterval, trafficIp, trafficPort, tunnelSecret
+      addrList, retryInterval, trafficIp, trafficPort, tunnelSecret, heartbeat
     );
     tcpClient.run();
   } else {

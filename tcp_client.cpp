@@ -19,12 +19,17 @@ using namespace Common;
 void
 TcpClient::init(const vector<Addr>& tunnelAddrList, int tunnelRetryInterval,
     const string& trafficIp_, uint16_t trafficPort_,
-    const string& tunnelSecret) {
+    const string& tunnelSecret, int tunnelHeartbeat) {
   if (tunnelAddrList.empty()) {
     log_error << "tunnel addr list is empty!";
     exit(EXIT_FAILURE);
   }
   secret = tunnelSecret;
+  if (tunnelHeartbeat <= 0) {
+    log_error << "invalid heartbeat, use default " << heartbeat;
+  } else {
+    heartbeat = tunnelHeartbeat;
+  }
   tunnelServerList = tunnelAddrList;
   trafficServerIp = trafficIp_;
   trafficServerPort = trafficPort_;

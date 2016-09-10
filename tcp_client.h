@@ -25,13 +25,14 @@ using namespace Common;
 
 class TcpClient: public TcpBase {
 public:
-  TcpClient() {
+  TcpClient(): heartbeat(60) {
     isServer = false;
   }
   void init(
       const vector<Addr>& tunnelAddrList, int retryInterval,
       const string& trafficIp_, uint16_t trafficPort_,
-      const string& tunnelSecret
+      const string& tunnelSecret,
+      int heartbeat
   );
   void cleanUpTrafficClient(int fd);
   void cleanUpTrafficServer(int fd);
@@ -43,6 +44,7 @@ public:
   int prepare(const string& ip, uint16_t port);
 
 private:
+  int heartbeat;
   string secret;
   string tunnelBuffer;
   int tunnelServerFd;
