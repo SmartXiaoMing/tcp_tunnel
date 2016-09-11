@@ -124,7 +124,7 @@ int main(int argc, char * argv[]) {
 
     string addrStr = optValue(paramMap, "client.tunnel.addr");
     vector<Addr> addrList;
-    if (parseAddressList(addrList, addrStr)) {
+    if (!parseAddressList(addrList, addrStr)) {
       log_error << "client.tunnel.port is invalid: " << addrStr;
     }
     int retryInterval

@@ -147,11 +147,11 @@ public:
     package.message.assign(message);
     string result;
     package.encode(result);
-    int n = send(tunnelFd, result.c_str(), result.size(), 0);
     log_debug << "send, " << addrLocal(tunnelFd)
         << " -[fd=" << trafficFd << ",state=" << package.getState()
-        << ",length=" << n << "/" << package.message.size() << "]-> "
+        << ",length=" << package.message.size() << "]-> "
         <<  addrRemote(tunnelFd);
+    send(tunnelFd, result.c_str(), result.size(), 0);
   }
 
   void sendTunnelState(int tunnelFd, int trafficFd, char state) {

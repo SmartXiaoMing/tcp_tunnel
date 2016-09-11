@@ -45,10 +45,10 @@ TcpClient::retryConnectTunnelServer() {
   while (tunnelServerFd < 0) {
     int index = rand() % tunnelServerList.size();
     Addr& addr = tunnelServerList[index];
-    if (firstConnect) {
-      firstConnect = false;
+    if (!firstConnect) {
       sleep(retryInterval);
     }
+    firstConnect = false;
     int fd = connectServer(addr.ip, addr.port);
     if (fd > 0) {
       log_info << "use tunnel server addr(" << index << "/"
@@ -105,10 +105,12 @@ TcpClient::resetTunnelServer() {
 
 bool
 TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
+  log_error << "events: " << events << ", fd: " << eventFd;
   if (eventFd != tunnelServerFd) { // traffic from tunnel
     return false;
   }
   if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
+    log_error << "events: " << events << ", fd: " << eventFd;
     resetTunnelServer();
     return true;
   }
@@ -118,6 +120,7 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
   char buf[BUFFER_SIZE];
   int len = recv(eventFd, buf, BUFFER_SIZE, 0);
   if (len <= 0) {
+    log_error << "events: " << events << ", len: " << len;
     resetTunnelServer();
     return true;
   }
@@ -129,6 +132,7 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
     int decodeLength
         = package.decode(tunnelBuffer.c_str() + offset, totalLength - offset);
     if (decodeLength < 0) {
+      log_error << "events: " << events << ", decodeLength: " << decodeLength;
       resetTunnelServer();
       return true;
     }
@@ -210,9 +214,10 @@ TcpClient::handleTrafficServer(uint32_t events, int eventFd) {
 
 void
 TcpClient::run() {
+  int heartbeatMs = heartbeat * 1000;
   while(true) {
     struct epoll_event events[MAX_EVENTS];
-    int nfds = epoll_wait(epollFd, events, MAX_EVENTS, 60000);
+    int nfds = epoll_wait(epollFd, events, MAX_EVENTS, heartbeatMs);
     if (nfds == 0) {
         sendTunnelState(tunnelServerFd, 0, TunnelPackage::STATE_HEARTBEAT);
     } else {

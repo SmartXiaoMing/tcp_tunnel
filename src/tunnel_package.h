@@ -45,7 +45,6 @@ public:
     static string challenge_response = "challenge_response";
     static string monitor_request = "monitor_request";
     static string monitor_response = "monitor_response";
-
     static string unknown = "unknown";
     switch(state) {
       case STATE_HEARTBEAT : return heartbeat;
