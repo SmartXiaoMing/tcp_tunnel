@@ -1,5 +1,6 @@
 install: tunnel build
-	cp tunnel tunnel.conf build/
+	cp tunnel.conf build/
+	mv tunnel build/
 
 build:
 	mkdir -p build
@@ -8,4 +9,4 @@ tunnel: tcp_client.cpp tcp_server.cpp tunnel.cpp common.cpp logger.cpp tcp_base.
 	$(CC) tcp_client.cpp tcp_server.cpp tunnel.cpp common.cpp logger.cpp tcp_monitor.cpp -o tunnel -lstdc++
 
 clean:
-	rm -rf build/ tunnel
+	rm -rf build/
