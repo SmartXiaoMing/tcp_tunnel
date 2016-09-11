@@ -230,18 +230,15 @@ TcpServer::handleTunnelClient(uint32_t events, int eventFd) {
     return false;
   }
   if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
-    log_error << "fd: " << eventFd << ", events: " << events;
     cleanUpTunnelClient(eventFd);
     return true;
   }
   if ((events & EPOLLIN) == 0) {
-    log_error << "fd: " << eventFd << ", events: " << events;
     return true;
   }
   char buf[BUFFER_SIZE];
   int len = recv(eventFd, buf, BUFFER_SIZE, 0);
   if (len <= 0) {
-    log_error << "fd: " << eventFd << ", len: " << len;
     cleanUpTunnelClient(eventFd);
     return true;
   }
