@@ -123,9 +123,9 @@ int main(int argc, char * argv[]) {
     savePid(pifFile);
 
     string addrStr = optValue(paramMap, "client.tunnel.addr");
-    vector<Addr> addrList;
-    if (!parseAddressList(addrList, addrStr)) {
-      log_error << "client.tunnel.port is invalid: " << addrStr;
+    if (addrStr.empty()) {
+      log_error << "client.tunnel.addr is unset";
+      exit(EXIT_FAILURE);
     }
     int retryInterval
         = stringToInt(optValue(paramMap, "client.tunnel.retry.interval", "10"));
@@ -135,13 +135,13 @@ int main(int argc, char * argv[]) {
     string trafficPortStr = optValue(paramMap, "client.traffic.port");
     int trafficPort = stringToInt(trafficPortStr);
     if (trafficPort <= 0 || trafficPort > 65535) {
-      log_error << "client.traffic.port is unset or invalid: " << trafficPortStr;
+      log_error << "client.traffic.port is invalid: " << trafficPortStr;
       exit(EXIT_FAILURE);
     }
     log_info << "traffic: " << trafficIp << ":" << trafficPort;
     TcpClient tcpClient;
     tcpClient.init(
-      addrList, retryInterval, trafficIp, trafficPort, tunnelSecret, heartbeat
+        addrStr, retryInterval, trafficIp, trafficPort, tunnelSecret, heartbeat
     );
     tcpClient.run();
   } else if (mode == "monitor") {

@@ -17,11 +17,15 @@ using namespace std;
 using namespace Common;
 
 void
-TcpClient::init(const vector<Addr>& tunnelAddrList, int tunnelRetryInterval,
+TcpClient::init(const string& addrStr, int tunnelRetryInterval,
     const string& trafficIp_, uint16_t trafficPort_,
     const string& tunnelSecret, int tunnelHeartbeat) {
-  if (tunnelAddrList.empty()) {
+  if (addrStr.empty()) {
     log_error << "tunnel addr list is empty!";
+    exit(EXIT_FAILURE);
+  }
+  addrListStr = addrStr;
+  if (!refreshAddrList()) {
     exit(EXIT_FAILURE);
   }
   secret = tunnelSecret;
@@ -30,7 +34,6 @@ TcpClient::init(const vector<Addr>& tunnelAddrList, int tunnelRetryInterval,
   } else {
     heartbeat = tunnelHeartbeat;
   }
-  tunnelServerList = tunnelAddrList;
   trafficServerIp = trafficIp_;
   trafficServerPort = trafficPort_;
   tunnelServerFd = -1;
@@ -38,11 +41,30 @@ TcpClient::init(const vector<Addr>& tunnelAddrList, int tunnelRetryInterval,
   retryConnectTunnelServer();
 }
 
+bool
+TcpClient::refreshAddrList() {
+  if (!parseAddressList(tunnelServerList, addrListStr)) {
+    log_error << "invalid addrList: " << addrListStr;
+    return false;
+  }
+  for (int i = 0; i < tunnelServerList.size(); ++i) {
+    log_info << "tunnelServer[" << i << "]: "
+        << tunnelServerList[i].toString() << endl;
+  }
+  return true;
+}
+
 void
 TcpClient::retryConnectTunnelServer() {
-  bool firstConnect = true;
+  static bool firstConnect = true;
   srand(time(0));
+  int retryTime = 0;
   while (tunnelServerFd < 0) {
+    ++retryTime;
+    if (retryTime > 10) {
+      refreshAddrList();
+      retryTime = 0;
+    }
     int index = rand() % tunnelServerList.size();
     Addr& addr = tunnelServerList[index];
     if (!firstConnect) {

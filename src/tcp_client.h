@@ -27,7 +27,7 @@ class TcpClient: public TcpBase {
 public:
   TcpClient(): heartbeat(60) {}
   void init(
-      const vector<Addr>& tunnelAddrList, int retryInterval,
+      const string& tunnelAddrList, int retryInterval,
       const string& trafficIp_, uint16_t trafficPort_,
       const string& tunnelSecret,
       int heartbeat
@@ -38,9 +38,11 @@ public:
   bool handleTrafficServer(uint32_t events, int eventFd);
   void resetTunnelServer();
   void retryConnectTunnelServer();
+  bool refreshAddrList();
   void run();
 
 private:
+  string addrListStr;
   int heartbeat;
   string secret;
   string tunnelBuffer;

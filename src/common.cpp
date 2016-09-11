@@ -5,6 +5,7 @@
 
 #include "logger.h"
 
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -84,6 +85,7 @@ parseAddressList(vector<Addr>& addrList, const string& addressList) {
       log_error << "invalid address: " << addr;
       return false;
     }
+
     string host = addr.substr(0, hostPos);
     vector<string> portStrList;
     split(portStrList, addr.substr(hostPos + 1), ',');
@@ -106,11 +108,13 @@ parseAddressList(vector<Addr>& addrList, const string& addressList) {
     } else {
       hostent* info = gethostbyname(host.c_str());
       if (info == NULL || info->h_addrtype != AF_INET) {
-        log_error << "invalid address: " << host << ", cannot be resolved";
-        return false;
+        log_warn << "address: " << host << ", cannot be resolved";
+        continue;
       }
-      for (char** ptr = info->h_addr_list; ptr != NULL; ++ptr) {
-        ipList.push_back(*ptr);
+      for (char** ptr = info->h_addr_list; *ptr != NULL; ++ptr) {
+        char dst[30];
+        socklen_t len = 29;
+        ipList.push_back(inet_ntop(AF_INET, *ptr, dst, len));
       }
     }
     for (int i = 0; i < ipList.size(); ++i) {
