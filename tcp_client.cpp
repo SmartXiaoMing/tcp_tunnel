@@ -40,23 +40,27 @@ TcpClient::init(const vector<Addr>& tunnelAddrList, int tunnelRetryInterval,
 
 void
 TcpClient::retryConnectTunnelServer() {
+  bool firstConnect = true;
   srand(time(0));
   while (tunnelServerFd < 0) {
     int index = rand() % tunnelServerList.size();
     Addr& addr = tunnelServerList[index];
-    int fd = prepare(addr.ip, addr.port);
-    if (tunnelServerFd > 0) {
+    if (firstConnect) {
+      firstConnect = false;
+      sleep(retryInterval);
+    }
+    int fd = connectServer(addr.ip, addr.port);
+    if (fd > 0) {
       log_info << "use tunnel server addr(" << index << "/"
           << tunnelServerList.size() << "): " << addr.ip << ":" << addr.port;
       tunnelServerFd = fd;
       return;
     }
     if (retryInterval > 0) {
-      log_error << "failed to connect: " << addr.ip << ":" << addr.port
-          << ", retry after " << retryInterval << " seconds";
+      log_error << "retry " << addr.ip << ":" << addr.port
+          << " after " << retryInterval << " seconds";
       sleep(retryInterval);
     } else {
-      log_error << "failed to connect: " << addr.ip << ":" << addr.port << ", exit now";
       exit(EXIT_FAILURE);
     }
   }
@@ -76,9 +80,9 @@ TcpClient::cleanUpTrafficClient(int fakeFd) {
 
 void
 TcpClient::cleanUpTrafficServer(int fd) {
-  log_debug << "clean up trafficServer, fd: " << fd;
   map<int, int>::iterator it = trafficServerMap.find(fd);
   if (it != trafficServerMap.end()) {
+    log_debug << "clean up trafficServer: " << addrRemote(fd);
     cleanUpFd(fd);
     trafficServerMap.erase(fd);
     trafficClientMap.erase(it->second);
@@ -99,42 +103,20 @@ TcpClient::resetTunnelServer() {
   retryConnectTunnelServer();
 }
 
-int
-TcpClient::prepare(const string& ip, uint16_t port) {
-  int fd = socket(PF_INET, SOCK_STREAM, 0);
-  if (fd < 0) {
-    log_error << "failed to socket";
-    return fd;
-  }
-  struct sockaddr_in addr;
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = inet_addr(ip.c_str());
-  addr.sin_port = htons(port);
-  int result = connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr));
-  if(result < 0) {
-    log_error << "failed to connect " << ip << ":" << port;
-    return result;
-  }
-  log_info << "new fd: " << fd << " for " << ip << ":" << port;
-  registerFd(fd);
-  return fd;
-}
-
 bool
-TcpClient::handleTunnelClient(const struct epoll_event& event) {
-  if (event.data.fd != tunnelServerFd) { // traffic from tunnel
+TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
+  if (eventFd != tunnelServerFd) { // traffic from tunnel
     return false;
   }
-  if ((event.events & EPOLLRDHUP) || (event.events & EPOLLERR)) {
+  if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
     resetTunnelServer();
     return true;
   }
-  if ((event.events & EPOLLIN) == 0) {
+  if ((events & EPOLLIN) == 0) {
     return true;
   }
   char buf[BUFFER_SIZE];
-  int len = recv(event.data.fd, buf, BUFFER_SIZE, 0);
+  int len = recv(eventFd, buf, BUFFER_SIZE, 0);
   if (len <= 0) {
     resetTunnelServer();
     return true;
@@ -160,12 +142,12 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
         <<  addrRemote(tunnelServerFd);
     switch (package.state) {
       case TunnelPackage::STATE_CHALLENGE_REQUEST:
-        sendTunnelState(
-            tunnelServerFd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE
+        sendTunnelMessage(
+            tunnelServerFd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE, secret
         );
         break;
       case TunnelPackage::STATE_CREATE: {
-        int trafficFd = prepare(trafficServerIp, trafficServerPort);
+        int trafficFd = connectServer(trafficServerIp, trafficServerPort);
         if (trafficFd > 0) {
           trafficServerMap[trafficFd] = package.fd;
           trafficClientMap[package.fd] = trafficFd;
@@ -199,30 +181,30 @@ TcpClient::handleTunnelClient(const struct epoll_event& event) {
 }
 
 bool
-TcpClient::handleTrafficServer(const struct epoll_event& event) {
-  map<int, int>::iterator it = trafficServerMap.find(event.data.fd);
+TcpClient::handleTrafficServer(uint32_t events, int eventFd) {
+  map<int, int>::iterator it = trafficServerMap.find(eventFd);
   if (it == trafficServerMap.end()) {
     return false;
   }
-  if ((event.events & EPOLLRDHUP) || (event.events & EPOLLERR)) {
+  if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
     sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
-    cleanUpTrafficServer(event.data.fd);
+    cleanUpTrafficServer(eventFd);
     return true;
   }
-  if ((event.events & EPOLLIN) == 0) {
+  if ((events & EPOLLIN) == 0) {
     return true;
   }
   char buf[BUFFER_SIZE];
-  int len = recv(event.data.fd, buf, BUFFER_SIZE, 0);
+  int len = recv(eventFd, buf, BUFFER_SIZE, 0);
   log_debug << "recv, " << addrLocal(it->first)
       << " <-[length=" << len << "]- "
       <<  addrRemote(it->first);
   if (len <= 0) {
     sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
-    cleanUpTrafficServer(event.data.fd);
+    cleanUpTrafficServer(eventFd);
     return true;
   }
-  sendTunnelTraffic(it->first, tunnelServerFd, it->second, string(buf, len));
+  sendTunnelTraffic(tunnelServerFd, it->second, string(buf, len));
   return true;
 }
 
@@ -239,8 +221,9 @@ TcpClient::run() {
           exit(EXIT_FAILURE);
         }
         for(int i = 0; i < nfds; i++) {
-          handleTunnelClient(events[i]);
-          handleTrafficServer(events[i]);
+          int eventFd = events[i].data.fd;
+          handleTunnelClient(events[i].events, eventFd);
+          handleTrafficServer(events[i].events, eventFd);
         }
     }
   }

@@ -43,9 +43,9 @@ public:
   void cleanUpMonitorClient(int fd);
   void cleanUpTunnelClient(int fd);
   void cleanUpTrafficClient(int fd);
-  bool handleMonitorClient(const struct epoll_event& event);
-  bool handleTrafficClient(const struct epoll_event& event);
-  bool handleTunnelClient(const struct epoll_event& event);
+  bool handleMonitorClient(uint32_t events, int eventFd);
+  bool handleTrafficClient(uint32_t events, int eventFd);
+  bool handleTunnelClient(uint32_t events, int eventFd);
   int prepareMonitor(const string& ip, uint16_t port, int connection);
   int prepareTraffic(const string& ip, uint16_t port, int connection);
   int prepareTunnel(const string& ip, uint16_t port, int connection);

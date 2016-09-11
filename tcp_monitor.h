@@ -27,8 +27,7 @@ class TcpMonitor: public TcpBase {
 public:
   TcpMonitor() {}
   void init(uint16_t monitorPort);
-  bool handleMonitor(const struct epoll_event& event);
-  int prepare(const string& ip, uint16_t port);
+  bool handleMonitor(uint32_t events, int eventFd);
   void run(const string& cmd);
 
 private:

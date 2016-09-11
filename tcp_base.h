@@ -40,6 +40,20 @@ public:
     // program exits, and all fds are clean up, so we have to do nothing
   }
 
+  int acceptClient(int serverFd) {
+    struct sockaddr_in addr;
+    socklen_t sin_size = sizeof(addr);
+    int clientFd = accept(serverFd, (struct sockaddr *) &addr, &sin_size);
+    if (clientFd < 0) {
+      log_error << "failed to accept client, serverFd: " << serverFd;
+      exit(EXIT_FAILURE);
+    }
+    log_info << "accept client, ip: " << inet_ntoa(addr.sin_addr) << ", port: "
+        << addr.sin_port;
+    registerFd(clientFd);
+    return clientFd;
+  }
+
   int cleanUpFd(int fd) {
     log_debug << " fd: " << fd;
     if (fd < 0) {
@@ -50,43 +64,64 @@ public:
     close(fd);
   }
 
-    int prepare(const string& ip, uint16_t port, int connection) {
-      int fd = socket(PF_INET, SOCK_STREAM, 0);
-      if(fd < 0) {
-        log_error << "failed to create socket!";
-        exit(EXIT_FAILURE);
-      }
-      int v;
-      if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &v, sizeof(v)) < 0) {
-        log_error << "failed to setsockopt: " << SO_REUSEADDR;
-        close(fd);
-        exit(EXIT_FAILURE);
-      }
-
-      struct sockaddr_in addr;
-      memset(&addr, 0, sizeof(addr));
-      addr.sin_family = AF_INET;
-      addr.sin_addr.s_addr = inet_addr(ip.c_str());
-      addr.sin_port = htons(port);
-      int result = bind(fd, (struct sockaddr *)&addr, sizeof(sockaddr));
-      if (result < 0) {
-        log_error << "failed to bind, port: " << port << "\n";
-        exit(EXIT_FAILURE);
-      }
-
-      result = listen(fd, connection);
-      if (result < 0) {
-        log_error << "failed to listen, port: " << port;
-        exit(EXIT_FAILURE);
-      }
-
-      if (registerFd(fd) < 0) {
-        log_error << "failed to registerFd: " <<  fd;
-        exit(EXIT_FAILURE);
-      }
-
+  int connectServer(const string& ip, uint16_t port) {
+    int fd = socket(PF_INET, SOCK_STREAM, 0);
+    if (fd < 0) {
+      log_error << "failed to socket";
       return fd;
     }
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ip.c_str());
+    addr.sin_port = htons(port);
+    int result = connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr));
+    if(result < 0) {
+      log_error << "failed to connect " << ip << ":" << port;
+      return result;
+    }
+    log_info << "connected for " << ip << ":" << port;
+    registerFd(fd);
+    return fd;
+  }
+
+  int prepare(const string& ip, uint16_t port, int connection) {
+    int fd = socket(PF_INET, SOCK_STREAM, 0);
+    if(fd < 0) {
+      log_error << "failed to create socket!";
+      exit(EXIT_FAILURE);
+    }
+    int v;
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &v, sizeof(v)) < 0) {
+      log_error << "failed to setsockopt: " << SO_REUSEADDR;
+      close(fd);
+      exit(EXIT_FAILURE);
+    }
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ip.c_str());
+    addr.sin_port = htons(port);
+    int result = bind(fd, (struct sockaddr *)&addr, sizeof(sockaddr));
+    if (result < 0) {
+      log_error << "failed to bind, port: " << port << "\n";
+      exit(EXIT_FAILURE);
+    }
+
+    result = listen(fd, connection);
+    if (result < 0) {
+      log_error << "failed to listen, port: " << port;
+      exit(EXIT_FAILURE);
+    }
+
+    if (registerFd(fd) < 0) {
+      log_error << "failed to registerFd: " <<  fd;
+      exit(EXIT_FAILURE);
+    }
+
+    return fd;
+  }
 
   int registerFd(int fd) {
     if (fd < 0) {
@@ -124,7 +159,7 @@ public:
     sendTunnelMessage(tunnelFd, trafficFd, state, result);
   }
 
-  void sendTunnelTraffic(int eventFd, int tunnelFd, int trafficFd,
+  void sendTunnelTraffic(int tunnelFd, int trafficFd,
       const string& message) {
     sendTunnelMessage(
         tunnelFd, trafficFd, TunnelPackage::STATE_TRAFFIC, message

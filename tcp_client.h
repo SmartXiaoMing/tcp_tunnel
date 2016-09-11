@@ -34,12 +34,11 @@ public:
   );
   void cleanUpTrafficClient(int fd);
   void cleanUpTrafficServer(int fd);
-  bool handleTunnelClient(const struct epoll_event& event);
-  bool handleTrafficServer(const struct epoll_event& event);
+  bool handleTunnelClient(uint32_t events, int eventFd);
+  bool handleTrafficServer(uint32_t events, int eventFd);
   void resetTunnelServer();
   void retryConnectTunnelServer();
   void run();
-  int prepare(const string& ip, uint16_t port);
 
 private:
   int heartbeat;
