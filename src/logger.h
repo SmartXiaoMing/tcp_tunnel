@@ -31,6 +31,7 @@ using namespace Common;
 
 class LoggerManager {
 public:
+  static const int OFF = 0;
   static const int ERROR = 1;
   static const int WARN = 2;
   static const int INFO = 3;
@@ -110,7 +111,9 @@ public:
   static void init(const string& level, const string& file, bool append,
       bool debug) {
     int l = INFO;
-    if (level == "ERROR") {
+    if (level == "OFF") {
+        l = OFF;
+    } else if (level == "ERROR") {
       l = ERROR;
     } else if (level == "WARN") {
       l = WARN;
