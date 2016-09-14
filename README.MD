@@ -15,5 +15,10 @@ We can visit a machine behind a NAT or firewall.
 
 ./tunnel --mode=monitor
 
+## TODO list
+
+* add client connect tunnel after prepare client.traffic
+* close or lower the client after client echo reset
+
 
 Report tunnel bugs to 95813422(at)qq.com.
