@@ -18,14 +18,34 @@
 
 class TcpBase {
 public:
+  static const int TC_STATE_OK = 0;
+  static const int TC_STATE_INVALID = 1; // not verified
+  static const int TC_STATE_BROKEN = 2; // broken
+
   struct TunnelClientInfo {
     int count;
     string buffer;
-    bool verified;
+    int state;
 
-    TunnelClientInfo() : count(0), buffer(), verified(false) {}
-    TunnelClientInfo(bool verified_)
-        : count(0), buffer(), verified(verified_) {}
+    TunnelClientInfo() : count(0), buffer(), state(TC_STATE_OK) {}
+    TunnelClientInfo(bool verified_) : count(0), buffer(), state(TC_STATE_OK) {}
+
+    string stateString() {
+      switch(state) {
+        case TC_STATE_OK: return "ok";
+        case TC_STATE_INVALID: return "invalid";
+        case TC_STATE_BROKEN: return "broken";
+        default: "unknown";
+      }
+    }
+  };
+
+  struct TrafficClientInfo {
+    int trafficServerFd;
+    int tunnelClientFd;
+    TrafficClientInfo(): trafficServerFd(-1), tunnelClientFd(-1) {}
+    TrafficClientInfo(int sfd, int cfd)
+        : trafficServerFd(sfd), tunnelClientFd(cfd) {}
   };
 
   TcpBase() {

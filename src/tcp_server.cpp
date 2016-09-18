@@ -33,24 +33,16 @@ TcpServer::acceptMonitorClient(int serverFd) {
 int
 TcpServer::acceptTrafficClient(int serverFd) {
   int clientFd = acceptClient(serverFd);
-  int tunnelClientFd = assignTunnelClient(serverFd, clientFd);
-  if (tunnelClientFd < 0) {
-    cleanUpTrafficClient(clientFd);
-    return -1;
-  }
-  trafficClientMap[clientFd] = tunnelClientFd;
-  sendTunnelState(tunnelClientFd, clientFd, TunnelPackage::STATE_CREATE);
-  return clientFd;
+  return assignTunnelClient(serverFd, clientFd);
 }
 
 int
 TcpServer::acceptTunnelClient(int serverFd) {
   int clientFd = acceptClient(serverFd);
   if (secret.empty()) {
-    tunnelClientMap[clientFd] = TunnelClientInfo(true);
-    tunnelClientCount += 1;
+    tunnelClientMap[clientFd] = TunnelClientInfo(TC_STATE_OK);
   } else {
-    tunnelClientMap[clientFd] = TunnelClientInfo(false);
+    tunnelClientMap[clientFd] = TunnelClientInfo(TC_STATE_INVALID);
     sendTunnelState(clientFd, 0, TunnelPackage::STATE_CHALLENGE_REQUEST);
   }
   return clientFd;
@@ -58,34 +50,59 @@ TcpServer::acceptTunnelClient(int serverFd) {
 
 int
 TcpServer::assignTunnelClient(int trafficServerFd, int trafficClientFd) {
-  if (tunnelClientCount <= 0) {
+  if (trafficClientFd <= 0) {
+    map<int, TrafficClientInfo>::iterator it
+        = trafficClientMap.find(trafficClientFd);
+    if (it == trafficClientMap.end()) {
+      log_error << "invalid trafficClientFd: " << trafficClientFd;
+      return -1;
+    }
+    trafficClientFd = it->second.trafficServerFd;
+  }
+  int tunnelClientFd = chooseTunnelClient(trafficServerFd);
+  if (tunnelClientFd < 0) {
+    cleanUpTrafficClient(trafficClientFd);
+    return -1;
+  }
+  trafficClientMap[trafficClientFd]
+      = TrafficClientInfo(trafficServerFd, tunnelClientFd);
+  sendTunnelState(tunnelClientFd, trafficClientFd, TunnelPackage::STATE_CREATE);
+  return tunnelClientFd;
+}
+
+int
+TcpServer::chooseTunnelClient(int trafficServerFd) {
+  if (tunnelClientMap.empty()) {
     log_warn << "no available tunnelClient";
     return -1;
   }
   map<int, int>::iterator it1 = trafficServerMap.find(trafficServerFd);
   if (it1 != trafficServerMap.end() && it1->second > 0) {
-    if (secret.empty()) {
-      log_debug << "use assigned fd: " << it1->second;
-      return it1->second;
-    }
     map<int, TunnelClientInfo>::iterator it2
         = tunnelClientMap.find(it1->second);
-    if (it2->second.verified) {
+    if (it2->second.state == TC_STATE_OK) {
       log_debug << "use assigned fd: " << it1->second;
       return it1->second;
+    } else {
+      it1->second = -1;
     }
+  }
+  int tunnelClientCount = getAvailableTunnelClientCount();
+  if (tunnelClientCount <= 0) {
+    log_warn << "no available tunnelClient";
     return -1;
   }
   int avg = trafficServerMap.size() / tunnelClientCount;
   map<int, TunnelClientInfo>::iterator it2 = tunnelClientMap.begin();
   for (; it2 != tunnelClientMap.end(); ++it2) {
-    if (it2->second.verified && it2->second.count <= avg) {
+    if (it2->second.state == TC_STATE_OK && it2->second.count <= avg) {
       trafficServerMap[trafficServerFd] = it2->first;
       it2->second.count++;
       return it2->first;
     }
   }
   log_error << "cannot find any tunnelClient, it is impossible!!";
+  return -1;
 }
 
 void
@@ -100,9 +117,9 @@ TcpServer::cleanUpMonitorClient(int fd) {
 
 void
 TcpServer::cleanUpTrafficClient(int fd) {
-  map<int, int>::iterator it = trafficClientMap.find(fd);
+  map<int, TrafficClientInfo>::iterator it = trafficClientMap.find(fd);
   if (it != trafficClientMap.end()) {
-    sendTunnelState(it->second, fd, TunnelPackage::STATE_CLOSE);
+    sendTunnelState(it->second.tunnelClientFd, fd, TunnelPackage::STATE_CLOSE);
     trafficClientMap.erase(it);
     log_debug << "clean up trafficClient: " << addrRemote(fd);
   }
@@ -117,9 +134,9 @@ TcpServer::cleanUpTunnelClient(int fd) {
       it1->second = -1; // keep trafficServer free
     }
   }
-  map<int, int>::iterator it2 = trafficClientMap.begin();
+  map<int, TrafficClientInfo>::iterator it2 = trafficClientMap.begin();
   for (; it2 != trafficClientMap.end();) {
-    if (it2->second == fd) {
+    if (it2->second.tunnelClientFd == fd) {
       log_debug << "clean up trafficClient, fd: " << addrRemote(it2->first);
       cleanUpFd(it2->first);
       trafficClientMap.erase(it2++);
@@ -129,13 +146,22 @@ TcpServer::cleanUpTunnelClient(int fd) {
   }
   map<int, TunnelClientInfo>::iterator it3 = tunnelClientMap.find(fd);
   if (it3 != tunnelClientMap.end()) {
-    if (it3->second.verified) {
-      tunnelClientCount -= 1;
-    }
     log_debug << "clean up tunnelClient: " <<  addrRemote(fd);
     tunnelClientMap.erase(it3);
   }
   cleanUpFd(fd);
+}
+
+int
+TcpServer::getAvailableTunnelClientCount() const {
+  int count = 0;
+  map<int, TunnelClientInfo>::const_iterator it = tunnelClientMap.begin();
+  for (; it != tunnelClientMap.end(); ++it) {
+    if (it->second.state == TC_STATE_OK) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 bool
@@ -181,7 +207,7 @@ TcpServer::handleMonitorClient(uint32_t events, int eventFd) {
               + "\t"
               + intToString(it2->second.count)
               + "\t"
-              + (it2->second.verified ? "valid" : "invalid")
+              + it2->second.stateString()
               + "\n";
           sendTunnelMessage(
               eventFd, 0, TunnelPackage::STATE_MONITOR_RESPONSE, line
@@ -198,12 +224,12 @@ TcpServer::handleMonitorClient(uint32_t events, int eventFd) {
               eventFd, 0, TunnelPackage::STATE_MONITOR_RESPONSE, line
           );
         }
-        map<int, int>::iterator it4 = trafficClientMap.begin();
+        map<int, TrafficClientInfo>::iterator it4 = trafficClientMap.begin();
         for (; it4 != trafficClientMap.end(); ++it4) {
           string line = "trafficMapTunnelClient\t"
               + addrRemote(it4->first).toAddr().toString()
               + "\t"
-              + addrRemote(it4->second).toAddr().toString()
+              + addrRemote(it4->second.tunnelClientFd).toAddr().toString()
               + "\n";
           sendTunnelMessage(
               eventFd, 0, TunnelPackage::STATE_MONITOR_RESPONSE, line
@@ -262,10 +288,9 @@ TcpServer::handleTunnelClient(uint32_t events, int eventFd) {
       case TunnelPackage::STATE_HEARTBEAT: break;
       case TunnelPackage::STATE_CHALLENGE_RESPONSE: {
         if (package.message == secret) {
-          if (!it->second.verified) {
+          if (it->second.state == TC_STATE_INVALID) {
             log_debug << "success to challenge: " << addrRemote(eventFd);
-            it->second.verified = true;
-            tunnelClientCount += 1;
+            it->second.state = TC_STATE_OK;
           }
         } else {
           log_warn << "failed to challenge" << addrRemote(eventFd)
@@ -275,7 +300,10 @@ TcpServer::handleTunnelClient(uint32_t events, int eventFd) {
           return true; // no need to read more
         }
       } break;
-      case TunnelPackage::STATE_CREATE_FAILURE:
+      case TunnelPackage::STATE_CREATE_FAILURE: {
+          it->second.state = TC_STATE_BROKEN;
+          assignTunnelClient(-1, package.fd);
+      } break;
       case TunnelPackage::STATE_CLOSE: cleanUpTrafficClient(package.fd); break;
       case TunnelPackage::STATE_TRAFFIC: {
         send(package.fd, package.message.c_str(), package.message.size(), 0);
@@ -296,7 +324,7 @@ TcpServer::handleTunnelClient(uint32_t events, int eventFd) {
 
 bool
 TcpServer::handleTrafficClient(uint32_t events, int eventFd) {
-  map<int, int>::iterator it = trafficClientMap.find(eventFd);
+  map<int, TrafficClientInfo>::iterator it = trafficClientMap.find(eventFd);
   if (it == trafficClientMap.end()) {
     return false;
   }
@@ -317,7 +345,7 @@ TcpServer::handleTrafficClient(uint32_t events, int eventFd) {
     cleanUpTrafficClient(eventFd);
     return true;
   }
-  sendTunnelTraffic(it->second, eventFd, string(buf, len));
+  sendTunnelTraffic(it->second.tunnelClientFd, eventFd, string(buf, len));
   return true;
 }
 

@@ -26,7 +26,7 @@ using namespace std;
 class TcpServer: public TcpBase {
 public:
 
-  TcpServer(): tunnelClientCount(0), monitorServerFd(-1) {}
+  TcpServer(): monitorServerFd(-1) {}
 
   void init(
     const string& tunnelIp, uint16_t tunnelPort, int tunnelConnection,
@@ -40,9 +40,11 @@ public:
   int acceptTrafficClient(int serverFd);
   int acceptTunnelClient(int serverFd);
   int assignTunnelClient(int trafficServerFd, int trafficClientFd);
+  int chooseTunnelClient(int trafficServerFd);
   void cleanUpMonitorClient(int fd);
   void cleanUpTunnelClient(int fd);
   void cleanUpTrafficClient(int fd);
+  int getAvailableTunnelClientCount() const;
   bool handleMonitorClient(uint32_t events, int eventFd);
   bool handleTrafficClient(uint32_t events, int eventFd);
   bool handleTunnelClient(uint32_t events, int eventFd);
@@ -56,9 +58,8 @@ private:
     map<int, string> monitorClientMap;
     string secret;
     map<int, TunnelClientInfo> tunnelClientMap; // count, buffer
-    int tunnelClientCount;
     int tunnelServerFd;
-    map<int, int> trafficClientMap; // trafficClient -> tunnelClient
+    map<int, TrafficClientInfo> trafficClientMap; // trafficClient -> (trafficServer, tunnelClient)
     map<int, int> trafficServerMap; // trafficServer -> tunnelClient
 };
 
