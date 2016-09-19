@@ -50,14 +50,14 @@ TcpServer::acceptTunnelClient(int serverFd) {
 
 int
 TcpServer::assignTunnelClient(int trafficServerFd, int trafficClientFd) {
-  if (trafficClientFd <= 0) {
+  if (trafficServerFd <= 0) {
     map<int, TrafficClientInfo>::iterator it
         = trafficClientMap.find(trafficClientFd);
     if (it == trafficClientMap.end()) {
-      log_error << "invalid trafficClientFd: " << trafficClientFd;
+      log_error << "invalid trafficServerFd: " << trafficClientFd;
       return -1;
     }
-    trafficClientFd = it->second.trafficServerFd;
+    trafficServerFd = it->second.trafficServerFd;
   }
   int tunnelClientFd = chooseTunnelClient(trafficServerFd);
   if (tunnelClientFd < 0) {
@@ -84,6 +84,7 @@ TcpServer::chooseTunnelClient(int trafficServerFd) {
       log_debug << "use assigned fd: " << it1->second;
       return it1->second;
     } else {
+      it2->second.count--;
       it1->second = -1;
     }
   }
@@ -98,6 +99,9 @@ TcpServer::chooseTunnelClient(int trafficServerFd) {
     if (it2->second.state == TC_STATE_OK && it2->second.count <= avg) {
       trafficServerMap[trafficServerFd] = it2->first;
       it2->second.count++;
+      log_debug << "assign " << addrRemote(it2->first)
+          << " to " << addrLocal(trafficServerFd) 
+          << ", rule:" << it2->second.count << "/" << avg;
       return it2->first;
     }
   }
