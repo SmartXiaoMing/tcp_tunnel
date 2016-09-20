@@ -127,7 +127,6 @@ TcpClient::resetTunnelServer() {
 
 bool
 TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
-  log_error << "events: " << events << ", fd: " << eventFd;
   if (eventFd != tunnelServerFd) { // traffic from tunnel
     return false;
   }
