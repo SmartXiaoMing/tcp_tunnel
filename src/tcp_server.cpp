@@ -93,17 +93,22 @@ TcpServer::chooseTunnelClient(int trafficServerFd) {
     log_warn << "no available tunnelClient";
     return -1;
   }
-  int avg = trafficServerMap.size() / tunnelClientCount;
+  pair<const int, TunnelClientInfo>* bestTunnelClient = NULL;
   map<int, TunnelClientInfo>::iterator it2 = tunnelClientMap.begin();
   for (; it2 != tunnelClientMap.end(); ++it2) {
-    if (it2->second.state == TC_STATE_OK && it2->second.count <= avg) {
-      trafficServerMap[trafficServerFd] = it2->first;
-      it2->second.count++;
-      log_debug << "assign " << addrRemote(it2->first)
-          << " to " << addrLocal(trafficServerFd) 
-          << ", rule:" << it2->second.count << "/" << avg;
-      return it2->first;
+    if (it2->second.state == TC_STATE_OK) {
+      if (bestTunnelClient == NULL || bestTunnelClient->second.count > it2->second.count) {
+        bestTunnelClient = &(*it2);
+      }
     }
+  }
+  if (bestTunnelClient != NULL) {
+    trafficServerMap[trafficServerFd] = bestTunnelClient->first;
+    bestTunnelClient->second.count++;
+    log_debug << "assign " << addrRemote(bestTunnelClient->first)
+        << " to " << addrLocal(trafficServerFd)
+        << ", rule:" << bestTunnelClient->second.count;
+    return bestTunnelClient->first;
   }
   log_error << "cannot find any tunnelClient, it is impossible!!";
   return -1;

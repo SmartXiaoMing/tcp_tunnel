@@ -220,10 +220,11 @@ TcpClient::handleTrafficServer(uint32_t events, int eventFd) {
     return true;
   }
   char buf[BUFFER_SIZE];
+  log_debug << "ready to recv data, for " << addrLocal(it->first) << " <- " << addrRemote(it->first);
   int len = recv(eventFd, buf, BUFFER_SIZE, 0);
   log_debug << "recv, " << addrLocal(it->first)
       << " <-[length=" << len << "]- "
-      <<  addrRemote(it->first);
+      << addrRemote(it->first);
   if (len <= 0) {
     sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
     cleanUpTrafficServer(eventFd);
