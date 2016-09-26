@@ -43,7 +43,7 @@ public:
   int chooseTunnelClient(int trafficServerFd);
   void cleanUpMonitorClient(int fd);
   void cleanUpTunnelClient(int fd);
-  void cleanUpTrafficClient(int fd);
+  void cleanUpTrafficClient(int fd, int ctrl);
   int getAvailableTunnelClientCount() const;
   bool handleMonitorClient(uint32_t events, int eventFd);
   bool handleTrafficClient(uint32_t events, int eventFd);
@@ -57,7 +57,7 @@ private:
     int monitorServerFd;
     map<int, string> monitorClientMap;
     string secret;
-    map<int, TunnelClientInfo> tunnelClientMap; // count, buffer
+    map<int, TunnelClientInfo> tunnelClientMap; // fd -> (count, buffer)
     int tunnelServerFd;
     map<int, TrafficClientInfo> trafficClientMap; // trafficClient -> (trafficServer, tunnelClient)
     map<int, int> trafficServerMap; // trafficServer -> tunnelClient

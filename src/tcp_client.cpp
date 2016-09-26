@@ -89,14 +89,16 @@ TcpClient::retryConnectTunnelServer() {
 }
 
 void
-TcpClient::cleanUpTrafficClient(int fakeFd) {
+TcpClient::cleanUpTrafficClient(int fakeFd, int ctrl) {
   log_debug << "clean up trafficClient, fakeFd: " << fakeFd;
   map<int, int>::iterator it = trafficClientMap.find(fakeFd);
   if (it != trafficClientMap.end()) {
-    sendTunnelState(tunnelServerFd, fakeFd, TunnelPackage::STATE_CLOSE);
+    if (ctrl == CTRL_ACTIVE) {
+      sendTunnelState(tunnelServerFd, fakeFd, TunnelPackage::STATE_CLOSE);
+    }
     cleanUpFd(it->second);
-    trafficClientMap.erase(fakeFd);
     trafficServerMap.erase(it->second);
+    trafficClientMap.erase(fakeFd); // TODO
   }
 }
 
@@ -105,9 +107,10 @@ TcpClient::cleanUpTrafficServer(int fd) {
   map<int, int>::iterator it = trafficServerMap.find(fd);
   if (it != trafficServerMap.end()) {
     log_debug << "clean up trafficServer: " << addrRemote(fd);
+    sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
     cleanUpFd(fd);
-    trafficServerMap.erase(fd);
     trafficClientMap.erase(it->second);
+    trafficServerMap.erase(fd); // TODO
   }
 }
 
@@ -176,13 +179,17 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
         if (trafficFd > 0) {
           trafficServerMap[trafficFd] = package.fd;
           trafficClientMap[package.fd] = trafficFd;
+          log_debug << "create trafficFd: " << trafficFd << " for package.fd" << package.fd
+            << ", " << addrLocal(trafficFd) << " -> " << addrRemote(trafficFd);
         } else {
           sendTunnelState(
               tunnelServerFd, package.fd, TunnelPackage::STATE_CREATE_FAILURE
           );
         }
       } break;
-      case TunnelPackage::STATE_CLOSE: cleanUpTrafficClient(package.fd); break;
+      case TunnelPackage::STATE_CLOSE:
+        cleanUpTrafficClient(package.fd, CTRL_PASSIVE);
+        break;
       case TunnelPackage::STATE_TRAFFIC: {
         map<int, int>::iterator it = trafficClientMap.find(package.fd);
         if (it == trafficClientMap.end()) {
@@ -212,7 +219,6 @@ TcpClient::handleTrafficServer(uint32_t events, int eventFd) {
     return false;
   }
   if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
-    sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
     cleanUpTrafficServer(eventFd);
     return true;
   }
@@ -226,7 +232,6 @@ TcpClient::handleTrafficServer(uint32_t events, int eventFd) {
       << " <-[length=" << len << "]- "
       << addrRemote(it->first);
   if (len <= 0) {
-    sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
     cleanUpTrafficServer(eventFd);
     return true;
   }
@@ -239,6 +244,7 @@ TcpClient::run() {
   int heartbeatMs = heartbeat * 1000;
   while(true) {
     struct epoll_event events[MAX_EVENTS];
+    log_debug << "wait events... ";
     int nfds = epoll_wait(epollFd, events, MAX_EVENTS, heartbeatMs);
     if (nfds == 0) {
         sendTunnelState(tunnelServerFd, 0, TunnelPackage::STATE_HEARTBEAT);
@@ -247,11 +253,19 @@ TcpClient::run() {
           log_error << "failed to epoll_wait";
           exit(EXIT_FAILURE);
         }
+        log_debug << "nfds.size = " << nfds;
         for(int i = 0; i < nfds; i++) {
           int eventFd = events[i].data.fd;
-          handleTunnelClient(events[i].events, eventFd);
-          handleTrafficServer(events[i].events, eventFd);
+          int count =0;
+          if (handleTunnelClient(events[i].events, eventFd)) {
+            count +=1;
+          }
+          if (handleTrafficServer(events[i].events, eventFd)) {
+            count +=1;
+          }
+          log_debug << "handle count: " << count << ", eventFd: " << eventFd << ", " << addrLocal(eventFd) << ", " << addrRemote(eventFd);
         }
+
     }
   }
 }

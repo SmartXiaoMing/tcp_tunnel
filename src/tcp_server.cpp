@@ -61,7 +61,7 @@ TcpServer::assignTunnelClient(int trafficServerFd, int trafficClientFd) {
   }
   int tunnelClientFd = chooseTunnelClient(trafficServerFd);
   if (tunnelClientFd < 0) {
-    cleanUpTrafficClient(trafficClientFd);
+    cleanUpTrafficClient(trafficClientFd, CTRL_ACTIVE);
     return -1;
   }
   trafficClientMap[trafficClientFd]
@@ -97,7 +97,8 @@ TcpServer::chooseTunnelClient(int trafficServerFd) {
   map<int, TunnelClientInfo>::iterator it2 = tunnelClientMap.begin();
   for (; it2 != tunnelClientMap.end(); ++it2) {
     if (it2->second.state == TC_STATE_OK) {
-      if (bestTunnelClient == NULL || bestTunnelClient->second.count > it2->second.count) {
+      if (bestTunnelClient == NULL
+          || bestTunnelClient->second.count > it2->second.count) {
         bestTunnelClient = &(*it2);
       }
     }
@@ -125,10 +126,14 @@ TcpServer::cleanUpMonitorClient(int fd) {
 }
 
 void
-TcpServer::cleanUpTrafficClient(int fd) {
+TcpServer::cleanUpTrafficClient(int fd, int ctrl) {
   map<int, TrafficClientInfo>::iterator it = trafficClientMap.find(fd);
   if (it != trafficClientMap.end()) {
-    sendTunnelState(it->second.tunnelClientFd, fd, TunnelPackage::STATE_CLOSE);
+    if (ctrl == CTRL_ACTIVE) {
+      sendTunnelState(
+        it->second.tunnelClientFd, fd, TunnelPackage::STATE_CLOSE
+      );
+    }
     trafficClientMap.erase(it);
     log_debug << "clean up trafficClient: " << addrRemote(fd);
   }
@@ -313,7 +318,9 @@ TcpServer::handleTunnelClient(uint32_t events, int eventFd) {
           it->second.state = TC_STATE_BROKEN;
           assignTunnelClient(-1, package.fd);
       } break;
-      case TunnelPackage::STATE_CLOSE: cleanUpTrafficClient(package.fd); break;
+      case TunnelPackage::STATE_CLOSE: {
+        cleanUpTrafficClient(package.fd, CTRL_PASSIVE);
+      } break;
       case TunnelPackage::STATE_TRAFFIC: {
         send(package.fd, package.message.c_str(), package.message.size(), 0);
         log_debug << "send, " << addrLocal(package.fd)
@@ -321,7 +328,7 @@ TcpServer::handleTunnelClient(uint32_t events, int eventFd) {
             <<  addrRemote(package.fd);
       } break;
       default: log_warn << "ignore state: " << (int) package.state;
-    }
+    };
   }
   if (offset > 0) {
     it->second.buffer.assign(
@@ -338,7 +345,7 @@ TcpServer::handleTrafficClient(uint32_t events, int eventFd) {
     return false;
   }
   if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
-    cleanUpTrafficClient(eventFd);
+    cleanUpTrafficClient(eventFd, CTRL_ACTIVE);
     return true;
   }
   if ((events & EPOLLIN) == 0) {
@@ -351,7 +358,7 @@ TcpServer::handleTrafficClient(uint32_t events, int eventFd) {
       << " <-[length=" << len << "]- "
       <<  addrRemote(eventFd);
   if (len <= 0) {
-    cleanUpTrafficClient(eventFd);
+    cleanUpTrafficClient(eventFd, CTRL_ACTIVE);
     return true;
   }
   sendTunnelTraffic(it->second.tunnelClientFd, eventFd, string(buf, len));

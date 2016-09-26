@@ -22,6 +22,9 @@ public:
   static const int TC_STATE_INVALID = 1; // not verified
   static const int TC_STATE_BROKEN = 2; // broken
 
+  static const int CTRL_ACTIVE = 0;
+  static const int CTRL_PASSIVE = 1;
+
   struct TunnelClientInfo {
     int count;
     string buffer;
@@ -103,6 +106,12 @@ public:
     log_info << "connected for " << ip << ":" << port;
     registerFd(fd);
     return fd;
+  }
+
+  int getNextId() const {
+    static int id = 0;
+    ++id;
+    return id;
   }
 
   int prepare(const string& ip, uint16_t port, int connection) {

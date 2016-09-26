@@ -32,7 +32,7 @@ public:
       const string& tunnelSecret,
       int heartbeat
   );
-  void cleanUpTrafficClient(int fd);
+  void cleanUpTrafficClient(int fd, int ctrl);
   void cleanUpTrafficServer(int fd);
   bool handleTunnelClient(uint32_t events, int eventFd);
   bool handleTrafficServer(uint32_t events, int eventFd);
