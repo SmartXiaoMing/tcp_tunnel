@@ -98,7 +98,7 @@ TcpClient::cleanUpTrafficClient(int fakeFd, int ctrl) {
     }
     cleanUpFd(it->second);
     trafficServerMap.erase(it->second);
-    trafficClientMap.erase(fakeFd); // TODO
+    trafficClientMap.erase(fakeFd);
   }
 }
 
@@ -110,7 +110,7 @@ TcpClient::cleanUpTrafficServer(int fd) {
     sendTunnelState(tunnelServerFd, it->second, TunnelPackage::STATE_CLOSE);
     cleanUpFd(fd);
     trafficClientMap.erase(it->second);
-    trafficServerMap.erase(fd); // TODO
+    trafficServerMap.erase(fd);
   }
 }
 
@@ -196,11 +196,22 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
           log_error << "no related fd for client: " << package.fd;
         } else {
           int n = send(
-              it->second, package.message.c_str(), package.message.size(), 0
+              it->second,
+              package.message.c_str(),
+              package.message.size(),
+              MSG_NOSIGNAL
           );
-          log_debug << "send, " << addrLocal(it->second)
-              << " -[length=" << n << "]-> "
-              <<  addrRemote(it->second);
+          if (n >= 0) {
+            log_debug << "send, fd:" << it->second << ", "
+                << addrLocal(it->second)
+                << " -[length=" << n << "]-> "
+                << addrRemote(it->second);
+          } else {
+            log_debug << "send failed, fd:" << it->second << ", "
+                << addrLocal(it->second)
+                << " -[length=" << n << "]-> "
+                << addrRemote(it->second);
+          }
         }
       } break;
       default: log_warn << "ignore state: " << (int) package.state;

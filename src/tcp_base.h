@@ -46,9 +46,11 @@ public:
   struct TrafficClientInfo {
     int trafficServerFd;
     int tunnelClientFd;
-    TrafficClientInfo(): trafficServerFd(-1), tunnelClientFd(-1) {}
-    TrafficClientInfo(int sfd, int cfd)
-        : trafficServerFd(sfd), tunnelClientFd(cfd) {}
+    int connectId;
+    TrafficClientInfo(): trafficServerFd(-1), tunnelClientFd(-1),
+        connectId(-1) {}
+    TrafficClientInfo(int sfd, int cfd, int cid)
+        : trafficServerFd(sfd), tunnelClientFd(cfd), connectId(cid) {}
   };
 
   TcpBase() {
@@ -108,12 +110,6 @@ public:
     return fd;
   }
 
-  int getNextId() const {
-    static int id = 0;
-    ++id;
-    return id;
-  }
-
   int prepare(const string& ip, uint16_t port, int connection) {
     int fd = socket(PF_INET, SOCK_STREAM, 0);
     if(fd < 0) {
@@ -168,7 +164,7 @@ public:
     return result;
   }
 
-  void sendTunnelMessage(int tunnelFd, int trafficFd, char state,
+  int sendTunnelMessage(int tunnelFd, int trafficFd, char state,
       const string& message) {
     TunnelPackage package;
     package.fd = trafficFd;
@@ -180,18 +176,18 @@ public:
         << " -[fd=" << trafficFd << ",state=" << package.getState()
         << ",length=" << package.message.size() << "]-> "
         <<  addrRemote(tunnelFd);
-    send(tunnelFd, result.c_str(), result.size(), 0);
+    return send(tunnelFd, result.c_str(), result.size(), MSG_NOSIGNAL);
   }
 
-  void sendTunnelState(int tunnelFd, int trafficFd, char state) {
+  int sendTunnelState(int tunnelFd, int trafficFd, char state) {
     string result;
-    sendTunnelMessage(tunnelFd, trafficFd, state, result);
+    return sendTunnelMessage(tunnelFd, trafficFd, state, result);
   }
 
-  void sendTunnelTraffic(int tunnelFd, int trafficFd,
+  int sendTunnelTraffic(int tunnelFd, int trafficFd,
       const string& message) {
-    sendTunnelMessage(
-        tunnelFd, trafficFd, TunnelPackage::STATE_TRAFFIC, message
+    return sendTunnelMessage(
+      tunnelFd, trafficFd, TunnelPackage::STATE_TRAFFIC, message
     );
   }
 

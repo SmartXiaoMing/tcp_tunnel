@@ -39,11 +39,22 @@ public:
   int acceptMonitorClient(int serverFd);
   int acceptTrafficClient(int serverFd);
   int acceptTunnelClient(int serverFd);
-  int assignTunnelClient(int trafficServerFd, int trafficClientFd);
+  int assignTunnelClient(int trafficClientFd);
   int chooseTunnelClient(int trafficServerFd);
   void cleanUpMonitorClient(int fd);
   void cleanUpTunnelClient(int fd);
   void cleanUpTrafficClient(int fd, int ctrl);
+    int generateConnectId() const {
+      static int id = 0;
+      if (id >= 1000000000) {
+        id = 0;
+      }
+      ++id;
+      while (connectIdMap.find(id) != connectIdMap.end()) {
+        ++id;
+      }
+      return id;
+    }
   int getAvailableTunnelClientCount() const;
   bool handleMonitorClient(uint32_t events, int eventFd);
   bool handleTrafficClient(uint32_t events, int eventFd);
@@ -60,6 +71,7 @@ private:
     map<int, TunnelClientInfo> tunnelClientMap; // fd -> (count, buffer)
     int tunnelServerFd;
     map<int, TrafficClientInfo> trafficClientMap; // trafficClient -> (trafficServer, tunnelClient)
+    map<int, int> connectIdMap; // connectId -> trafficClient
     map<int, int> trafficServerMap; // trafficServer -> tunnelClient
 };
 
