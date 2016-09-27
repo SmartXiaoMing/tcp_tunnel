@@ -146,7 +146,7 @@ void
 TcpServer::cleanUpTrafficClient(int fd, int ctrl) {
   map<int, TrafficClientInfo>::iterator it = trafficClientMap.find(fd);
   if (it != trafficClientMap.end()) {
-    if (ctrl == CTRL_ACTIVE) {
+    if (ctrl == CTRL_ACTIVE && it->second.tunnelClientFd > 0) {
       int result = sendTunnelState(
         it->second.tunnelClientFd, fd, TunnelPackage::STATE_CLOSE
       );
