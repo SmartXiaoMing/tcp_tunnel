@@ -16,6 +16,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <set>
+
+using namespace std;
+
 class TcpBase {
 public:
   static const int TC_STATE_OK = 0;
@@ -86,7 +90,8 @@ public:
     }
     struct epoll_event ev;
     epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &ev);
-    close(fd);
+    recycleFdSet.insert(fd);
+    // close(fd);
   }
 
   int connectServer(const string& ip, uint16_t port) {
@@ -164,6 +169,14 @@ public:
     return result;
   }
 
+  void recycleFd() {
+    set<int>::iterator it = recycleFdSet.begin();
+    for(; it != recycleFdSet.end(); ++it) {
+      close(*it);
+    }
+    recycleFdSet.clear();
+  }
+
   int sendTunnelMessage(int tunnelFd, int trafficFd, char state,
       const string& message) {
     TunnelPackage package;
@@ -192,6 +205,7 @@ public:
   }
 
 protected:
+  set<int> recycleFdSet;
   int epollFd;
 };
 

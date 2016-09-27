@@ -504,6 +504,7 @@ TcpServer::run() {
           || handleTrafficClient(events[i].events, eventFd)
           || handleMonitorClient(events[i].events, eventFd);
     }
+    recycleFd();
   }
 }
 

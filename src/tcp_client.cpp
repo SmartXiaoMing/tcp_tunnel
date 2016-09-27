@@ -276,7 +276,7 @@ TcpClient::run() {
           }
           log_debug << "handle count: " << count << ", eventFd: " << eventFd << ", " << addrLocal(eventFd) << ", " << addrRemote(eventFd);
         }
-
+        recycleFd();
     }
   }
 }
