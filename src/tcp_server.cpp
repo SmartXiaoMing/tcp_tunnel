@@ -42,6 +42,7 @@ TcpServer::acceptTunnelClient(int serverFd) {
   int clientFd = acceptClient(serverFd);
   if (secret.empty()) {
     tunnelClientMap[clientFd] = TunnelClientInfo(TC_STATE_OK);
+    rebalance();
   } else {
     tunnelClientMap[clientFd] = TunnelClientInfo(TC_STATE_INVALID);
     if (!sendTunnelState(clientFd, 0, TunnelPackage::STATE_CHALLENGE_REQUEST)) {
@@ -330,6 +331,7 @@ TcpServer::handleTunnelClient(uint32_t events, int eventFd) {
           if (it->second.state == TC_STATE_INVALID) {
             log_debug << "success to challenge: " << addrRemote(eventFd);
             it->second.state = TC_STATE_OK;
+            rebalance();
           }
         } else {
           log_warn << "failed to challenge" << addrRemote(eventFd)
@@ -475,6 +477,48 @@ int
 TcpServer::prepareTunnel(const string& ip, uint16_t port, int connection) {
   tunnelServerFd = prepare(ip, port, connection);
   return tunnelServerFd;
+}
+
+void
+TcpServer::rebalance() {
+  if (trafficServerMap.empty()) {
+    return;
+  }
+  int tunnelClientCount = getAvailableTunnelClientCount();
+  if (tunnelClientCount <= 0) {
+    log_warn << "no available tunnelClient";
+    return;
+  }
+  int trafficSize = trafficServerMap.size();
+  int avgCount = (tunnelClientCount + trafficSize - 1) / trafficSize;
+  vector<map<int, int>::iterator*> freeTrafficServer;
+  map<int, int>::iterator it = trafficServerMap.begin();
+  for (; it != trafficServerMap.end(); ++it) {
+    if (it->second <= 0) {
+      freeTrafficServer.push_back(&it);
+      continue;
+    }
+    map<int, TunnelClientInfo>::iterator it2
+        = tunnelClientMap.find(it->second);
+    if (it2 == tunnelClientMap.end()) {
+      freeTrafficServer.push_back(&it);
+      continue;
+    }
+    if (it2->second.state != TC_STATE_OK || it2->second.count > avgCount) {
+      freeTrafficServer.push_back(&it);
+      it2->second.count--;
+    }
+  }
+
+  map<int, TunnelClientInfo>::iterator it1 = tunnelClientMap.begin();
+  for(; it1 != tunnelClientMap.end() && !freeTrafficServer.empty(); ++it1) {
+    if (it1->second.state != TC_STATE_OK || it1->second.count >= avgCount) {
+      continue;
+    }
+    map<int, int>::iterator* it2 = freeTrafficServer.back();
+    (*it2)->second = it1->first;
+    freeTrafficServer.pop_back();
+  }
 }
 
 void

@@ -62,6 +62,7 @@ public:
   int prepareMonitor(const string& ip, uint16_t port, int connection);
   int prepareTraffic(const string& ip, uint16_t port, int connection);
   int prepareTunnel(const string& ip, uint16_t port, int connection);
+  void rebalance();
   void run();
 
 private:
