@@ -31,51 +31,56 @@ TcpMonitor::handleMonitor(uint32_t events, int eventFd) {
     exit(EXIT_FAILURE);
   }
 
-  if ((events & EPOLLIN) == 0) {
-    return true;
-  }
-
-  char buf[BUFFER_SIZE];
-  int len = recv(eventFd, buf, BUFFER_SIZE, 0);
-  if (len <= 0) {
-    exit(EXIT_FAILURE);
-    return true;
-  }
-  buffer.append(buf, len);
-  int offset = 0;
-  int totalLength = buffer.length();
-  while (offset < buffer.length()) {
-    TunnelPackage package;
-    int decodeLength
-        = package.decode(buffer.c_str() + offset, totalLength - offset);
-    if (decodeLength < 0) {
+  if (events & EPOLLIN) {
+		char buf[BUFFER_SIZE];
+		int len = recv(eventFd, buf, BUFFER_SIZE, 0);
+		if (len > 0) {
+		  recvBuffer.append(buf, len);
+		  int offset = 0;
+		  int totalLength = recvBuffer.length();
+		  while (offset < recvBuffer.length()) {
+		    TunnelPackage package;
+		    int decodeLength
+		        = package.decode(recvBuffer.c_str() + offset, totalLength - offset);
+		    if (decodeLength < 0) {
+		      exit(EXIT_FAILURE);
+		      return true;
+		    }
+		    if (decodeLength == 0) { // wait next time to read
+		      break;
+		    }
+		    offset += decodeLength;
+		    log_debug << "recv, " << addrLocal(eventFd)
+		        << " <-[fd=" << package.fd << ",state=" << package.getState()
+		        << ",length=" << package.message.size() << "]- "
+		        <<  addrRemote(eventFd);
+		    switch (package.state) {
+		      case TunnelPackage::STATE_CLOSE: exit(EXIT_SUCCESS); break;
+		      case TunnelPackage::STATE_MONITOR_RESPONSE:
+		        cout << package.message;
+		        break;
+		      default: log_warn << "ignore state: " << (int) package.state;
+		    }
+		  }
+		  if (offset > 0) {
+		    recvBuffer.assign(recvBuffer.begin() + offset, recvBuffer.end());
+		  }
+		} else if (!isGoodCode()) {
       exit(EXIT_FAILURE);
       return true;
     }
-    if (decodeLength == 0) { // wait next time to read
-      break;
-    }
-    offset += decodeLength;
-    log_debug << "recv, " << addrLocal(eventFd)
-        << " <-[fd=" << package.fd << ",state=" << package.getState()
-        << ",length=" << package.message.size() << "]- "
-        <<  addrRemote(eventFd);
-    switch (package.state) {
-      case TunnelPackage::STATE_CLOSE: exit(EXIT_SUCCESS); break;
-      case TunnelPackage::STATE_MONITOR_RESPONSE:
-        cout << package.message;
-        break;
-      default: log_warn << "ignore state: " << (int) package.state;
-    }
   }
-  if (offset > 0) {
-    buffer.assign(buffer.begin() + offset, buffer.end());
+  if (events & EPOLLOUT) {
+    if (!send(sendBuffer, eventFd)) {
+      exit(EXIT_FAILURE);
+      return true;
+    }
   }
 }
 
 void
 TcpMonitor::run(const string& cmd) {
-  sendTunnelMessage(serverFd, 0, TunnelPackage::STATE_MONITOR_REQUEST, cmd);
+  sendTunnelMessage(sendBuffer, serverFd, 0, TunnelPackage::STATE_MONITOR_REQUEST, cmd);
   while(true) {
     struct epoll_event events[MAX_EVENTS];
     int nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1);

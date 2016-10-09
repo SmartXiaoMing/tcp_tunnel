@@ -9,6 +9,8 @@
 #include "tunnel_package.h"
 
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +19,8 @@
 #include <unistd.h>
 
 #include <set>
+
+extern int errno;
 
 using namespace std;
 
@@ -31,11 +35,12 @@ public:
 
   struct TunnelClientInfo {
     int count;
-    string buffer;
+    string recvBuffer;
+    string sendBuffer;
     int state;
 
-    TunnelClientInfo() : count(0), buffer(), state(TC_STATE_OK) {}
-    TunnelClientInfo(bool verified_) : count(0), buffer(), state(TC_STATE_OK) {}
+    TunnelClientInfo() : count(0), state(TC_STATE_OK) {}
+    TunnelClientInfo(bool verified_) : count(0), state(TC_STATE_OK) {}
 
     string stateString() {
       switch(state) {
@@ -45,17 +50,32 @@ public:
         default: "unknown";
       }
     }
+
+    bool sendBufferFull() {
+      return sendBuffer.size() >= 1024*1024;
+    }
   };
 
   struct TrafficClientInfo {
     int trafficServerFd;
     int tunnelClientFd;
     int connectId;
+    string sendBuffer;
     TrafficClientInfo(): trafficServerFd(-1), tunnelClientFd(-1),
         connectId(-1) {}
     TrafficClientInfo(int sfd, int cfd, int cid)
         : trafficServerFd(sfd), tunnelClientFd(cfd), connectId(cid) {}
   };
+
+  struct MonitorClientInfo {
+    string recvBuffer;
+    string sendBuffer;
+  };
+
+  static bool isGoodCode() {
+    int code = errno;
+    return code == EAGAIN || code == EWOULDBLOCK || code == EINTR;
+  }
 
   TcpBase() {
     epollFd = epoll_create1(0);
@@ -158,6 +178,7 @@ public:
       log_warn << "invalid fd: " << fd;
       return -1;
     }
+    setNonblock(fd);
     struct epoll_event ev;
     ev.events = EPOLLIN | EPOLLERR | EPOLLHUP;
     ev.data.fd = fd;
@@ -177,33 +198,64 @@ public:
     recycleFdSet.clear();
   }
 
-  int sendTunnelMessage(int tunnelFd, int trafficFd, char state,
+  int setNonblock(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    int result = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    if (result < 0) {
+      log_error << "failed to set NONBLOK, fd: " << fd;
+    }
+    return result;
+  }
+
+	bool send(string& sendBuffer, int eventFd) {
+    int n = ::send(eventFd, sendBuffer.c_str(), sendBuffer.size(), MSG_NOSIGNAL);
+    if (n > 0) {
+      sendBuffer.assign(sendBuffer.begin() + n, sendBuffer.end());
+      return true;
+    } else if (isGoodCode()) {
+      return true;
+    }
+    return false;
+  }
+
+  bool send(string& sendBuffer, int eventFd, const string& msg) {
+    sendBuffer.append(msg);
+    int n = ::send(eventFd, sendBuffer.c_str(), sendBuffer.size(), MSG_NOSIGNAL);
+    if (n > 0) {
+      sendBuffer.assign(sendBuffer.begin() + n, sendBuffer.end());
+      return true;
+    } else if (isGoodCode()) {
+      return true;
+    }
+    return false;
+  }
+
+	bool sendTunnelMessage(string& sendBuffer, int tunnelFd, int trafficFd, char state,
       const string& message) {
-    TunnelPackage package;
-    package.fd = trafficFd;
-    package.state = state;
-    package.message.assign(message);
-    string result;
-    package.encode(result);
-    log_debug << "send, " << addrLocal(tunnelFd)
+		  TunnelPackage package;
+      package.fd = trafficFd;
+      package.state = state;
+      package.message.assign(message);
+      string result;
+      package.encode(result);
+      log_debug << "send, " << addrLocal(tunnelFd)
         << " -[fd=" << trafficFd << ",state=" << package.getState()
         << ",length=" << package.message.size() << "]-> "
         <<  addrRemote(tunnelFd);
-    return send(tunnelFd, result.c_str(), result.size(), MSG_NOSIGNAL);
-  }
+      sendBuffer.append(result);
+      return send(sendBuffer, tunnelFd);
+    }
 
-  int sendTunnelState(int tunnelFd, int trafficFd, char state) {
+  bool sendTunnelState(string& sendBuffer, int tunnelFd, int trafficFd, char state) {
     string result;
-    return sendTunnelMessage(tunnelFd, trafficFd, state, result);
+    return sendTunnelMessage(sendBuffer, tunnelFd, trafficFd, state, result);
   }
 
-  int sendTunnelTraffic(int tunnelFd, int trafficFd,
-      const string& message) {
+  bool sendTunnelTraffic(string& sendBuffer, int tunnelFd, int trafficFd, const string& message) {
     return sendTunnelMessage(
-      tunnelFd, trafficFd, TunnelPackage::STATE_TRAFFIC, message
+      sendBuffer, tunnelFd, trafficFd, TunnelPackage::STATE_TRAFFIC, message
     );
   }
-
 protected:
   set<int> recycleFdSet;
   int epollFd;

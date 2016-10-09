@@ -25,6 +25,13 @@ using namespace Common;
 
 class TcpClient: public TcpBase {
 public:
+  struct TrafficServerInfo {
+    string sendBuffer;
+    int connectId;
+    TrafficServerInfo(): connectId(-1) {}
+    TrafficServerInfo(int cid): connectId(cid) {}
+  };
+
   TcpClient(): heartbeat(60) {}
   void init(
       const string& tunnelAddrList, int retryInterval,
@@ -45,13 +52,14 @@ private:
   string addrListStr;
   int heartbeat;
   string secret;
-  string tunnelBuffer;
+  string tunnelRecvBuffer;
+  string tunnelSendBuffer;
   int tunnelServerFd;
   vector<Addr> tunnelServerList;
   int retryInterval;
   string trafficServerIp;
   uint16_t trafficServerPort;
-  map<int, int> trafficServerMap; // trafficServer -> trafficClient
+  map<int, TrafficServerInfo> trafficServerMap; // trafficServer -> trafficClient
   map<int, int> trafficClientMap; // trafficClient -> trafficServer
 };
 

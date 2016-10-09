@@ -67,7 +67,7 @@ public:
 
 private:
     int monitorServerFd;
-    map<int, string> monitorClientMap;
+    map<int, MonitorClientInfo> monitorClientMap;
     string secret;
     map<int, TunnelClientInfo> tunnelClientMap; // fd -> (count, buffer)
     int tunnelServerFd;
