@@ -6,6 +6,7 @@
 #include "logger.h"
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netdb.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -20,7 +21,10 @@
 
 using namespace std;
 
+extern int errno;
+
 namespace Common {
+
 string
 Addr::toString() const {
   string result;
@@ -57,6 +61,12 @@ addrLocal(int fd) {
 FdToAddr
 addrRemote(int fd) {
   return FdToAddr(fd, false);
+}
+
+bool
+isGoodCode() {
+  int code = errno;
+  return code == EAGAIN || code == EWOULDBLOCK || code == EINTR;
 }
 
 string

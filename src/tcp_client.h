@@ -5,6 +5,7 @@
 #ifndef TCP_TUNNEL_TCP_CLIENT_H
 #define TCP_TUNNEL_TCP_CLIENT_H
 
+#include "buffer.h"
 #include "common.h"
 #include "logger.h"
 #include "tcp_base.h"
@@ -26,7 +27,7 @@ using namespace Common;
 class TcpClient: public TcpBase {
 public:
   struct TrafficServerInfo {
-    string sendBuffer;
+    Buffer sendBuffer;
     int connectId;
     TrafficServerInfo(): connectId(-1) {}
     TrafficServerInfo(int cid): connectId(cid) {}
@@ -52,8 +53,8 @@ private:
   string addrListStr;
   int heartbeat;
   string secret;
-  string tunnelRecvBuffer;
-  string tunnelSendBuffer;
+  Buffer tunnelRecvBuffer;
+  Buffer tunnelSendBuffer;
   int tunnelServerFd;
   vector<Addr> tunnelServerList;
   int retryInterval;

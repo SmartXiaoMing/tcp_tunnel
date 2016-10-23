@@ -33,15 +33,15 @@ TcpMonitor::handleMonitor(uint32_t events, int eventFd) {
 
   if (events & EPOLLIN) {
 		char buf[BUFFER_SIZE];
-		int len = recv(eventFd, buf, BUFFER_SIZE, 0);
-		if (len > 0) {
-		  recvBuffer.append(buf, len);
+		int len = recvBuffer.recv(eventFd);
+		if (len >= 0) {
 		  int offset = 0;
-		  int totalLength = recvBuffer.length();
-		  while (offset < recvBuffer.length()) {
+		  int totalLength = recvBuffer.buffer.length();
+		  while (offset < totalLength) {
 		    TunnelPackage package;
-		    int decodeLength
-		        = package.decode(recvBuffer.c_str() + offset, totalLength - offset);
+		    int decodeLength = package.decode(
+          recvBuffer.buffer.c_str() + offset, totalLength - offset
+				);
 		    if (decodeLength < 0) {
 		      exit(EXIT_FAILURE);
 		      return true;
@@ -63,15 +63,17 @@ TcpMonitor::handleMonitor(uint32_t events, int eventFd) {
 		    }
 		  }
 		  if (offset > 0) {
-		    recvBuffer.assign(recvBuffer.begin() + offset, recvBuffer.end());
+		    recvBuffer.buffer.assign(
+            recvBuffer.buffer.begin() + offset, recvBuffer.buffer.end()
+        );
 		  }
-		} else if (!isGoodCode()) {
+		} else {
       exit(EXIT_FAILURE);
       return true;
     }
   }
   if (events & EPOLLOUT) {
-    if (!send(sendBuffer, eventFd)) {
+    if (sendBuffer.send(eventFd) < 0) {
       exit(EXIT_FAILURE);
       return true;
     }
@@ -80,7 +82,9 @@ TcpMonitor::handleMonitor(uint32_t events, int eventFd) {
 
 void
 TcpMonitor::run(const string& cmd) {
-  sendTunnelMessage(sendBuffer, serverFd, 0, TunnelPackage::STATE_MONITOR_REQUEST, cmd);
+  sendBuffer.sendTunnelMessage(
+      serverFd, 0, TunnelPackage::STATE_MONITOR_REQUEST, cmd
+  );
   while(true) {
     struct epoll_event events[MAX_EVENTS];
     int nfds = epoll_wait(epollFd, events, MAX_EVENTS, -1);

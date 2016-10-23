@@ -5,6 +5,7 @@
 #ifndef TCP_TUNNEL_TCP_BASE_H
 #define TCP_TUNNEL_TCP_BASE_H
 
+#include "buffer.h"
 #include "logger.h"
 #include "tunnel_package.h"
 
@@ -35,8 +36,8 @@ public:
 
   struct TunnelClientInfo {
     int count;
-    string recvBuffer;
-    string sendBuffer;
+    Buffer recvBuffer;
+    Buffer sendBuffer;
     int state;
 
     TunnelClientInfo() : count(0), state(TC_STATE_OK) {}
@@ -52,7 +53,7 @@ public:
     }
 
     bool sendBufferFull() {
-      return sendBuffer.size() >= 1024*1024;
+      return sendBuffer.isFull();
     }
   };
 
@@ -60,7 +61,7 @@ public:
     int trafficServerFd;
     int tunnelClientFd;
     int connectId;
-    string sendBuffer;
+    Buffer sendBuffer;
     TrafficClientInfo(): trafficServerFd(-1), tunnelClientFd(-1),
         connectId(-1) {}
     TrafficClientInfo(int sfd, int cfd, int cid)
@@ -68,8 +69,8 @@ public:
   };
 
   struct MonitorClientInfo {
-    string recvBuffer;
-    string sendBuffer;
+    Buffer recvBuffer;
+    Buffer sendBuffer;
   };
 
   static bool isGoodCode() {
@@ -205,56 +206,6 @@ public:
       log_error << "failed to set NONBLOK, fd: " << fd;
     }
     return result;
-  }
-
-	bool send(string& sendBuffer, int eventFd) {
-    int n = ::send(eventFd, sendBuffer.c_str(), sendBuffer.size(), MSG_NOSIGNAL);
-    if (n > 0) {
-      sendBuffer.assign(sendBuffer.begin() + n, sendBuffer.end());
-      return true;
-    } else if (isGoodCode()) {
-      return true;
-    }
-    return false;
-  }
-
-  bool send(string& sendBuffer, int eventFd, const string& msg) {
-    sendBuffer.append(msg);
-    int n = ::send(eventFd, sendBuffer.c_str(), sendBuffer.size(), MSG_NOSIGNAL);
-    if (n > 0) {
-      sendBuffer.assign(sendBuffer.begin() + n, sendBuffer.end());
-      return true;
-    } else if (isGoodCode()) {
-      return true;
-    }
-    return false;
-  }
-
-	bool sendTunnelMessage(string& sendBuffer, int tunnelFd, int trafficFd, char state,
-      const string& message) {
-		  TunnelPackage package;
-      package.fd = trafficFd;
-      package.state = state;
-      package.message.assign(message);
-      string result;
-      package.encode(result);
-      log_debug << "send, " << addrLocal(tunnelFd)
-        << " -[fd=" << trafficFd << ",state=" << package.getState()
-        << ",length=" << package.message.size() << "]-> "
-        <<  addrRemote(tunnelFd);
-      sendBuffer.append(result);
-      return send(sendBuffer, tunnelFd);
-    }
-
-  bool sendTunnelState(string& sendBuffer, int tunnelFd, int trafficFd, char state) {
-    string result;
-    return sendTunnelMessage(sendBuffer, tunnelFd, trafficFd, state, result);
-  }
-
-  bool sendTunnelTraffic(string& sendBuffer, int tunnelFd, int trafficFd, const string& message) {
-    return sendTunnelMessage(
-      sendBuffer, tunnelFd, trafficFd, TunnelPackage::STATE_TRAFFIC, message
-    );
   }
 protected:
   set<int> recycleFdSet;

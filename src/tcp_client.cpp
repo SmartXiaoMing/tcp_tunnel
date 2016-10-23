@@ -94,7 +94,7 @@ TcpClient::cleanUpTrafficClient(int fakeFd, int ctrl) {
   map<int, int>::iterator it = trafficClientMap.find(fakeFd);
   if (it != trafficClientMap.end()) {
     if (ctrl == CTRL_ACTIVE) {
-      sendTunnelState(tunnelSendBuffer, tunnelServerFd, fakeFd, TunnelPackage::STATE_CLOSE);
+      tunnelSendBuffer.sendTunnelState(tunnelServerFd, fakeFd, TunnelPackage::STATE_CLOSE);
     }
     cleanUpFd(it->second);
     trafficServerMap.erase(it->second);
@@ -107,7 +107,7 @@ TcpClient::cleanUpTrafficServer(int fd) {
   map<int, TrafficServerInfo>::iterator it = trafficServerMap.find(fd);
   if (it != trafficServerMap.end()) {
     log_debug << "clean up trafficServer: " << addrRemote(fd);
-    sendTunnelState(tunnelSendBuffer, tunnelServerFd, it->second.connectId, TunnelPackage::STATE_CLOSE);
+    tunnelSendBuffer.sendTunnelState(tunnelServerFd, it->second.connectId, TunnelPackage::STATE_CLOSE);
     cleanUpFd(fd);
     trafficClientMap.erase(it->second.connectId);
     trafficServerMap.erase(fd);
@@ -124,8 +124,8 @@ TcpClient::resetTunnelServer() {
   trafficClientMap.clear();
   cleanUpFd(tunnelServerFd);
   tunnelServerFd = -1;
-  tunnelRecvBuffer.clear();
-  tunnelSendBuffer.clear();
+  tunnelRecvBuffer.buffer.clear();
+  tunnelSendBuffer.buffer.clear();
   retryConnectTunnelServer();
 }
 
@@ -141,15 +141,15 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
   }
   if (events & EPOLLIN) {
 		char buf[BUFFER_SIZE];
-		int len = recv(eventFd, buf, BUFFER_SIZE, 0);
-		if (len > 0) {
-		  tunnelRecvBuffer.append(buf, len);
+		int len = tunnelRecvBuffer.recv(eventFd);
+		if (len >= 0) {
 		  int offset = 0;
-		  int totalLength = tunnelRecvBuffer.length();
-		  while (offset < tunnelRecvBuffer.length()) {
+		  int totalLength = tunnelRecvBuffer.buffer.length();
+		  while (offset < totalLength) {
 		    TunnelPackage package;
-		    int decodeLength
-		        = package.decode(tunnelRecvBuffer.c_str() + offset, totalLength - offset);
+		    int decodeLength = package.decode(
+            tunnelRecvBuffer.buffer.c_str() + offset, totalLength - offset
+        );
 		    if (decodeLength < 0) {
 		      log_error << "events: " << events << ", decodeLength: " << decodeLength;
 		      resetTunnelServer();
@@ -165,8 +165,8 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
 		        <<  addrRemote(tunnelServerFd);
 		    switch (package.state) {
 		      case TunnelPackage::STATE_CHALLENGE_REQUEST:
-		        sendTunnelMessage(
-		            tunnelSendBuffer, tunnelServerFd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE, secret
+            tunnelSendBuffer.sendTunnelMessage(
+		          tunnelServerFd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE, secret
 		        );
 		        break;
 		      case TunnelPackage::STATE_CREATE: {
@@ -177,8 +177,8 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
 		          log_debug << "create trafficFd: " << trafficFd << " for package.fd" << package.fd
 		            << ", " << addrLocal(trafficFd) << " -> " << addrRemote(trafficFd);
 		        } else {
-		          sendTunnelState(
-		            tunnelSendBuffer, tunnelServerFd, package.fd, TunnelPackage::STATE_CREATE_FAILURE
+              tunnelSendBuffer.sendTunnelState(
+		            tunnelServerFd, package.fd, TunnelPackage::STATE_CREATE_FAILURE
 		          );
 		        }
 		      } break;
@@ -191,7 +191,7 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
 		          log_error << "no related fd for client: " << package.fd;
 		        } else {
 		          map<int, TrafficServerInfo>::iterator it2 = trafficServerMap.find(it->second);
-		          bool result = send(it2->second.sendBuffer, it2->first, package.message);
+		          int result = it2->second.sendBuffer.send(it2->first, package.message);
 		          if (!result) {
 		            log_debug << "send, fd:" << it->second << ", "
 		                << addrLocal(it->second)
@@ -209,16 +209,19 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
 		    }
 		  }
 		  if (offset > 0) {
-		    tunnelRecvBuffer.assign(tunnelRecvBuffer.begin() + offset, tunnelRecvBuffer.end());
+		    tunnelRecvBuffer.buffer.assign(
+            tunnelRecvBuffer.buffer.begin() + offset,
+            tunnelRecvBuffer.buffer.end()
+        );
 		  }
-		} else if (!isGoodCode()) {
+		} else {
 		  log_error << "events: " << events << ", len: " << len;
 		  resetTunnelServer();
 		  return true;
 		}
 	}
   if (events & EPOLLOUT) {
-    if (!send(tunnelSendBuffer, eventFd)) {
+    if (tunnelSendBuffer.send(eventFd) < 0) {
       resetTunnelServer();
       return true;
     }
@@ -236,12 +239,12 @@ TcpClient::handleTrafficServer(uint32_t events, int eventFd) { // TODO
     cleanUpTrafficServer(eventFd);
     return true;
   }
-  if (events & EPOLLIN && tunnelSendBuffer.size() < 1024*1024) {
+  if (events & EPOLLIN && !tunnelSendBuffer.isFull()) {
     char buf[BUFFER_SIZE];
     log_debug << "ready to recv data, for " << addrLocal(it->first) << " <- " << addrRemote(it->first);
     int len = recv(eventFd, buf, BUFFER_SIZE, 0);
     if (len > 0) { // TODO
-      sendTunnelTraffic(tunnelSendBuffer, tunnelServerFd, it->second.connectId, string(buf, len));
+      tunnelSendBuffer.sendTunnelTraffic(tunnelServerFd, it->second.connectId, string(buf, len));
       log_debug << "recv, " << addrLocal(it->first)
           << " <-[length=" << len << "]- "
           << addrRemote(it->first);
@@ -251,7 +254,7 @@ TcpClient::handleTrafficServer(uint32_t events, int eventFd) { // TODO
     }
   }
   if (events & EPOLLOUT) {
-    if (!send(it->second.sendBuffer, eventFd)) {
+    if (it->second.sendBuffer.send(eventFd) < 0) {
       cleanUpTrafficServer(eventFd);
       return true;
     }
@@ -267,7 +270,7 @@ TcpClient::run() {
     log_debug << "wait events... ";
     int nfds = epoll_wait(epollFd, events, MAX_EVENTS, heartbeatMs);
     if (nfds == 0) {
-      sendTunnelState(tunnelSendBuffer, tunnelServerFd, 0, TunnelPackage::STATE_HEARTBEAT);
+      tunnelSendBuffer.sendTunnelState(tunnelServerFd, 0, TunnelPackage::STATE_HEARTBEAT);
     } else {
       if(nfds == -1) {
         log_error << "failed to epoll_wait";

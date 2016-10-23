@@ -31,8 +31,8 @@ public:
   void run(const string& cmd);
 
 private:
-  string recvBuffer;
-  string sendBuffer;
+  Buffer recvBuffer;
+  Buffer sendBuffer;
   uint16_t port;
   int serverFd;
 };

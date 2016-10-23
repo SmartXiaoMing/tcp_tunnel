@@ -47,6 +47,7 @@ const string & optValue(
 FdToAddr addrLocal(int fd);
 FdToAddr addrRemote(int fd);
 string intToString(int n);
+bool isGoodCode();
 bool parseAddressList(vector<Addr>& addrList, const string& addressList);
 bool parseCommandLine(map<string, string> &result, int argc, char *argv[]);
 bool parseFile(map<string, string> &result, const string &file);
