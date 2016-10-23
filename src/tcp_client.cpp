@@ -140,85 +140,63 @@ TcpClient::handleTunnelClient(uint32_t events, int eventFd) {
     return true;
   }
   if (events & EPOLLIN) {
-		char buf[BUFFER_SIZE];
 		int len = tunnelRecvBuffer.recv(eventFd);
-		if (len >= 0) {
-		  int offset = 0;
-		  int totalLength = tunnelRecvBuffer.buffer.length();
-		  while (offset < totalLength) {
-		    TunnelPackage package;
-		    int decodeLength = package.decode(
-            tunnelRecvBuffer.buffer.c_str() + offset, totalLength - offset
-        );
-		    if (decodeLength < 0) {
-		      log_error << "events: " << events << ", decodeLength: " << decodeLength;
-		      resetTunnelServer();
-		      return true;
-		    }
-		    if (decodeLength == 0) { // wait next time to read
-		      break;
-		    }
-		    offset += decodeLength;
-		    log_debug << "recv, " << addrLocal(tunnelServerFd)
-		        << " <-[fd=" << package.fd << ",state=" << package.getState()
-		        << ",length=" << package.message.size() << "]- "
-		        <<  addrRemote(tunnelServerFd);
-		    switch (package.state) {
-		      case TunnelPackage::STATE_CHALLENGE_REQUEST:
-            tunnelSendBuffer.sendTunnelMessage(
-		          tunnelServerFd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE, secret
-		        );
-		        break;
-		      case TunnelPackage::STATE_CREATE: {
-		        int trafficFd = connectServer(trafficServerIp, trafficServerPort);
-		        if (trafficFd > 0) {
-		          trafficServerMap[trafficFd] = TrafficServerInfo(package.fd);
-		          trafficClientMap[package.fd] = trafficFd;
-		          log_debug << "create trafficFd: " << trafficFd << " for package.fd" << package.fd
-		            << ", " << addrLocal(trafficFd) << " -> " << addrRemote(trafficFd);
-		        } else {
-              tunnelSendBuffer.sendTunnelState(
-		            tunnelServerFd, package.fd, TunnelPackage::STATE_CREATE_FAILURE
-		          );
-		        }
-		      } break;
-		      case TunnelPackage::STATE_CLOSE:
-		        cleanUpTrafficClient(package.fd, CTRL_PASSIVE);
-		        break;
-		      case TunnelPackage::STATE_TRAFFIC: {
-		        map<int, int>::iterator it = trafficClientMap.find(package.fd);
-		        if (it == trafficClientMap.end()) {
-		          log_error << "no related fd for client: " << package.fd;
-		        } else {
-		          map<int, TrafficServerInfo>::iterator it2 = trafficServerMap.find(it->second);
-		          int result = it2->second.sendBuffer.send(it2->first, package.message);
-		          if (!result) {
-		            log_debug << "send, fd:" << it->second << ", "
-		                << addrLocal(it->second)
-		                << " --> "
-		                << addrRemote(it->second);
-		          } else {
-		            log_debug << "send failed, fd:" << it->second << ", "
-		                << addrLocal(it->second)
-		                << " --> "
-		                << addrRemote(it->second);
-		          }
-		        }
-		      } break;
-		      default: log_warn << "ignore state: " << (int) package.state;
-		    }
-		  }
-		  if (offset > 0) {
-		    tunnelRecvBuffer.buffer.assign(
-            tunnelRecvBuffer.buffer.begin() + offset,
-            tunnelRecvBuffer.buffer.end()
-        );
-		  }
-		} else {
-		  log_error << "events: " << events << ", len: " << len;
-		  resetTunnelServer();
-		  return true;
-		}
+		if (len < 0) {
+      log_error << "events: " << events << ", len: " << len;
+      resetTunnelServer();
+      return true;
+    }
+    TunnelPackage package;
+    while (tunnelRecvBuffer.popPackage(package)) {
+      log_debug << "recv, " << addrLocal(tunnelServerFd)
+          << " <-[fd=" << package.fd << ",state=" << package.getState()
+          << ",length=" << package.message.size() << "]- "
+          <<  addrRemote(tunnelServerFd);
+      switch (package.state) {
+        case TunnelPackage::STATE_CHALLENGE_REQUEST:
+          tunnelSendBuffer.sendTunnelMessage(
+            tunnelServerFd, 0, TunnelPackage::STATE_CHALLENGE_RESPONSE, secret
+          );
+          break;
+        case TunnelPackage::STATE_CREATE: {
+          int trafficFd = connectServer(trafficServerIp, trafficServerPort);
+          if (trafficFd > 0) {
+            trafficServerMap[trafficFd] = TrafficServerInfo(package.fd);
+            trafficClientMap[package.fd] = trafficFd;
+            log_debug << "create trafficFd: " << trafficFd << " for package.fd" << package.fd
+              << ", " << addrLocal(trafficFd) << " -> " << addrRemote(trafficFd);
+          } else {
+            tunnelSendBuffer.sendTunnelState(
+              tunnelServerFd, package.fd, TunnelPackage::STATE_CREATE_FAILURE
+            );
+          }
+        } break;
+        case TunnelPackage::STATE_CLOSE:
+          cleanUpTrafficClient(package.fd, CTRL_PASSIVE);
+          break;
+        case TunnelPackage::STATE_TRAFFIC: {
+          map<int, int>::iterator it = trafficClientMap.find(package.fd);
+          if (it == trafficClientMap.end()) {
+            log_error << "no related fd for client: " << package.fd;
+          } else {
+            map<int, TrafficServerInfo>::iterator it2 = trafficServerMap.find(it->second);
+            int result = it2->second.sendBuffer.send(it2->first, package.message);
+            if (result < 0) {
+              log_debug << "send, fd:" << it->second << ", "
+                  << addrLocal(it->second)
+                  << " --> "
+                  << addrRemote(it->second);
+            } else {
+              log_debug << "send failed, fd:" << it->second << ", "
+                  << addrLocal(it->second)
+                  << " --> "
+                  << addrRemote(it->second);
+            }
+          }
+        } break;
+        default: log_warn << "ignore state: " << (int) package.state;
+      }
+    }
 	}
   if (events & EPOLLOUT) {
     if (tunnelSendBuffer.send(eventFd) < 0) {

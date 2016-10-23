@@ -122,6 +122,15 @@ public:
     }
   }
 
+  bool popPackage(TunnelPackage& tunnelPackage) {
+    int len = tunnelPackage.decode(buffer.c_str(), buffer.size());
+    if (len > 0) {
+      buffer.assign(buffer.begin() + len, buffer.end());
+      return true;
+    }
+    return false;
+  }
+
   bool needClosed() {
     return closeOnEmpty && buffer.empty();
   }
