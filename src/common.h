@@ -6,13 +6,20 @@
 #define TCP_TUNNEL_COMMON_H
 
 #include <arpa/inet.h>
+#include <net/if.h>
 #include <netinet/in.h>
 #include <stdint.h>
 #include <sys/socket.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+
 
 #include <map>
 #include <string>
 #include <vector>
+#include <sys/ioctl.h>
+#include <cstring>
 
 using namespace std;
 
@@ -21,6 +28,7 @@ namespace Common {
 const int BUFFER_SIZE = 4096;
 const int CONF_LINE_MAX_LENGTH = 8128;
 const int MAX_EVENTS = 500;
+const int DefaultConnection = 30000;
 
 struct Addr {
   string ip;
@@ -28,6 +36,7 @@ struct Addr {
   Addr(): ip("0.0.0.0"), port(0) {}
   Addr(const char* ip_, uint16_t port_): ip(ip_), port(port_) {}
   string toString() const;
+	bool parse(string address);
 };
 
 class FdToAddr {
@@ -54,7 +63,7 @@ bool parseFile(map<string, string> &result, const string &file);
 void savePid(const string& file);
 bool split(vector<string> &result, const string &str, char ch);
 int stringToInt(const string &str);
-
+string formatTime(time_t ts);
+bool getMac(string& mac, int sock);
 }
-
 #endif //TCP_TUNNEL_COMMON_H

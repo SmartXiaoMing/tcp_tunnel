@@ -2,8 +2,8 @@
 // Created by mabaiming on 16-8-29.
 //
 
-#ifndef TCP_TUNNEL_TUNNEL_PACKAGE_H
-#define TCP_TUNNEL_TUNNEL_PACKAGE_H
+#ifndef TCP_TUNNEL_FRAME_H
+#define TCP_TUNNEL_FRAME_H
 
 #include "logger.h"
 
@@ -14,7 +14,7 @@
 
 using namespace std;
 
-class TunnelPackage {
+class Frame {
 public:
   static const uint8_t DefaultVersion = 1;
   static const int HeadLength = 10;
@@ -30,8 +30,9 @@ public:
   static const uint8_t STATE_CHALLENGE_RESPONSE = 7;
   static const uint8_t STATE_MONITOR_REQUEST = 8;
   static const uint8_t STATE_MONITOR_RESPONSE = 9;
+  static const uint8_t STATE_SET_NAME = 10;
 
-  uint32_t fd;
+  uint32_t cid;
   uint8_t state;
   string message;
 
@@ -72,13 +73,13 @@ public:
     decode(*this, result, size);
   }
 
-  static int encode(string& result, const TunnelPackage& package) {
-    return encode(result, package.fd, package.state, package.message);
+  static int encode(string& result, const Frame& package) {
+    return encode(result, package.cid, package.state, package.message);
   }
 
-  static int encode(string& result, int32_t fd, uint8_t state, const string& message) {
+  static int encode(string& result, int32_t cid, uint8_t state, const string& message) {
     // 1byte version
-    // 4bytes fd
+    // 4bytes cid
     // 1byte state
     // 4byte message length
     // message
@@ -86,10 +87,10 @@ public:
     int total = HeadLength + message.size();
     result.resize(total);
     result[0] = DefaultVersion;
-    result[1] = ((fd >> 24) & 0xff);
-    result[2] = ((fd >> 16) & 0xff);
-    result[3] = ((fd >> 8) & 0xff);
-    result[4] = ((fd >> 0) & 0xff);
+    result[1] = ((cid >> 24) & 0xff);
+    result[2] = ((cid >> 16) & 0xff);
+    result[3] = ((cid >> 8) & 0xff);
+    result[4] = ((cid >> 0) & 0xff);
     result[5] = state;
     int length = message.size();
     result[6] = ((length >> 24) & 0xff);
@@ -102,11 +103,11 @@ public:
     return total;
   }
 
-  static int decode(TunnelPackage& tunnelPackage, const string& result) {
-    return decode(tunnelPackage, result.c_str(), result.size());
+  static int decode(Frame& frame, const string& result) {
+    return decode(frame, result.c_str(), result.size());
   }
 
-  static int decode(TunnelPackage& tunnelPackage, const char* result, int size) {
+  static int decode(Frame& frame, const char* result, int size) {
     if (size < HeadLength) {
       return 0;
     }
@@ -126,14 +127,14 @@ public:
     if (size < packageLength) {
       return 0;
     }
-    tunnelPackage.fd = ((result[1] & 0xff)  << 24)
+    frame.cid = ((result[1] & 0xff)  << 24)
         | ((result[2] & 0xff)  << 16)
         | ((result[3] & 0xff)  << 8)
         | (result[4] & 0xff) ;
-    tunnelPackage.state = result[5];
-    tunnelPackage.message.assign(result + HeadLength, length);
+    frame.state = result[5];
+    frame.message.assign(result + HeadLength, length);
     return packageLength;
   }
 };
 
-#endif // TCP_TUNNEL_TUNNEL_PACKAGE_H
+#endif // TCP_TUNNEL_FRAME_H
