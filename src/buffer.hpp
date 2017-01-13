@@ -9,274 +9,271 @@
 #include "frame.h"
 
 #include <string>
+#include <memory>
 
 using namespace Common;
 using namespace std;
+class Stream {
+public:
+		static const int MaxSize = 4096;
+		Stream() {
+			eof = false;
+		}
+		bool eof;
+		string buffer;
+		int throughSize;
+		int readableSize() {
+			if (eof && buffer.empty()) {
+				return -1;
+			}
+			return buffer.size();
+		}
+		int read(char* data, int len) {
+			int n = readableSize();
+			if (n == -1) {
+				return -1;
+			}
+			if (len > 0 && n > 0) {
+				if (len > n) {
+					len = n;
+				}
+				memcpy(data, buffer.data(), len);
+				return len;
+			}
+			return 0;
+		}
+		int read(string& result, int len) {
+			int n = readableSize();
+			if (n == -1) {
+				return -1;
+			}
+			if (len > 0 && n > 0) {
+				if (len > n) {
+					len = n;
+				}
+				result.append(buffer.data(), len);
+				return len;
+			}
+			return 0;
+		}
+		int readFrame(Frame& frame) {
+			int n = readableSize();
+			if (n == -1) {
+				return -1;
+			}
+			return frame.decode(buffer.data(), n);
+		}
+		const char* getReadData() {
+			return buffer.data();
+		}
+		int popRead(int len) {
+			int n = readableSize();
+			if (n == -1) {
+				return -1;
+			}
+			if (len > 0 && n > 0) {
+				if (len >= n) {
+					throughSize += n;
+					buffer.clear();
+					return n;
+				} else {
+					throughSize += len;
+					buffer.assign(buffer.data() + len, buffer.size() - len);
+					return len;
+				}
+			}
+			return 0;
+		}
+		int writableSize() {
+			if (eof) {
+				return -1;
+			}
+			int n = MaxSize - buffer.size();
+			return n > 0 ? n : 0;
+		}
+		int writableSizeForFrame() {
+			int n = writableSize();
+			if (n == -1) {
+				return -1;
+			}
+			if (n < Frame::HeadLength) {
+				return 0;
+			}
+			return n <= MaxSize - Frame::HeadLength ? n : MaxSize - Frame::HeadLength;
+		}
+		int write(const char* data, int len) {
+			int n = writableSize();
+			if (n == -1) {
+				return -1;
+			}
+			if (len > 0 && n > 0) {
+				if (len > n) {
+					len = n;
+				}
+				buffer.append(data, len);
+				return len;
+			}
+			return 0;
+		}
+		int writeAll(const char* data, int len) {
+			int n = writableSize();
+			if (n == -1) {
+				return -1;
+			}
+			if (len > 0 && len <= n) {
+				buffer.append(data, len);
+				return len;
+			}
+			return 0;
+		}
+		void close() {
+			eof = true;
+		}
+};
 
 class Buffer {
 public:
-  Buffer(int type_, int fd_) {
-    gId += 1;
-    id = gId;
-    type = type_;
-	  fd = fd_;
-    isOK = true;
-    isReadEOF = false;
-    isWriteEOF = false;
-	  outputSize = 0;
-	  inputSize = 0;
-	  ts = time(NULL);
-  }
-  ~Buffer() {
-   }
-
-  int getId() {
-    return id;
-  }
-
-  int getType() {
-    return type;
-  }
-
-	bool getOK() {
-		return isOK;
-	}
-
-	bool getError() {
-		return !isOK;
-	}
-
-	void setError() {
-		isOK = false;
-	}
-
-	bool getReadEOF() {
-		return isReadEOF;
-	}
-
-	void setReadEOF() {
-		isReadEOF = true;
-	}
-
-	bool getWriteEOF() {
-		return isWriteEOF;
-	}
-
-	void close() {
-		isWriteEOF = true;
-	}
-
-	void setName(const string& name_) {
-		if (name_.size() < 32) {
-			name = name_;
-		} else {
-			name.assign(name_.c_str(), 32);
+		Buffer(){}
+		Buffer(int type_, int fd_) {
+			index = 0;
+			gId += 1;
+			id = gId;
+			type = type_;
+			fd = fd_;
+			ts = time(NULL);
+			stream[0].reset(new Stream());
+			stream[1].reset(new Stream());
 		}
-	}
-
-	string getMac() {
-		string mac;
-		if (Common::getMac(mac, fd)) {
-			return mac;
+		Buffer reverse() {
+			Buffer buffer = *this;
+			buffer.index = 1 - index;
+			return buffer;
 		}
-		return "unknown";
-	}
-
-	string getName() {
-		string result;
-		result.append(FdToAddr(fd, false).toAddr().toString());
-		if (!name.empty()) {
-			result.append("(").append(name).append(")");
+		int readableSize() {
+			return stream[index]->readableSize();
 		}
-		return result;
-	}
-
-
-	string toString() {
-		string result;
-		result.append(intToString(id)).append("\t");
-		result.append(getName()).append("\t");
-		if (!isOK) {
-			result.append("ERROR\t");
-		} else if (isReadEOF) {
-			if (isWriteEOF) {
-				result.append("EOF\t");
-			} else {
-				result.append("READ_EOF\t");
+		int read(char* result, int len) {
+			return stream[index]->read(result, len);
+		}
+		int read(string& result, int len) {
+			return stream[index]->read(result, len);
+		}
+		int readFrame(Frame& frame) {
+			return stream[index]->readFrame(frame);
+		}
+		const char* getReadData() {
+			return stream[index]->getReadData();
+		}
+		int popRead(int len) {
+			return stream[index]->popRead(len);
+		}
+		int writableSize() {
+			return stream[1-index]->writableSize();
+		}
+		int writableSizeForFrame() {
+			return stream[1-index]->writableSizeForFrame();
+		}
+		int write(const char* data, int len) {
+			return stream[1-index]->writeAll(data, len);
+		}
+		int write(const string& data) {
+			return stream[1-index]->writeAll(data.data(), data.size());
+		}
+		int writeFrame(int cid, char state, const string& data) {
+			int n = writableSizeForFrame();
+			if (n == -1) {
+				return -1;
 			}
-		} else if (isWriteEOF) {
-			result.append("WRITE_EOF\t");
-		} else {
-			result.append("OK\t");
+			if (n < data.size()) {
+				return 0;
+			}
+			Frame frame;
+			frame.cid = cid;
+			frame.state = state;
+			frame.message = data;
+			string result;
+			frame.encode(result);
+			return write(result);
 		}
-		result.append(formatTime(ts)).append("\t");
-		result.append(intToString(inputSize)).append("+");
-		result.append(intToString(readBuffer.size())).append("\t");
-		result.append(intToString(outputSize)).append("+");
-		result.append(intToString(writeBuffer.size()));
-		return result;
-	}
-
-	// called by user below
-  int readableSize() {
-		if (isReadEOF && readBuffer.empty()) {
-			return -1;
+		int writeFrame(int id, const string& data) {
+			return writeFrame(id, Frame::STATE_TRAFFIC, data);
 		}
-    return readBuffer.size();
-  }
-
-  int read(string& result, int maxSize) {
-    int rSize = readableSize();
-    if (rSize == -1) {
-      return -1;
-    }
-    if (rSize < maxSize) {
-      maxSize = rSize;
-    }
-    if (maxSize > 0) {
-      result.append(readBuffer.data(), maxSize);
-    }
-    return maxSize;
-  }
-
-	int readFrame(Frame& package) {
-		int n = readBuffer.empty() ? 0 : package.decode(readBuffer);
-		if (isReadEOF && n == 0) {
-			return -1;
+		int writeFrame(int id, char state) {
+			return writeFrame(id, state, "");
 		}
-		return n;
-	}
-
-  int popRead(int size) {
-    if (size >= readBuffer.size()) {
-      size = readBuffer.size();
-      readBuffer.clear();
-	    inputSize += size;
-      return size;
-    }
-    if (size > 0) {
-      readBuffer.assign(readBuffer.begin() + size, readBuffer.end());
-	    inputSize += size;
-    }
-    return size;
-  }
-
-  int writableSize() {
-	  if (isWriteEOF || isReadEOF || !isOK) {
-		  return -1;
-	  }
-    int n = gMaxSize - writeBuffer.size();
-	  return n > 0 ? n : 0;
-  }
-
-	int writableSizeForFrame() {
-		if (isWriteEOF || isReadEOF || !isOK) {
-			return -1;
+		void close() {
+			stream[1-index]->close();
 		}
-		int n = gMaxSize - writeBuffer.size() - Frame::HeadLength;
-		if (n > BUFFER_SIZE) {
-			n = BUFFER_SIZE;
+		bool isClosed() {
+			return stream[index]->readableSize() == -1
+			       || stream[1-index]->writableSize() == -1;
 		}
-		return n > 0 ? n : 0;
-	}
+		int getInputSize() {
+			return stream[index]->throughSize;
+		}
+		int getOutputSize() {
+			return stream[1-index]->throughSize;
+		}
 
-  int write(const string& data) {
-    int wSize = writableSize();
-    if (wSize == -1) {
-      return -1;
-    }
-    if (wSize >= data.size()) {
-      writeBuffer.append(data);
-      return data.size();
-    }
-    return 0;
-  }
+		int getId() {
+			return id;
+		}
 
-  int writeFrame(int cid, char state, const string& data) {
-    int left = writableSize();
-    if (left == -1) {
-      return -1;
-    }
-    if (left < Frame::HeadLength + data.size()) {
-      return 0;
-    }
-    Frame frame;
-	  frame.cid = cid;
-	  frame.state = state;
-    frame.message = data;
-    string result;
-	  frame.encode(result);
-    writeBuffer.append(result);
-    return result.size();
-  }
+		int getType() {
+			return type;
+		}
 
-  int writeFrame(int id, const string& data) {
-    return writeFrame(id, Frame::STATE_TRAFFIC, data);
-  }
+		void setName(const string& name_) {
+			if (name_.size() < 32) {
+				name = name_;
+			} else {
+				name.assign(name_.c_str(), 32);
+			}
+		}
 
-  int writeFrame(int id, char state) {
-    return writeFrame(id, state, "");
-  }
+		string getMac() {
+			string mac;
+			if (Common::getMac(mac, fd)) {
+				return mac;
+			}
+			return "unknown";
+		}
 
-  int getReadBufferSize() {
-	  return readBuffer.size();
-  }
+		string getName() {
+			string result;
+			result.append(FdToAddr(fd, false).toAddr().toString());
+			if (!name.empty()) {
+				result.append("(").append(name).append(")");
+			}
+			return result;
+		}
 
-  int readBufferLeft() {
-    if (!isOK || isReadEOF) {
-      return -1;
-    }
-    return gMaxSize - readBuffer.size();
-  }
-
-  int appendToReadBuffer(char* buf, int len) {
-	  if (readBufferLeft() < len) {
-		  return 0;
-	  }
-    readBuffer.append(buf, len);
-	  return len;
-  }
-
-	int getWriteBufferSize() {
-		return writeBuffer.size();
-	}
-
-  const char* getWriteBuffer() {
-    return writeBuffer.data();
-  }
-
-  int popWrite(int size) {
-    if (size >= writeBuffer.size()) {
-      size = writeBuffer.size();
-      writeBuffer.clear();
-	    outputSize += size;
-      return size;
-    }
-    if (size > 0) {
-      writeBuffer.assign(writeBuffer.begin() + size, writeBuffer.end());
-	    outputSize += size;
-    }
-    return size;
-  }
+		string toString() {
+			string result;
+			result.append(intToString(id)).append("\t");
+			result.append(getName()).append("\t");
+			if (isClosed()) {
+				result.append("CLOSED\t");
+			} else {
+				result.append("OK\t");
+			}
+			result.append(formatTime(ts)).append("\t");
+			result.append(intToString(getInputSize())).append("\t");
+			result.append(intToString(getOutputSize()));
+			return result;
+		}
 
 protected:
-  static int gMaxSize;
-  static int gId;
-  bool isOK;
-  bool isReadEOF;
-  bool isWriteEOF;
-  int id;
-  int type;
-  string readBuffer;
-  string writeBuffer;
-	int fd;
-	int outputSize;
-	int inputSize;
-	time_t ts;
-	string name;
+		static int gId;
+		int id;
+		int type;
+		int fd;
+		time_t ts;
+		string name;
+		int index;
+		shared_ptr<Stream> stream[2];
 };
 
 int Buffer::gId = 0;
-int Buffer::gMaxSize = 4096;
 
 #endif //TCP_TUNNEL_BUFFER_H

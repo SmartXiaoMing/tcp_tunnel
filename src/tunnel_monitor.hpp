@@ -21,7 +21,7 @@ private:
 public:
   void init(const Addr& monitor, const string& cmd_) {
 	  monitorBuffer = connect(monitor.ip, monitor.port, FD_TYPE_MONITOR);
-	  if (!monitorBuffer->getOK()) {
+	  if (monitorBuffer->isClosed()) {
 		  log_error << "failed to connect " << monitor.ip << ":" << monitor.port;
 		  exit(EXIT_FAILURE);
 	  }
@@ -32,9 +32,7 @@ public:
   }
 
   bool handleMonitorData() {
-    if (!monitorBuffer->getOK()
-      || monitorBuffer->writableSizeForFrame() == -1
-      || monitorBuffer->readableSize() == -1) {
+    if (monitorBuffer->isClosed()){
 		  cout << readBuffer;
 		  readBuffer.clear();
 		  exit(EXIT_SUCCESS);

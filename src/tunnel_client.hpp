@@ -15,6 +15,8 @@
 
 class TunnelClient : public EventManager {
 private:
+	typedef map<int, TrafficBuffer>::iterator TrafficIt;
+	typedef map<int, MonitorBuffer>::iterator MonitorIt;
   map<int, TrafficBuffer> trafficMap;
 	map<int, MonitorBuffer> monitorMap;
   shared_ptr<Buffer> tunnelBuffer;
@@ -37,7 +39,7 @@ public:
 
   void reset() {
     if (!trafficMap.empty()) {
-      map<int, TrafficBuffer>::iterator it = trafficMap.begin();
+      TrafficIt it = trafficMap.begin();
       for (; it != trafficMap.end();++it) {
 	      it->second.buffer->close();
       }
@@ -45,21 +47,20 @@ public:
     }
 	  while (true) {
 		  Addr tunnel;
-		  if (chooseTunnelAddr(tunnel)) {
-			  shared_ptr<Buffer> buffer
-				  = connect(tunnel.ip, tunnel.port, FD_TYPE_TUNNEL);
-			  if (buffer->getOK()) {
-				  tunnelBuffer = buffer;
-					tunnelBuffer->writeFrame(0, Frame::STATE_SET_NAME, buffer->getMac());
-				  log_info << "use tunnel server: " << tunnel.ip << ":" << tunnel.port;
-				  break;
-			  } else {
-				  log_error << "get tunnel server failed, waiting for 30 second...";
-				  sleep(10);
-			  }
-		  } else {
+		  if (!chooseTunnelAddr(tunnel)) {
 			  log_error << "no valid tunnel server, waiting for 30 second...";
 			  sleep(30);
+			  continue;
+		  }
+		  shared_ptr<Buffer> buffer = connect(tunnel.ip, tunnel.port, FD_TYPE_TUNNEL);
+		  if (buffer.get() != NULL && !buffer->isClosed()) {
+			  tunnelBuffer = buffer;
+				tunnelBuffer->writeFrame(0, Frame::STATE_SET_NAME, buffer->getMac());
+			  log_info << "use tunnel server: " << tunnel.ip << ":" << tunnel.port;
+			  break;
+		  } else {
+			  log_error << "get tunnel server failed, waiting for 10 second...";
+			  sleep(10);
 		  }
 	  }
   }
@@ -75,9 +76,7 @@ public:
 	}
 
   bool handleTunnelData() {
-    if (tunnelBuffer.get() == NULL
-        || tunnelBuffer->getError()
-        || tunnelBuffer->readableSize() == -1) {
+    if (tunnelBuffer.get() == NULL || tunnelBuffer->isClosed()) {
       reset();
       return true;
     }
@@ -85,15 +84,15 @@ public:
   	Frame frame;
     int n = 0;
   	while ((n = tunnelBuffer->readFrame(frame)) > 0) {
-      map<int, TrafficBuffer>::iterator it = trafficMap.find(frame.cid);
+      TrafficIt it = trafficMap.find(frame.cid);
       if (it == trafficMap.end()) {
         if (frame.state == Frame::STATE_CREATE) {
           shared_ptr<Buffer> buffer = connect(trafficAddr.ip, trafficAddr.port, FD_TYPE_TRAFFIC);
           TrafficBuffer trafficBuffer(buffer);
-          if (buffer->getOK()) {
-            trafficBuffer.state = TrafficBuffer::TRAFFIC_OK;
+          if (buffer.get() == NULL || buffer->isClosed()) {
+	          trafficBuffer.state = TrafficBuffer::TRAFFIC_CLOSING;
           } else {
-						trafficBuffer.state = TrafficBuffer::TRAFFIC_CLOSING;
+	          trafficBuffer.state = TrafficBuffer::TRAFFIC_OK;
           }
           trafficMap[frame.cid] = trafficBuffer;
         }
@@ -125,17 +124,19 @@ public:
   }
 
   int handleTrafficData() {
-    if (tunnelBuffer.get() == NULL
-      || tunnelBuffer->getError()
-      || tunnelBuffer->writableSize() == -1) {
+    if (tunnelBuffer.get() == NULL || tunnelBuffer->isClosed()) {
       reset();
       return 0;
     }
     bool success = false;
-    map<int, TrafficBuffer>::iterator it = trafficMap.begin();
+    TrafficIt it = trafficMap.begin();
     while (it != trafficMap.end()) {
       int cid = it->first;
       TrafficBuffer& trafficBuffer = it->second;
+	    if (trafficBuffer.buffer->isClosed()
+        && trafficBuffer.state != TrafficBuffer::TRAFFIC_CLOSING) {
+		    trafficBuffer.state = TrafficBuffer::TRAFFIC_CLOSING;
+	    }
       if (trafficBuffer.state == TrafficBuffer::TRAFFIC_OK) {
         int n = 0;
         while((n = trafficBuffer.buffer->readableSize()) > 0) {
@@ -169,7 +170,7 @@ public:
 
 	int handleMonitorData() {
 		bool success = false;
-		map<int, MonitorBuffer>::iterator it = monitorMap.begin();
+		MonitorIt it = monitorMap.begin();
 		while (it != monitorMap.end()) {
 			MonitorBuffer& monitorBuffer = it->second;
 			if (monitorBuffer.buffer->readableSize() == -1) {
@@ -197,7 +198,7 @@ public:
 					result.append("trafficSize\t");
 					result.append(intToString(trafficMap.size()));
 					result.append("\n");
-					map<int, TrafficBuffer>::iterator it2 = trafficMap.begin();
+					TrafficIt it2 = trafficMap.begin();
 					for (; it2 != trafficMap.end(); ++it2) {
 						result.append(it2->second.buffer->toString());
 						result.append("\n");

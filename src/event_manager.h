@@ -101,7 +101,8 @@ public:
     registerFd(clientFd);
     shared_ptr<Buffer> buffer(new Buffer(it->second, clientFd));
     bufferMap[clientFd] = buffer;
-    onBufferCreated(buffer);
+	  shared_ptr<Buffer> buffer2(new Buffer(buffer->reverse()));
+	  onBufferCreated(buffer2);
     return true;
   }
 
@@ -120,15 +121,12 @@ public:
     shared_ptr<Buffer> buffer(new Buffer(type, fd));
     if(result < 0) {
       log_error << "failed to connect " << ip << ":" << port;
-	    buffer->setError();
-	    cleanUpFd(fd);
-      return buffer;
+	    buffer->close();
     } else {
-      log_info << "connected for " << ip << ":" << port;
       registerFd(fd);
       bufferMap[fd] = buffer;
     }
-    return buffer;
+    return shared_ptr<Buffer>(new Buffer(buffer->reverse()));
   }
 
 	bool handleEvent(int eventFd, int events) {
@@ -138,33 +136,33 @@ public:
     }
     shared_ptr<Buffer> buffer = it->second;
     if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
-      buffer->setError();
+      buffer->close();
       return true;
     }
     if (events & EPOLLIN) {
-        int left = buffer->readBufferLeft();
-        if (left > 0) {
-          char buf[left];
-          int len = recv(eventFd, buf, left, 0);
-          if (len > 0) {
-            buffer->appendToReadBuffer(buf, len);
-          } else if (len == 0) {
-            buffer->setReadEOF();
-            return true;
-          } else if (!isGoodCode()) {
-            buffer->setError();
-            return true;
-          }
-        }
-      }
+	    int maxSize = buffer->writableSize();
+	    if (maxSize > 0) {
+		    char buf[maxSize];
+		    int len = recv(eventFd, buf, maxSize, 0);
+		    if (len > 0) {
+			    int s = buffer->write(buf, len);
+		    } else if (len == 0) {
+			    buffer->close();
+			    return true;
+		    } else if (!isGoodCode()) {
+			    buffer->close();
+			    return true;
+		    }
+	    }
+    }
     if (events & EPOLLOUT) {
-      int wSize = buffer->getWriteBufferSize();
-      if (wSize > 0) {
-        int n = ::send(eventFd, buffer->getWriteBuffer(), wSize, MSG_NOSIGNAL);
+      int maxSize = buffer->readableSize();
+      if (maxSize > 0) {
+        int n = ::send(eventFd, buffer->getReadData(), maxSize, MSG_NOSIGNAL);
         if (n > 0) {
-          buffer->popWrite(n);
+          buffer->popRead(n);
         } else if (n < 0 && !isGoodCode()) {
-          buffer->setError();
+          buffer->close();
           return true;
         }
       }
@@ -208,13 +206,9 @@ public:
   void recycle() {
     map<int, shared_ptr<Buffer>>::iterator it = bufferMap.begin();
     while (it != bufferMap.end()) {
-	    // error
-	    // isReadEOF
-	    // isWriteEOF, and writeBuffer.empty
 	    shared_ptr<Buffer>& buffer = it->second;
 	    bool toClean = false;
-      if (buffer->getError() || buffer->getReadEOF() || (
-        buffer->getWriteEOF() && buffer->getWriteBufferSize() == 0)) {
+      if (buffer->isClosed()) {
         int fd = it->first;
 	      it = bufferMap.erase(it);
         cleanUpFd(fd);
@@ -243,7 +237,7 @@ public:
     ev.data.fd = fd;
     int result = epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev);
     if (result < 0) {
-      log_error << "failed epoll_ctl add cid: "
+      log_error << "failed epoll_ctl add fd: "
           << fd << ", events: " << ev.events;
     }
     return result;

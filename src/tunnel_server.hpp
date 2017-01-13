@@ -18,17 +18,17 @@
 using namespace std;
 
 class TunnelServer : public EventManager {
-  class TunnelBuffer {
+private:
+	class TunnelBuffer {
     public:
     TunnelBuffer(){}
     TunnelBuffer(shared_ptr<Buffer> buffer_): buffer(buffer_) {}
     shared_ptr<Buffer> buffer;
     set<int> trafficIdSet;
   };
-
-
-
-private:
+	typedef map<int, TrafficBuffer>::iterator TrafficIt;
+	typedef map<int, TunnelBuffer>::iterator TunnelIt;
+	typedef map<int, MonitorBuffer>::iterator MonitorIt;
   map<int, TrafficBuffer> trafficMap;
   map<int, TunnelBuffer> tunnelMap;
 	map<int, MonitorBuffer> monitorMap;
@@ -50,7 +50,7 @@ public:
       TrafficBuffer trafficBuffer(buffer);
       trafficBuffer.state = TrafficBuffer::TRAFFIC_CREATING;
       int totalCount = 0;
-      map<int, TunnelBuffer>::iterator it = tunnelMap.begin();
+      TunnelIt it = tunnelMap.begin();
       for (; it != tunnelMap.end(); ++it) {
         totalCount += it->second.trafficIdSet.size();
       }
@@ -77,16 +77,15 @@ public:
 
   bool handleTunnelData() {
     bool success = false;
-    map<int, TunnelBuffer>::iterator tunnelIt = tunnelMap.begin();
+    TunnelIt tunnelIt = tunnelMap.begin();
     while (tunnelIt != tunnelMap.end()) {
-      shared_ptr<Buffer> tunnelBuffer = tunnelIt->second.buffer;
+      shared_ptr<Buffer>& tunnelBuffer = tunnelIt->second.buffer;
       Frame frame;
-      int n = tunnelBuffer->readFrame(frame);
-	    if (n == -1) {
+	    if (tunnelBuffer->isClosed()) {
 		    // 清理tunnel
 		    set<int>::iterator it = tunnelIt->second.trafficIdSet.begin();
 		    for(;it != tunnelIt->second.trafficIdSet.end();++it) {
-			    map<int, TrafficBuffer>::iterator it2 = trafficMap.find(*it);
+			    TrafficIt it2 = trafficMap.find(*it);
 			    if (it2 != trafficMap.end()) {
 				    it2->second.buffer->close();
 				    trafficMap.erase(it2);
@@ -96,18 +95,19 @@ public:
 		    success = true;
 		    continue;
 	    }
-	    while (n > 0) {
+	    int n = 0;
+	    while ((n = tunnelBuffer->readFrame(frame)) > 0) {
 		    if (frame.state == Frame::STATE_SET_NAME) {
 			    tunnelBuffer->setName(frame.message);
 			    tunnelBuffer->popRead(n);
 			    success = true;
-			    n = tunnelBuffer->readFrame(frame);
 			    continue;
 		    }
-		    map<int, TrafficBuffer>::iterator trafficIt = trafficMap.find(frame.cid);
+		    TrafficIt trafficIt = trafficMap.find(frame.cid);
 		    if (trafficIt != trafficMap.end()) {
 			    shared_ptr<Buffer> trafficBuffer = trafficIt->second.buffer;
-			    if (trafficBuffer->writableSize() == -1) {
+			    if (trafficBuffer->writableSize() == -1
+			        || frame.state == Frame::STATE_CLOSE) {
 				    tunnelIt->second.trafficIdSet.erase(trafficBuffer->getId());
 				    trafficBuffer->close();
 				    trafficMap.erase(trafficIt);
@@ -116,17 +116,12 @@ public:
 				    if (s == 0) {
 					    break;
 				    }
-			    } else if (frame.state == Frame::STATE_CLOSE) {
-				    tunnelIt->second.trafficIdSet.erase(trafficBuffer->getId());
-				    trafficBuffer->close();
-				    trafficMap.erase(trafficIt);
 			    } else {
 				    log_warn << "ignore state: " << (int) frame.state;
 			    }
 		    }
 		    tunnelBuffer->popRead(n);
 		    success = true;
-		    n = tunnelBuffer->readFrame(frame);
 	    }
       ++tunnelIt;
     }
@@ -135,26 +130,32 @@ public:
 
   bool handleTrafficData() {
 	  bool success = false;
-    map<int, TrafficBuffer>::iterator it = trafficMap.begin();
+    TrafficIt it = trafficMap.begin();
     while (it != trafficMap.end()) {
 	    int cid = it->first;
 	    TrafficBuffer& trafficBuffer = it->second;
-      map<int, TunnelBuffer>::iterator tunnelIt
-	      = tunnelMap.find(trafficBuffer.tunnelId);
+      TunnelIt tunnelIt = tunnelMap.find(trafficBuffer.tunnelId);
       if (tunnelIt == tunnelMap.end()) {
 	      trafficBuffer.buffer->close();
 	      it = trafficMap.erase(it);
 	      success = true;
 	      continue;
       }
-      if (tunnelIt->second.buffer->writableSizeForFrame() == -1) {
+	    TunnelBuffer& tunnelBuffer = tunnelIt->second;
+      if (tunnelBuffer.buffer->isClosed()) {
 	      tunnelIt->second.trafficIdSet.erase(trafficBuffer.buffer->getId());
 	      trafficBuffer.buffer->close();
 	      it = trafficMap.erase(it);
 	      success = true;
 	      continue;
       }
-			TunnelBuffer& tunnelBuffer = tunnelIt->second;
+	    // 下面这个if不要优化掉，可以帮助理解逻辑
+	    // 对于read=0断开，直到缓冲区无数据数据，才有isClosed=true
+	    if (trafficBuffer.buffer->isClosed()
+		    && trafficBuffer.state != TrafficBuffer::TRAFFIC_CLOSING) {
+		    trafficBuffer.state = TrafficBuffer::TRAFFIC_CLOSING;
+		    success = true;
+	    }
       if (trafficBuffer.state == TrafficBuffer::TRAFFIC_CREATING) {
 	      int n = tunnelBuffer.buffer->writeFrame(cid, Frame::STATE_CREATE);
         if (n == 0) {
@@ -166,13 +167,13 @@ public:
         }
       }
       if (trafficBuffer.state == TrafficBuffer::TRAFFIC_OK) {
-	      int n = 0;
+	      int n  = 0;
 	      while((n = trafficBuffer.buffer->readableSize()) > 0) {
-		      string result;
 		      int maxWriteSize = tunnelBuffer.buffer->writableSizeForFrame();
 		      if (maxWriteSize == 0) {
 			      break;
 		      }
+		      string result;
 		      int readSize = trafficBuffer.buffer->read(result, maxWriteSize);
 		      tunnelBuffer.buffer->writeFrame(cid, result);
 		      trafficBuffer.buffer->popRead(readSize);
@@ -180,7 +181,6 @@ public:
         }
 	      if (n == -1) {
 		      trafficBuffer.state = TrafficBuffer::TRAFFIC_CLOSING;
-		      success = true;
 	      }
       }
       if (trafficBuffer.state == TrafficBuffer::TRAFFIC_CLOSING) {
@@ -200,7 +200,7 @@ public:
 
 	bool handleMonitorData() {
 		bool success = false;
-		map<int, MonitorBuffer>::iterator it = monitorMap.begin();
+		MonitorIt it = monitorMap.begin();
 		while (it != monitorMap.end()) {
 			MonitorBuffer& monitorBuffer = it->second;
 			if (monitorBuffer.buffer->readableSize() == -1) {
@@ -226,7 +226,7 @@ public:
 					result.append("tunnelSize\t");
 					result.append(intToString(tunnelMap.size()));
 					result.append("\n");
-					map<int, TunnelBuffer>::iterator it1 = tunnelMap.begin();
+					TunnelIt it1 = tunnelMap.begin();
 					for (; it1 != tunnelMap.end(); ++it1) {
 						result.append(it1->second.buffer->toString());
 						result.append("\t");
@@ -236,11 +236,11 @@ public:
 					result.append("trafficSize\t");
 					result.append(intToString(trafficMap.size()));
 					result.append("\n");
-					map<int, TrafficBuffer>::iterator it2 = trafficMap.begin();
+					TrafficIt it2 = trafficMap.begin();
 					for (; it2 != trafficMap.end(); ++it2) {
 						result.append(it2->second.buffer->toString()).append("\t->\t");
 						int tunnelId = it2->second.tunnelId;
-						map<int, TunnelBuffer>::iterator it3 = tunnelMap.find(tunnelId);
+						TunnelIt it3 = tunnelMap.find(tunnelId);
 						if (it3 == tunnelMap.end()) {
 							result.append("invalid\n");
 						} else {
