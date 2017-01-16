@@ -286,47 +286,47 @@ savePid(const string &file) {
 
 string
 formatTime(time_t ts) {
-	struct tm* ptr;
-	time_t lt;
-	struct tm* localTimePtr = localtime(&ts);
-	char timeStr[80];
-	strftime(timeStr, 80, "%F %T", localTimePtr);
-	return string(timeStr);
+  struct tm* ptr;
+  time_t lt;
+  struct tm* localTimePtr = localtime(&ts);
+  char timeStr[80];
+  strftime(timeStr, 80, "%F %T", localTimePtr);
+  return string(timeStr);
 }
 
 bool
-getMac(string& mac, int sock)	{
-	char buf[2048];
-	if (sock < 0) {
-		return false;
-	}
-	struct ifconf ifc;
-	ifc.ifc_len = sizeof(buf);
-	ifc.ifc_buf = buf;
-	if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) {
-		return false;
-	}
-	struct ifreq* it = ifc.ifc_req;
-	const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
-	for (; it != end; ++it) {
-		struct ifreq ifr;
-		strcpy(ifr.ifr_name, it->ifr_name);
-		if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0) {
-			if ((ifr.ifr_flags & IFF_LOOPBACK)) { // don't count loopback
-				continue;
-			}
-			if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) {
-				unsigned char* b = (unsigned char *)ifr.ifr_hwaddr.sa_data;
-				char str[20];
-				sprintf(
-					str, "%.2X:%.2X:%.2X:%.2X:%.2X:%.2X" ,
-					b[0], b[1], b[2], b[3], b[4], b[5]
-				);
-				mac.assign(str);
-				return true;
-			}
-		}
-	}
-	return false;
+getMac(string& mac, int sock)  {
+  char buf[2048];
+  if (sock < 0) {
+    return false;
+  }
+  struct ifconf ifc;
+  ifc.ifc_len = sizeof(buf);
+  ifc.ifc_buf = buf;
+  if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) {
+    return false;
+  }
+  struct ifreq* it = ifc.ifc_req;
+  const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
+  for (; it != end; ++it) {
+    struct ifreq ifr;
+    strcpy(ifr.ifr_name, it->ifr_name);
+    if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0) {
+      if ((ifr.ifr_flags & IFF_LOOPBACK)) { // don't count loopback
+        continue;
+      }
+      if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) {
+        unsigned char* b = (unsigned char *)ifr.ifr_hwaddr.sa_data;
+        char str[20];
+        sprintf(
+          str, "%.2X:%.2X:%.2X:%.2X:%.2X:%.2X" ,
+          b[0], b[1], b[2], b[3], b[4], b[5]
+        );
+        mac.assign(str);
+        return true;
+      }
+    }
+  }
+  return false;
 }
 }

@@ -36,7 +36,7 @@ struct Addr {
   Addr(): ip("0.0.0.0"), port(0) {}
   Addr(const char* ip_, uint16_t port_): ip(ip_), port(port_) {}
   string toString() const;
-	bool parse(string address);
+  bool parse(string address);
 };
 
 class FdToAddr {

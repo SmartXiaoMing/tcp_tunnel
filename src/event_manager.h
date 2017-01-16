@@ -38,15 +38,15 @@ public:
     // program exits, and all fds are clean up, so we have to do nothing
   }
   virtual void onBufferCreated(shared_ptr<Buffer> buffer) = 0;
-	virtual bool exchangeData() = 0;
-	virtual int idle() = 0;
+  virtual bool exchangeData() = 0;
+  virtual int idle() = 0;
 
   static const int FD_TYPE_TUNNEL = 1;
   static const int FD_TYPE_TRAFFIC = 2;
-	static const int FD_TYPE_MONITOR = 3;
+  static const int FD_TYPE_MONITOR = 3;
 
-	map<int, shared_ptr<Buffer>> bufferMap;
-	map<int, int> acceptFdMap;
+  map<int, shared_ptr<Buffer>> bufferMap;
+  map<int, int> acceptFdMap;
 
   void listen(const string& ip, int port, int connectionCount, int type) {
     int fd = socket(PF_INET, SOCK_STREAM, 0);
@@ -82,7 +82,7 @@ public:
       exit(EXIT_FAILURE);
     }
     acceptFdMap[fd] = type;
-	}
+  }
 
   bool accept(int eventFd, int events) {
     map<int, int>::iterator it = acceptFdMap.find(eventFd);
@@ -96,13 +96,13 @@ public:
       log_error << "failed to accept client: " << FdToAddr(clientFd, false);
       exit(EXIT_FAILURE);
     } else {
-	    log_info << "success accept client: " << FdToAddr(clientFd, false);
+      log_info << "success accept client: " << FdToAddr(clientFd, false);
     }
     registerFd(clientFd);
     shared_ptr<Buffer> buffer(new Buffer(it->second, clientFd));
     bufferMap[clientFd] = buffer;
-	  shared_ptr<Buffer> buffer2(new Buffer(buffer->reverse()));
-	  onBufferCreated(buffer2);
+    shared_ptr<Buffer> buffer2(new Buffer(buffer->reverse()));
+    onBufferCreated(buffer2);
     return true;
   }
 
@@ -121,7 +121,7 @@ public:
     shared_ptr<Buffer> buffer(new Buffer(type, fd));
     if(result < 0) {
       log_error << "failed to connect " << ip << ":" << port;
-	    buffer->close();
+      buffer->close();
     } else {
       registerFd(fd);
       bufferMap[fd] = buffer;
@@ -129,7 +129,7 @@ public:
     return shared_ptr<Buffer>(new Buffer(buffer->reverse()));
   }
 
-	bool handleEvent(int eventFd, int events) {
+  bool handleEvent(int eventFd, int events) {
     map<int, shared_ptr<Buffer>>::iterator it = bufferMap.find(eventFd);
     if (it == bufferMap.end()) {
       return false;
@@ -140,20 +140,20 @@ public:
       return true;
     }
     if (events & EPOLLIN) {
-	    int maxSize = buffer->writableSize();
-	    if (maxSize > 0) {
-		    char buf[maxSize];
-		    int len = recv(eventFd, buf, maxSize, 0);
-		    if (len > 0) {
-			    int s = buffer->write(buf, len);
-		    } else if (len == 0) {
-			    buffer->close();
-			    return true;
-		    } else if (!isGoodCode()) {
-			    buffer->close();
-			    return true;
-		    }
-	    }
+      int maxSize = buffer->writableSize();
+      if (maxSize > 0) {
+        char buf[maxSize];
+        int len = recv(eventFd, buf, maxSize, 0);
+        if (len > 0) {
+          int s = buffer->write(buf, len);
+        } else if (len == 0) {
+          buffer->close();
+          return true;
+        } else if (!isGoodCode()) {
+          buffer->close();
+          return true;
+        }
+      }
     }
     if (events & EPOLLOUT) {
       int maxSize = buffer->readableSize();
@@ -170,10 +170,10 @@ public:
     return true;
   }
 
-	void run() {
-	  int idleTime = 60 * 1000;
-	  int timeout = 1000;
-	  int timeCount = 0;
+  void run() {
+    int idleTime = 60 * 1000;
+    int timeout = 1000;
+    int timeCount = 0;
 
     while(true) {
       struct epoll_event events[MAX_EVENTS];
@@ -184,33 +184,33 @@ public:
         return;
       }
       if (nfds == 0) {
-	      timeCount += timeout;
+        timeCount += timeout;
         if (timeCount >= idleTime) {
-	        timeCount = 0;
+          timeCount = 0;
           idle();
         }
       } else {
-	      timeCount = 0;
-		    for(int i = 0; i < nfds; i++) {
-			    accept(events[i].data.fd, events[i].events)
-			    || handleEvent(events[i].data.fd, events[i].events);
-		    }
-		  }
-		  if (!exchangeData()) {
+        timeCount = 0;
+        for(int i = 0; i < nfds; i++) {
+          accept(events[i].data.fd, events[i].events)
+          || handleEvent(events[i].data.fd, events[i].events);
+        }
+      }
+      if (!exchangeData()) {
         usleep(100000);
       }
       recycle();
     }
-	}
+  }
 
   void recycle() {
     map<int, shared_ptr<Buffer>>::iterator it = bufferMap.begin();
     while (it != bufferMap.end()) {
-	    shared_ptr<Buffer>& buffer = it->second;
-	    bool toClean = false;
+      shared_ptr<Buffer>& buffer = it->second;
+      bool toClean = false;
       if (buffer->isClosed()) {
         int fd = it->first;
-	      it = bufferMap.erase(it);
+        it = bufferMap.erase(it);
         cleanUpFd(fd);
       } else {
         it++;

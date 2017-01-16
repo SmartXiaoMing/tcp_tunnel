@@ -13,9 +13,9 @@ using namespace std;
 
 class MonitorBuffer {
 public:
-		MonitorBuffer(){}
-		MonitorBuffer(shared_ptr<Buffer> buffer_): buffer(buffer_) {}
-		shared_ptr<Buffer> buffer;
-		string sendBuffer;
+  MonitorBuffer(){}
+  MonitorBuffer(shared_ptr<Buffer> buffer_): buffer(buffer_) {}
+  shared_ptr<Buffer> buffer;
+  string sendBuffer;
 };
 #endif //TCP_TUNNEL_BUFFER_MONITOR_H

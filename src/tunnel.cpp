@@ -87,48 +87,48 @@ int main(int argc, char * argv[]) {
       exit(EXIT_FAILURE);
     }
     TunnelServer server;
-	  server.init(tunnelAddr, trafficAddr, monitorAddr);
-	  server.run();
+    server.init(tunnelAddr, trafficAddr, monitorAddr);
+    server.run();
   } else if (mode == "client") {
     string pifFile = optValue(paramMap, "pid.file", "client.tunnel.pid");
     savePid(pifFile);
 
-	  string tunnelAddr = optValue(paramMap, "client.tunnel.address", "");
-	  vector<Addr> addrList;
-	  if (!parseAddressList(addrList, tunnelAddr)) {
-		  log_error << "client.tunnel.address is invalid: " << tunnelAddr;
-		  exit(EXIT_FAILURE);
-	  }
-	  string trafficAddressStr = optValue(paramMap, "client.traffic.address", "");
-	  Addr trafficAddr;
-	  if (!trafficAddr.parse(trafficAddressStr)) {
-		  log_error << "client.traffic.address is invalid: " << trafficAddressStr;
-		  exit(EXIT_FAILURE);
-	  }
-	  string monitorAddressStr = optValue(paramMap, "client.monitor.address", "");
-	  Addr monitorAddr;
-	  if (!monitorAddr.parse(monitorAddressStr)) {
-		  log_error << "client.monitor.address is invalid: " << monitorAddressStr;
-		  exit(EXIT_FAILURE);
-	  }
+    string tunnelAddr = optValue(paramMap, "client.tunnel.address", "");
+    vector<Addr> addrList;
+    if (!parseAddressList(addrList, tunnelAddr)) {
+      log_error << "client.tunnel.address is invalid: " << tunnelAddr;
+      exit(EXIT_FAILURE);
+    }
+    string trafficAddressStr = optValue(paramMap, "client.traffic.address", "");
+    Addr trafficAddr;
+    if (!trafficAddr.parse(trafficAddressStr)) {
+      log_error << "client.traffic.address is invalid: " << trafficAddressStr;
+      exit(EXIT_FAILURE);
+    }
+    string monitorAddressStr = optValue(paramMap, "client.monitor.address", "");
+    Addr monitorAddr;
+    if (!monitorAddr.parse(monitorAddressStr)) {
+      log_error << "client.monitor.address is invalid: " << monitorAddressStr;
+      exit(EXIT_FAILURE);
+    }
     TunnelClient client;
-	  client.init(tunnelAddr, trafficAddr, monitorAddr);
-	  client.run();
+    client.init(tunnelAddr, trafficAddr, monitorAddr);
+    client.run();
   } else if (mode == "monitor") {
-	  string monitorAddressStr = optValue(paramMap, "monitor.address", "");
-	  Addr monitorAddr;
-	  if (!monitorAddr.parse(monitorAddressStr)) {
-		  log_error << "monitor.address is invalid: " << monitorAddressStr;
-		  exit(EXIT_FAILURE);
-	  }
+    string monitorAddressStr = optValue(paramMap, "monitor.address", "");
+    Addr monitorAddr;
+    if (!monitorAddr.parse(monitorAddressStr)) {
+      log_error << "monitor.address is invalid: " << monitorAddressStr;
+      exit(EXIT_FAILURE);
+    }
     string cmd = optValue(paramMap, "monitor.cmd");
     if (cmd.empty()) {
       log_error << "server.monitor.cmd is unset";
       exit(EXIT_FAILURE);
     }
-	  TunnelMonitor monitor;
-	  monitor.init(monitorAddr, cmd);
-	  monitor.run();
+    TunnelMonitor monitor;
+    monitor.init(monitorAddr, cmd);
+    monitor.run();
   } else {
     log_error << "invalid mode: " << mode;
     exit(EXIT_FAILURE);
