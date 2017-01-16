@@ -84,6 +84,9 @@ public:
     Frame frame;
     int n = 0;
     while ((n = tunnelBuffer->readFrame(frame)) > 0) {
+      log_info << "recv tunnel, id: " << frame.cid
+        << ", state: " << frame.getState()
+        << ", size: " << frame.message.size();
       TrafficIt it = trafficMap.find(frame.cid);
       if (it == trafficMap.end()) {
         if (frame.state == Frame::STATE_CREATE) {
@@ -181,6 +184,9 @@ public:
       Frame frame;
       int n = 0;
       while ((n = monitorBuffer.buffer->readFrame(frame)) > 0) {
+        log_info << "recv monitor, id: " << frame.cid
+          << ", state: " << frame.getState()
+          << ", size: " << frame.message.size();
         if (frame.state != Frame::STATE_MONITOR_REQUEST) {
           monitorBuffer.buffer->popRead(n);
           success = true;
