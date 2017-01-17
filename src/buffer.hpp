@@ -71,7 +71,7 @@ public:
     }
     if (len > 0 && n > 0) {
       if (len >= n) {
-        throughSize += n;
+	      throughSize += n;
         buffer.clear();
         return n;
       } else {
@@ -94,10 +94,8 @@ public:
     if (n == -1) {
       return -1;
     }
-    if (n < Frame::HeadLength) {
-      return 0;
-    }
-    return n <= MaxSize - Frame::HeadLength ? n : MaxSize - Frame::HeadLength;
+    n -= Frame::HeadLength;
+    return n < 0 ? 0 : n;
   }
   int write(const char* data, int len) {
     int n = writableSize();
@@ -181,11 +179,11 @@ public:
     return stream[1-index]->writeAll(data.data(), data.size());
   }
   int writeFrame(int cid, char state, const string& data) {
-    int n = writableSizeForFrame();
+    int n = writableSize();
     if (n == -1) {
       return -1;
     }
-    if (n < data.size()) {
+    if (n < data.size() + Frame::HeadLength) {
       return 0;
     }
     Frame frame;
@@ -216,6 +214,12 @@ public:
     return stream[1-index]->throughSize;
   }
 
+  int getWriteBufferSize() {
+    return stream[1-index]->buffer.size();
+  }
+  int getReadBufferSize() {
+    return stream[index]->buffer.size();
+  }
   int getId() {
     return id;
   }

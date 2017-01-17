@@ -25,7 +25,6 @@
 using namespace std;
 
 class EventManager {
-
 public:
   EventManager() {
     epollFd = epoll_create1(0);
@@ -145,7 +144,7 @@ public:
         char buf[maxSize];
         int len = recv(eventFd, buf, maxSize, 0);
         if (len > 0) {
-          int s = buffer->write(buf, len);
+          buffer->write(buf, len);
         } else if (len == 0) {
           buffer->close();
           return true;
