@@ -170,33 +170,28 @@ public:
   }
 
   void run() {
-    int idleTime = 60 * 1000;
-    int timeout = 1000;
-    int timeCount = 0;
-
+    int idleCount = 0;
     while(true) {
       struct epoll_event events[MAX_EVENTS];
-      int nfds = epoll_wait(epollFd, events, MAX_EVENTS, timeout);
+      int nfds = epoll_wait(epollFd, events, MAX_EVENTS, 10);
       if(nfds == -1) {
         log_error << "failed to epoll_wait";
         exit(EXIT_FAILURE);
         return;
       }
-      if (nfds == 0) {
-        timeCount += timeout;
-        if (timeCount >= idleTime) {
-          timeCount = 0;
-          idle();
-        }
-      } else {
-        timeCount = 0;
-        for(int i = 0; i < nfds; i++) {
-          accept(events[i].data.fd, events[i].events)
-          || handleEvent(events[i].data.fd, events[i].events);
-        }
+      for(int i = 0; i < nfds; i++) {
+        accept(events[i].data.fd, events[i].events)
+        || handleEvent(events[i].data.fd, events[i].events);
       }
       if (!exchangeData()) {
         usleep(100000);
+	      idleCount += 1;
+	      if (idleCount >= 600) {
+		      idle();
+		      idleCount = 0;
+	      }
+      } else {
+	      idleCount = 0;
       }
       recycle();
     }

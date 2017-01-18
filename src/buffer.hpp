@@ -89,14 +89,6 @@ public:
     int n = MaxSize - buffer.size();
     return n > 0 ? n : 0;
   }
-  int writableSizeForFrame() {
-    int n = writableSize();
-    if (n == -1) {
-      return -1;
-    }
-    n -= Frame::HeadLength;
-    return n < 0 ? 0 : n;
-  }
   int write(const char* data, int len) {
     int n = writableSize();
     if (n == -1) {
@@ -169,37 +161,24 @@ public:
   int writableSize() {
     return stream[1-index]->writableSize();
   }
-  int writableSizeForFrame() {
-    return stream[1-index]->writableSizeForFrame();
-  }
   int write(const char* data, int len) {
     return stream[1-index]->writeAll(data, len);
   }
   int write(const string& data) {
     return stream[1-index]->writeAll(data.data(), data.size());
   }
-  int writeFrame(int cid, char state, const string& data) {
-    int n = writableSize();
-    if (n == -1) {
-      return -1;
-    }
-    if (n < data.size() + Frame::HeadLength) {
-      return 0;
-    }
-    Frame frame;
-    frame.cid = cid;
-    frame.state = state;
-    frame.message = data;
-    string result;
-    frame.encode(result);
-    return write(result);
-  }
-  int writeFrame(int id, const string& data) {
-    return writeFrame(id, Frame::STATE_TRAFFIC, data);
-  }
-  int writeFrame(int id, char state) {
-    return writeFrame(id, state, "");
-  }
+	int writeFrame(const Frame& frame) {
+		int n = writableSize();
+		if (n == -1) {
+			return -1;
+		}
+		if (n < frame.message.size() + Frame::HeadLength) {
+			return 0;
+		}
+		string result;
+		frame.encode(result);
+		return write(result);
+	}
   void close() {
     stream[1-index]->close();
   }

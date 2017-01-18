@@ -40,12 +40,12 @@ public:
     }
     bool success = false;
     if (!cmd.empty()) {
-      int n = monitorBuffer->writeFrame(
-        monitorBuffer->getId(),
-        Frame::STATE_MONITOR_REQUEST,
-        cmd
-      );
-      if (n > 0) {
+      Frame frame;
+      frame.cid = 0;
+      frame.state = Frame::STATE_MONITOR_REQUEST;
+      frame.message = cmd;
+      if (monitorBuffer->writableSize() >= cmd.size() + Frame::HeadLength) {
+        monitorBuffer->writeFrame(frame);
         cmd.clear();
         success = true;
       }

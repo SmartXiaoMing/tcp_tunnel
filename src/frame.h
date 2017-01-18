@@ -46,6 +46,7 @@ public:
     static string challenge_response = "challenge_response";
     static string monitor_request = "monitor_request";
     static string monitor_response = "monitor_response";
+    static string monitor_set_name = "set_name";
     static string unknown = "unknown";
     switch(state) {
       case STATE_HEARTBEAT : return heartbeat;
@@ -57,11 +58,12 @@ public:
       case STATE_CHALLENGE_RESPONSE : return challenge_response;
       case STATE_MONITOR_REQUEST : return monitor_request;
       case STATE_MONITOR_RESPONSE : return monitor_response;
+      case STATE_SET_NAME : return monitor_set_name;
       default : return unknown;
     }
   }
 
-  int encode(string& result) {
+  int encode(string& result) const {
     return encode(result, *this);
   }
 
