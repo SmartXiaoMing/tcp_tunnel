@@ -71,7 +71,7 @@ public:
     }
     if (len > 0 && n > 0) {
       if (len >= n) {
-	      throughSize += n;
+        throughSize += n;
         buffer.clear();
         return n;
       } else {
@@ -167,18 +167,18 @@ public:
   int write(const string& data) {
     return stream[1-index]->writeAll(data.data(), data.size());
   }
-	int writeFrame(const Frame& frame) {
-		int n = writableSize();
-		if (n == -1) {
-			return -1;
-		}
-		if (n < frame.message.size() + Frame::HeadLength) {
-			return 0;
-		}
-		string result;
-		frame.encode(result);
-		return write(result);
-	}
+  int writeFrame(const Frame& frame) {
+    int n = writableSize();
+    if (n == -1) {
+      return -1;
+    }
+    if (n < frame.message.size() + Frame::HeadLength) {
+      return 0;
+    }
+    string result;
+    frame.encode(result);
+    return write(result);
+  }
   void close() {
     stream[1-index]->close();
   }

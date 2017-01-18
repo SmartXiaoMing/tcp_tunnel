@@ -41,7 +41,7 @@ public:
     bool success = false;
     if (!cmd.empty()) {
       Frame frame;
-      frame.cid = 0;
+      frame.cid = monitorBuffer->getId();
       frame.state = Frame::STATE_MONITOR_REQUEST;
       frame.message = cmd;
       if (monitorBuffer->writableSize() >= cmd.size() + Frame::HeadLength) {

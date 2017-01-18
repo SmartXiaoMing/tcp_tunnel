@@ -185,13 +185,13 @@ public:
       }
       if (!exchangeData()) {
         usleep(100000);
-	      idleCount += 1;
-	      if (idleCount >= 600) {
-		      idle();
-		      idleCount = 0;
-	      }
+        idleCount += 1;
+        if (idleCount >= 600) {
+          idle();
+          idleCount = 0;
+        }
       } else {
-	      idleCount = 0;
+        idleCount = 0;
       }
       recycle();
     }

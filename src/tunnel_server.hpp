@@ -63,8 +63,8 @@ public:
           trafficBuffer.state = TrafficBuffer::TRAFFIC_CREATING;
           it->second.trafficIdSet.insert(buffer->getId());
           trafficMap[buffer->getId()] = trafficBuffer;
-	        log_info << "traffic:" << buffer->getId()
-            << " choose  tunnel: " << it->first;
+          log_info << "traffic:" << buffer->getId()
+            << " choose tunnel: " << it->first;
           return;
         }
       }
@@ -72,7 +72,7 @@ public:
       buffer->close();
     } else if (buffer->getType() == FD_TYPE_TUNNEL) {
       tunnelMap[buffer->getId()] = TunnelBuffer(buffer);
-	    log_info << "new tunnel: " << buffer->getId();
+      log_info << "new tunnel: " << buffer->getId();
     } else if (buffer->getType() == FD_TYPE_MONITOR) {
       monitorMap[buffer->getId()] = MonitorBuffer(buffer);
     }
@@ -288,7 +288,7 @@ public:
         continue;
       }
 
-      int writeSize = monitorBuffer.buffer->writableSize();
+      int writeSize = monitorBuffer.buffer->writableSize() - Frame::HeadLength;
       if (monitorBuffer.sendBuffer.size() > 0 && writeSize > 0) {
         success = true;
         if (writeSize >= monitorBuffer.sendBuffer.size() + Frame::HeadLength) {
