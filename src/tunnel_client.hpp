@@ -60,7 +60,8 @@ public:
         frame.state = Frame::STATE_SET_NAME;
         frame.message = buffer->getMac();
         tunnelBuffer->writeFrame(frame);
-        log_debug << "send to server, cid: " << frame.cid
+	      log_debug << "send to server: " << tunnelBuffer->getName()
+          << ", cid: " << frame.cid
           << ", state: " << frame.getState()
           << ", message.size: " << frame.message.size();
         log_info << "use tunnel server: " << tunnel.ip << ":" << tunnel.port;
@@ -120,7 +121,8 @@ public:
           if (s == 0) {
             break; // block and break
           } else {
-            log_debug << "send to traffic, cid: " << frame.cid
+            log_debug << "send to traffic: " << trafficBuffer.buffer->getName()
+	            << ", cid: " << frame.cid
               << ", state: " << frame.getState()
               << ", message.size: " << frame.message.size();
             tunnelBuffer->popRead(n);
@@ -164,7 +166,8 @@ public:
           frame.state = Frame::STATE_TRAFFIC;
           frame.message = result;
           tunnelBuffer->writeFrame(frame);
-          log_debug << "send to server, cid: " << frame.cid
+	        log_debug << "send to server: " << tunnelBuffer->getName()
+            << ", cid: " << frame.cid
             << ", state: " << frame.getState()
             << ", message.size: " << frame.message.size();
           trafficBuffer.buffer->popRead(readSize);
@@ -181,7 +184,8 @@ public:
           frame.state = Frame::STATE_CLOSE;
           frame.message = "";
           tunnelBuffer->writeFrame(frame);
-          log_debug << "send to server, cid: " << frame.cid
+          log_debug << "send to server: " << tunnelBuffer->getName()
+	          << ", cid: " << frame.cid
             << ", state: " << frame.getState()
             << ", message.size: " << frame.message.size();
           trafficBuffer.buffer->close();
@@ -248,7 +252,8 @@ public:
           frame1.state = Frame::STATE_MONITOR_RESPONSE;
           frame1.message = monitorBuffer.sendBuffer;
           monitorBuffer.buffer->writeFrame(frame1);
-          log_debug << "send to monitor, cid: " << frame1.cid
+	        log_debug << "send to monitor: " << monitorBuffer.buffer->getName()
+            << ", cid: " << frame1.cid
             << ", state: " << frame1.getState()
             << ", message.size: " << frame1.message.size();
           monitorBuffer.buffer->close();
@@ -258,7 +263,8 @@ public:
           frame1.state = Frame::STATE_MONITOR_RESPONSE;
           frame1.message = monitorBuffer.sendBuffer.substr(0, writeSize);
           monitorBuffer.buffer->writeFrame(frame1);
-          log_debug << "send to monitor, cid: " << frame1.cid
+          log_debug << "send to monitor: " << monitorBuffer.buffer->getName()
+	          << ", cid: " << frame1.cid
             << ", state: " << frame1.getState()
             << ", message.size: " << frame1.message.size();
           monitorBuffer.sendBuffer.append(
@@ -290,7 +296,8 @@ public:
       frame.cid = 0;
       frame.state = Frame::STATE_HEARTBEAT;
       frame.message = "";
-      log_debug << "send to server, cid: " << frame.cid
+      log_debug << "send to server: " << tunnelBuffer->getName()
+	      << ", cid: " << frame.cid
         << ", state: " << frame.getState()
         << ", message.size: " << frame.message.size();
       return tunnelBuffer->writeFrame(frame);

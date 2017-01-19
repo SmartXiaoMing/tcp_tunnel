@@ -100,7 +100,8 @@ public:
       }
       int n = 0;
       while ((n = tunnelBuffer->readFrame(frame)) > 0) {
-        log_debug << "recv from client, cid: " << frame.cid
+        log_debug << "recv from client: " << tunnelBuffer->getName()
+	        << ", cid: " << frame.cid
           << ", state: " << frame.getState()
           << ", message.size: " << frame.message.size();
         if (frame.state == Frame::STATE_SET_NAME) {
@@ -109,6 +110,11 @@ public:
           success = true;
           continue;
         }
+	      if (frame.state == Frame::STATE_HEARTBEAT) {
+		      tunnelBuffer->popRead(n);
+		      success = true;
+		      continue;
+	      }
         TrafficIt trafficIt = trafficMap.find(frame.cid);
         if (trafficIt != trafficMap.end()) {
           shared_ptr<Buffer> trafficBuffer = trafficIt->second.buffer;
@@ -122,12 +128,15 @@ public:
             if (s == 0) {
               break;
             }
-            log_debug << "send to traffic, cid: " << frame.cid
+            log_debug << "send to traffic: " << trafficBuffer->getName()
+              << ", cid: " << frame.cid
               << ", state: " << frame.getState()
               << ", message.size: " << frame.message.size();
           } else {
             log_warn << "ignore state: " << (int) frame.state;
           }
+        } else {
+	        log_warn << "ignore state: " << (int) frame.state;
         }
         tunnelBuffer->popRead(n);
         success = true;
@@ -177,7 +186,8 @@ public:
         tunnelBuffer.buffer->writeFrame(frame);
         trafficBuffer.state = TrafficBuffer::TRAFFIC_OK;
         success = true;
-        log_debug << "send to client, cid: " << frame.cid
+        log_debug << "send to client: " << tunnelBuffer.buffer->getName()
+	        << ", cid: " << frame.cid
           << ", state: " << frame.getState()
           << ", message.size: " << frame.message.size();
       }
@@ -196,7 +206,8 @@ public:
           frame.state = Frame::STATE_TRAFFIC;
           frame.message = result;
           tunnelBuffer.buffer->writeFrame(frame);
-          log_debug << "send to client, cid: " << frame.cid
+          log_debug << "send to client: " << tunnelBuffer.buffer->getName()
+	          << ", cid: " << frame.cid
             << ", state: " << frame.getState()
             << ", message.size: " << frame.message.size();
           trafficBuffer.buffer->popRead(readSize);
@@ -213,7 +224,8 @@ public:
           frame.state = Frame::STATE_CLOSE;
           frame.message = "";
           tunnelBuffer.buffer->writeFrame(frame);
-          log_debug << "send to client, cid: " << frame.cid
+          log_debug << "send to client: "  << tunnelBuffer.buffer->getName()
+	          << ", cid: " << frame.cid
             << ", state: " << frame.getState()
             << ", message.size: " << frame.message.size();
           tunnelIt->second.trafficIdSet.erase(trafficBuffer.buffer->getId());
@@ -297,7 +309,8 @@ public:
           frame1.state = Frame::STATE_MONITOR_RESPONSE;
           frame1.message = monitorBuffer.sendBuffer;
           monitorBuffer.buffer->writeFrame(frame1);
-          log_debug << "send to monitor, cid: " << frame1.cid
+          log_debug << "send to monitor: " << monitorBuffer.buffer->getName()
+	           << ", cid: " << frame1.cid
              << ", state: " << frame1.getState()
              << ", message.size: " << frame1.message.size();
           monitorBuffer.buffer->close();
@@ -310,7 +323,8 @@ public:
           frame1.state = Frame::STATE_MONITOR_RESPONSE;
           frame1.message = monitorBuffer.sendBuffer.substr(0, writeSize);
           monitorBuffer.buffer->writeFrame(frame1);
-          log_debug << "send to monitor, cid: " << frame1.cid
+	        log_debug << "send to monitor: " << monitorBuffer.buffer->getName()
+            << ", cid: " << frame1.cid
             << ", state: " << frame1.getState()
             << ", message.size: " << frame1.message.size();
           monitorBuffer.sendBuffer.assign(
