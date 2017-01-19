@@ -109,7 +109,7 @@ public:
     int fd = socket(PF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
       log_error << "failed to socket";
-      return shared_ptr<Buffer>(NULL);
+      return shared_ptr<Buffer>();
     }
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
