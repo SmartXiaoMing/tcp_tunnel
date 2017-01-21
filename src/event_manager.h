@@ -135,6 +135,8 @@ public:
     }
     shared_ptr<Buffer> buffer = it->second;
     if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
+      log_debug << "event " << events << " occurs, close "
+        << buffer->getName() << ", fd: " << eventFd << ", error: " << errno;
       buffer->close();
       return true;
     }
@@ -146,9 +148,11 @@ public:
         if (len > 0) {
           buffer->write(buf, len);
         } else if (len == 0) {
+          log_debug << "read EOF, close " << buffer->getName() << ", fd: " << eventFd;
           buffer->close();
           return true;
         } else if (!isGoodCode()) {
+          log_debug << "read error, close " << buffer->getName() << ", fd: " << eventFd;
           buffer->close();
           return true;
         }
@@ -158,12 +162,19 @@ public:
       int maxSize = buffer->readableSize();
       if (maxSize > 0) {
         int n = ::send(eventFd, buffer->getReadData(), maxSize, MSG_NOSIGNAL);
-        if (n > 0) {
-          buffer->popRead(n);
-        } else if (n < 0 && !isGoodCode()) {
-          buffer->close();
-          return true;
-        }
+          if (n > 0) {
+            log_debug << "write bytes: " << n << "/" << maxSize << "/"
+              << buffer->getReadBufferSize() << ", for " << buffer->getName();
+            buffer->popRead(n);
+          } else if (n < 0 && !isGoodCode()) {
+            log_debug << "write error, close " << buffer->getName()
+              << ", errno: " << errno;
+            buffer->close();
+            return true;
+          }
+          log_debug << "write bytes: " << n << "/" << maxSize << "/"
+            << buffer->getReadBufferSize() << ", for "
+            << buffer->getName();
       }
     }
     return true;
@@ -173,7 +184,7 @@ public:
     int idleCount = 0;
     while(true) {
       struct epoll_event events[MAX_EVENTS];
-      int nfds = epoll_wait(epollFd, events, MAX_EVENTS, 10);
+      int nfds = epoll_wait(epollFd, events, MAX_EVENTS, 2);
       if(nfds == -1) {
         log_error << "failed to epoll_wait";
         exit(EXIT_FAILURE);
@@ -227,12 +238,12 @@ public:
     }
     setNonblock(fd);
     struct epoll_event ev;
-    ev.events = EPOLLIN | EPOLLOUT | EPOLLERR | EPOLLHUP;
+    ev.events = EPOLLIN | EPOLLOUT | EPOLLERR | EPOLLHUP | EPOLLRDHUP;
     ev.data.fd = fd;
     int result = epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev);
     if (result < 0) {
       log_error << "failed epoll_ctl add fd: "
-          << fd << ", events: " << ev.events;
+        << fd << ", events: " << ev.events;
     }
     return result;
   }
@@ -241,7 +252,7 @@ public:
     int flags = fcntl(fd, F_GETFL, 0);
     int result = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
     if (result < 0) {
-      log_error << "failed to set NONBLOK, cid: " << fd;
+      log_error << "failed to set NONBLOCK, fd: " << fd;
     }
     return result;
   }

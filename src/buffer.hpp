@@ -135,6 +135,9 @@ public:
     stream[0].reset(new Stream());
     stream[1].reset(new Stream());
   }
+  ~Buffer() {
+    close();
+  }
   Buffer reverse() {
     Buffer buffer = *this;
     buffer.index = 1 - index;
