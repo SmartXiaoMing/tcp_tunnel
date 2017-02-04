@@ -31,8 +31,8 @@ public:
     reset();
   }
 
-  void onBufferCreated(shared_ptr<Buffer> buffer) {
-    if (buffer->getType() == FD_TYPE_MONITOR) {
+  void onBufferCreated(shared_ptr<Buffer> buffer, const ListenInfo& info) {
+    if (info.type == FD_TYPE_MONITOR) {
       monitorMap[buffer->getId()] = MonitorBuffer(buffer);
     }
   }
@@ -52,7 +52,7 @@ public:
         sleep(30);
         continue;
       }
-      shared_ptr<Buffer> buffer = connect(tunnel.ip, tunnel.port, FD_TYPE_TUNNEL);
+      shared_ptr<Buffer> buffer = connect(tunnel.ip, tunnel.port);
       if (buffer.get() != NULL && !buffer->isClosed()) {
         tunnelBuffer = buffer;
         Frame frame;
@@ -98,7 +98,7 @@ public:
       TrafficIt it = trafficMap.find(frame.cid);
       if (it == trafficMap.end()) {
         if (frame.state == Frame::STATE_CREATE) {
-          shared_ptr<Buffer> buffer = connect(trafficAddr.ip, trafficAddr.port, FD_TYPE_TRAFFIC);
+          shared_ptr<Buffer> buffer = connect(trafficAddr.ip, trafficAddr.port);
           TrafficBuffer trafficBuffer(buffer);
           if (buffer.get() == NULL || buffer->isClosed()) {
             trafficBuffer.state = TrafficBuffer::TRAFFIC_CLOSING;

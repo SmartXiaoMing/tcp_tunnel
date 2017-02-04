@@ -125,11 +125,10 @@ public:
 class Buffer {
 public:
   Buffer(){}
-  Buffer(int type_, int fd_) {
+  Buffer(int fd_) {
     index = 0;
     gId += 1;
     id = gId;
-    type = type_;
     fd = fd_;
     ts = time(NULL);
     stream[0].reset(new Stream());
@@ -206,10 +205,6 @@ public:
     return id;
   }
 
-  int getType() {
-    return type;
-  }
-
   void setName(const string& name_) {
     if (name_.size() < 32) {
       name = name_;
@@ -253,7 +248,6 @@ public:
 protected:
   static int gId;
   int id;
-  int type;
   int fd;
   time_t ts;
   string name;

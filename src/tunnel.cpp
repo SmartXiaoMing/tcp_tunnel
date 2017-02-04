@@ -16,8 +16,9 @@ void showUsage(int argc, char* argv[]) {
   cout << "options with mode=server:\n";
   cout << "\t--server.tunnel.address=[ip:]port\ttunnel bind ip:port\n";
   cout << "\t--server.tunnel.connection=connection\tclient count, default 10\n";
-  cout << "\t--server.traffic.address=[ip:]port\ttraffic bind ip:port\n";
+  cout << "\t--server.traffic.address=[ip:]port\ttraffic bind ip:port[,port]\n";
   cout << "\t--server.monitor.address=[ip:]port\tserver monitor bind ip:port\n";
+  cout << "\t--server.map.mode=1ton\tmap rule, such as 1ton, 1to1, nto1\n";
   cout << "options with mode=client:\n";
   cout << "\t--client.tunnel.address=[host]:port\ttunnel server host:port\n";
   cout << "\t--client.tunnel.retry.interval=number\tdefault 10 seconds\n";
@@ -75,8 +76,8 @@ int main(int argc, char * argv[]) {
       exit(EXIT_FAILURE);
     }
     string trafficAddressStr = optValue(paramMap, "server.traffic.address", "");
-    Addr trafficAddr;
-    if (!trafficAddr.parse(trafficAddressStr)) {
+    vector<Addr> trafficAddrList;
+    if (!parseAddressList(trafficAddrList, trafficAddressStr)) {
       log_error << "server.traffic.address is invalid: " << trafficAddressStr;
       exit(EXIT_FAILURE);
     }
@@ -86,8 +87,9 @@ int main(int argc, char * argv[]) {
       log_error << "server.monitor.address is invalid: " << monitorAddressStr;
       exit(EXIT_FAILURE);
     }
+    string mapMode = optValue(paramMap, "server.map.mode", "1ton");
     TunnelServer server;
-    server.init(tunnelAddr, trafficAddr, monitorAddr);
+    server.init(tunnelAddr, trafficAddrList, monitorAddr, mapMode);
     server.run();
   } else if (mode == "client") {
     string pifFile = optValue(paramMap, "pid.file", "client.tunnel.pid");

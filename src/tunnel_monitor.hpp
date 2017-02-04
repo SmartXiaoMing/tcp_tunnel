@@ -20,7 +20,7 @@ private:
 
 public:
   void init(const Addr& monitor, const string& cmd_) {
-    monitorBuffer = connect(monitor.ip, monitor.port, FD_TYPE_MONITOR);
+    monitorBuffer = connect(monitor.ip, monitor.port);
     if (monitorBuffer->isClosed()) {
       log_error << "failed to connect " << monitor.ip << ":" << monitor.port;
       exit(EXIT_FAILURE);
@@ -28,7 +28,7 @@ public:
     cmd = cmd_;
   }
 
-  void onBufferCreated(shared_ptr<Buffer> buffer) {
+  void onBufferCreated(shared_ptr<Buffer> buffer, const ListenInfo&) {
   }
 
   bool handleMonitorData() {

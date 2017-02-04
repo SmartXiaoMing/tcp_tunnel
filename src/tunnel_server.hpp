@@ -33,15 +33,31 @@ private:
   map<int, TunnelBuffer> tunnelMap;
   map<int, MonitorBuffer> monitorMap;
 
+  static const int MAP_MODE_1TON = 0;
+  static const int MAP_MODE_1TO1 = 1;
+  static const int MAP_MODE_NTO1 = 2;
+  int mapMode;
+
 public:
-  void init(const Addr& tunnel, const Addr& traffic, const Addr& monitor) {
-    listen(traffic.ip, traffic.port, DefaultConnection, FD_TYPE_TRAFFIC);
+  void init(const Addr& tunnel, const vector<Addr>& trafficList,
+    const Addr& monitor, const string& modeStr) {
+    if (modeStr == "1to1") {
+      mapMode = MAP_MODE_1TO1;
+    } else if (modeStr == "nto1") {
+      mapMode = MAP_MODE_NTO1;
+    } else {
+      mapMode = MAP_MODE_1TON;
+    }
+    for (size_t i = 0; i < trafficList.size(); ++i) {
+      const Addr& addr = trafficList[i];
+      listen(addr.ip, addr.port, DefaultConnection, FD_TYPE_TRAFFIC);
+    }
     listen(tunnel.ip, tunnel.port, DefaultConnection, FD_TYPE_TUNNEL);
     listen(monitor.ip, monitor.port, DefaultConnection, FD_TYPE_MONITOR);
   }
 
-  void onBufferCreated(shared_ptr<Buffer> buffer) {
-    if (buffer->getType() == FD_TYPE_TRAFFIC) {
+  void onBufferCreated(shared_ptr<Buffer> buffer, const ListenInfo& info) {
+    if (info.type == FD_TYPE_TRAFFIC) {
       if (tunnelMap.empty()) {
         log_error << "no available connection to assign";
         buffer->close();
@@ -70,12 +86,16 @@ public:
       }
       log_error << "no available connection to assign";
       buffer->close();
-    } else if (buffer->getType() == FD_TYPE_TUNNEL) {
+    } else if (info.type == FD_TYPE_TUNNEL) {
       tunnelMap[buffer->getId()] = TunnelBuffer(buffer);
       log_info << "new tunnel: " << buffer->getId();
-    } else if (buffer->getType() == FD_TYPE_MONITOR) {
+    } else if (info.type == FD_TYPE_MONITOR) {
       monitorMap[buffer->getId()] = MonitorBuffer(buffer);
     }
+  }
+
+  bool chooseTunnel() {
+    return false; // TODO
   }
 
   bool handleTunnelData() {

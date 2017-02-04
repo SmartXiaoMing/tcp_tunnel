@@ -26,6 +26,15 @@ using namespace std;
 
 class EventManager {
 public:
+  struct ListenInfo {
+      string ip;
+      int port;
+      int type;
+      ListenInfo() {}
+      ListenInfo(const string& ip_, int port_, int type_)
+          : ip(ip_), port(port_), type(type_) {}
+  };
+
   EventManager() {
     epollFd = epoll_create1(0);
     if(epollFd < 0) {
@@ -36,7 +45,8 @@ public:
  ~EventManager() {
     // program exits, and all fds are clean up, so we have to do nothing
   }
-  virtual void onBufferCreated(shared_ptr<Buffer> buffer) = 0;
+  virtual void onBufferCreated(
+    shared_ptr<Buffer> buffer, const ListenInfo& listenInfo) = 0;
   virtual bool exchangeData() = 0;
   virtual int idle() = 0;
 
@@ -45,7 +55,7 @@ public:
   static const int FD_TYPE_MONITOR = 3;
 
   map<int, shared_ptr<Buffer>> bufferMap;
-  map<int, int> acceptFdMap;
+  map<int, ListenInfo> acceptFdMap;
 
   void listen(const string& ip, int port, int connectionCount, int type) {
     int fd = socket(PF_INET, SOCK_STREAM, 0);
@@ -80,11 +90,11 @@ public:
       log_error << "failed to registerFd: " <<  fd;
       exit(EXIT_FAILURE);
     }
-    acceptFdMap[fd] = type;
+    acceptFdMap[fd] = ListenInfo(ip, port, type);
   }
 
   bool accept(int eventFd, int events) {
-    map<int, int>::iterator it = acceptFdMap.find(eventFd);
+    map<int, ListenInfo>::iterator it = acceptFdMap.find(eventFd);
     if (it == acceptFdMap.end()) {
       return false;
     }
@@ -98,14 +108,14 @@ public:
       log_info << "success accept client: " << FdToAddr(clientFd, false);
     }
     registerFd(clientFd);
-    shared_ptr<Buffer> buffer(new Buffer(it->second, clientFd));
+    shared_ptr<Buffer> buffer(new Buffer(clientFd));
     bufferMap[clientFd] = buffer;
     shared_ptr<Buffer> buffer2(new Buffer(buffer->reverse()));
-    onBufferCreated(buffer2);
+    onBufferCreated(buffer2, it->second);
     return true;
   }
 
-  shared_ptr<Buffer> connect(const string& ip, int port, int type) {
+  shared_ptr<Buffer> connect(const string& ip, int port) {
     int fd = socket(PF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
       log_error << "failed to socket";
@@ -117,7 +127,7 @@ public:
     addr.sin_addr.s_addr = inet_addr(ip.c_str());
     addr.sin_port = htons(port);
     int result = ::connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr));
-    shared_ptr<Buffer> buffer(new Buffer(type, fd));
+    shared_ptr<Buffer> buffer(new Buffer(fd));
     if(result < 0) {
       log_error << "failed to connect " << ip << ":" << port;
       buffer->close();
