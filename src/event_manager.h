@@ -27,12 +27,17 @@ using namespace std;
 class EventManager {
 public:
   struct ListenInfo {
+      int id;
       string ip;
       int port;
       int type;
       ListenInfo() {}
       ListenInfo(const string& ip_, int port_, int type_)
-          : ip(ip_), port(port_), type(type_) {}
+          : ip(ip_), port(port_), type(type_) {
+        static int gId = 0;
+        gId++;
+        id = gId;
+      }
   };
 
   EventManager() {

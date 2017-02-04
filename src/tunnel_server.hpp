@@ -95,6 +95,9 @@ public:
   }
 
   bool chooseTunnel() {
+    // 当一个tunnel连接进来，根据规则，试图分配到一个traffic
+    // 如果不能分配，就放到一个待连接池中，有一个永不用，有一个看时机
+    // 当一个traffic断开或一个tunnel断开，重新分配
     return false; // TODO
   }
 
