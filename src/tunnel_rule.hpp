@@ -83,6 +83,10 @@ public:
           log_warn << "unsupported key: " << kvIt->first << " at line " << num;
         }
       }
+      log_debug << "add rule, name: " << rule.name
+        << ", remoteHost: " << rule.remoteHost
+        << ", remotePort: " << rule.remotePort
+        << ", localPort: " << rule.localPort;
 			ruleList.push_back(rule);
 		}
 		return true;
