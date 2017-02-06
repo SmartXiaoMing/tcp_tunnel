@@ -16,6 +16,7 @@ public:
   static const int TRAFFIC_CREATING = 1;
   static const int TRAFFIC_CLOSING = 2;
   static const int TRAFFIC_CLOSED = 3;
+  static const int TRAFFIC_CREATE_FAILURE = 4;
 
   TrafficBuffer(): state(TRAFFIC_OK) {}
   TrafficBuffer(shared_ptr<Buffer> buffer_):

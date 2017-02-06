@@ -1,3 +1,8 @@
 # config
 
 remotePort=22,localPort=8130
+remoteHost=1.1.1.1, remotePort=22,localPort=8130
+remoteHost=2.1.1.1, remotePort=22,localPort=8130, name = xxx,
+remoteHost=2.1.1.1, remotePort=22,localPort=8130, name = xxx,remoteHost=2.1.1.1, remotePort=22,localPort=8130, name = xxx,
+, name = yyy,remoteHost=2.1.1.1, remotePort=22,localPort=8130, name = yyy,
+

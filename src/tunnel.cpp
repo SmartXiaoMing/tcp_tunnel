@@ -14,13 +14,13 @@ using namespace Common;
 
 void showUsage(int argc, char* argv[]) {
   cout << "usage: " << argv[0] << " --mode=server|client|monitor [OPTION]\n";
-  cout << "\t--tunnel.secret=str\tsecret to verify, unset means no verify.\n";
   cout << "options with mode=server:\n";
   cout << "\t--server.tunnel.address=[ip:]port\ttunnel bind ip:port\n";
   cout << "\t--server.tunnel.connection=connection\tclient count, default 10\n";
   cout << "\t--server.traffic.address=[ip:]port\ttraffic bind ip:port[,port]\n";
   cout << "\t--server.monitor.address=[ip:]port\tserver monitor bind ip:port\n";
   cout << "\t--server.tunnel.share=1\tshared max count for traffic\n";
+  cout << "\t--server.tunnel.rule=file\ttunnel rule file for\n";
   cout << "options with mode=client:\n";
   cout << "\t--client.tunnel.address=[host]:port\ttunnel server host:port\n";
   cout << "\t--client.tunnel.retry.interval=number\tdefault 10 seconds\n";

@@ -151,7 +151,7 @@ public:
     shared_ptr<Buffer> buffer = it->second;
     if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
       log_debug << "event " << events << " occurs, close "
-        << buffer->getName() << ", fd: " << eventFd << ", error: " << errno;
+        << buffer->getAddr() << ", fd: " << eventFd << ", error: " << errno;
       buffer->close();
       return true;
     }
@@ -163,11 +163,11 @@ public:
         if (len > 0) {
           buffer->write(buf, len);
         } else if (len == 0) {
-          log_debug << "read EOF, close " << buffer->getName() << ", fd: " << eventFd;
+          log_debug << "read EOF, close " << buffer->getAddr() << ", fd: " << eventFd;
           buffer->close();
           return true;
         } else if (!isGoodCode()) {
-          log_debug << "read error, close " << buffer->getName() << ", fd: " << eventFd;
+          log_debug << "read error, close " << buffer->getAddr() << ", fd: " << eventFd;
           buffer->close();
           return true;
         }
@@ -179,17 +179,17 @@ public:
         int n = ::send(eventFd, buffer->getReadData(), maxSize, MSG_NOSIGNAL);
           if (n > 0) {
             log_debug << "write bytes: " << n << "/" << maxSize << "/"
-              << buffer->getReadBufferSize() << ", for " << buffer->getName();
+              << buffer->getReadBufferSize() << ", for " << buffer->getAddr();
             buffer->popRead(n);
           } else if (n < 0 && !isGoodCode()) {
-            log_debug << "write error, close " << buffer->getName()
+            log_debug << "write error, close " << buffer->getAddr()
               << ", errno: " << errno;
             buffer->close();
             return true;
           }
           log_debug << "write bytes: " << n << "/" << maxSize << "/"
             << buffer->getReadBufferSize() << ", for "
-            << buffer->getName();
+            << buffer->getAddr();
       }
     }
     return true;

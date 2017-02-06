@@ -194,7 +194,6 @@ public:
   int getOutputSize() {
     return stream[1-index]->throughSize;
   }
-
   int getWriteBufferSize() {
     return stream[1-index]->buffer.size();
   }
@@ -204,15 +203,6 @@ public:
   int getId() {
     return id;
   }
-
-  void setName(const string& name_) {
-    if (name_.size() < 32) {
-      name = name_;
-    } else {
-      name.assign(name_.c_str(), 32);
-    }
-  }
-
   string getMac() {
     string mac;
     if (Common::getMac(mac, fd)) {
@@ -220,29 +210,13 @@ public:
     }
     return "unknown";
   }
-
-  string getName() {
+  string getAddr() {
     string result;
     result.append(FdToAddr(fd, false).toAddr().toString());
-    if (!name.empty()) {
-      result.append("(").append(name).append(")");
-    }
     return result;
   }
-
-  string toString() {
-    string result;
-    result.append(intToString(id)).append("\t");
-    result.append(getName()).append("\t");
-    if (isClosed()) {
-      result.append("CLOSED\t");
-    } else {
-      result.append("OK\t");
-    }
-    result.append(formatTime(ts)).append("\t");
-    result.append(intToString(getInputSize())).append("\t");
-    result.append(intToString(getOutputSize()));
-    return result;
+  int getTs() {
+    return ts;
   }
 
 protected:
@@ -250,7 +224,6 @@ protected:
   int id;
   int fd;
   time_t ts;
-  string name;
   int index;
   shared_ptr<Stream> stream[2];
 };

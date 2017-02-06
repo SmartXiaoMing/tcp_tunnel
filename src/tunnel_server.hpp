@@ -22,12 +22,15 @@ class TunnelServer : public EventManager {
 private:
   class TunnelBuffer {
     public:
-    TunnelBuffer(){}
-    TunnelBuffer(shared_ptr<Buffer> buffer_): buffer(buffer_) {}
+    TunnelBuffer() : remotePort(0), createCount(0), failedCount(0){}
+    TunnelBuffer(shared_ptr<Buffer> buffer_): buffer(buffer_),
+      remotePort(0), createCount(), failedCount(0) {}
     shared_ptr<Buffer> buffer;
     string name;
     string remoteHost;
     int remotePort;
+    int createCount;
+    int failedCount;
     set<int> trafficIdSet;
   };
   typedef map<int, TrafficBuffer>::iterator TrafficIt;
@@ -176,7 +179,11 @@ public:
         if (trafficIt != trafficMap.end()) {
           shared_ptr<Buffer> trafficBuffer = trafficIt->second.buffer;
           if (trafficBuffer->writableSize() == -1
-              || frame.state == Frame::STATE_CLOSE) {
+              || frame.state == Frame::STATE_CLOSE
+              || frame.state == Frame::STATE_CREATE_FAILURE) {
+            if (frame.state == Frame::STATE_CREATE_FAILURE) {
+              tunnelIt->second.failedCount++;
+            }
             tunnelIt->second.trafficIdSet.erase(trafficBuffer->getId());
             trafficBuffer->close();
             trafficMap.erase(trafficIt);
@@ -185,7 +192,7 @@ public:
             if (s == 0) {
               break;
             }
-            log_debug << "send to traffic: " << trafficBuffer->getName()
+            log_debug << "send to traffic: " << trafficBuffer->getAddr()
               << ", cid: " << frame.cid
               << ", state: " << frame.getState()
               << ", message.size: " << frame.message.size();
@@ -256,8 +263,9 @@ public:
         frame.message = "";
         tunnelBuffer.buffer->writeFrame(frame);
         trafficBuffer.state = TrafficBuffer::TRAFFIC_OK;
+        tunnelIt->second.createCount++;
         success = true;
-        log_debug << "send to client: " << tunnelBuffer.buffer->getName()
+        log_debug << "send to client: " << tunnelBuffer.buffer->getAddr()
 	        << ", cid: " << frame.cid
           << ", state: " << frame.getState()
           << ", message.size: " << frame.message.size();
@@ -277,7 +285,7 @@ public:
           frame.state = Frame::STATE_TRAFFIC;
           frame.message = result;
           tunnelBuffer.buffer->writeFrame(frame);
-          log_debug << "send to client: " << tunnelBuffer.buffer->getName()
+          log_debug << "send to client: " << tunnelBuffer.buffer->getAddr()
 	          << ", cid: " << frame.cid
             << ", state: " << frame.getState()
             << ", message.size: " << frame.message.size();
@@ -295,7 +303,7 @@ public:
           frame.state = Frame::STATE_CLOSE;
           frame.message = "";
           tunnelBuffer.buffer->writeFrame(frame);
-          log_debug << "send to client: "  << tunnelBuffer.buffer->getName()
+          log_debug << "send to client: "  << tunnelBuffer.buffer->getAddr()
 	          << ", cid: " << frame.cid
             << ", state: " << frame.getState()
             << ", message.size: " << frame.message.size();
@@ -344,24 +352,41 @@ public:
           result.append("\n");
           TunnelIt it1 = tunnelMap.begin();
           for (; it1 != tunnelMap.end(); ++it1) {
-            result.append(it1->second.buffer->toString());
-            result.append("\t");
+            shared_ptr<Buffer>& buffer = it1->second.buffer;
+            result.append(intToString(buffer->getId())).append("\t");
+            result.append(buffer->getAddr()).append("(");
+            result.append(it1->second.name).append(")\t");
+            result.append(buffer->isClosed() ? "CLOSED\t" :"OK\t");
+            result.append(formatTime(buffer->getTs())).append("\t");
+            result.append(intToString(buffer->getInputSize())).append("\t");
+            result.append(intToString(buffer->getOutputSize())).append("\t");
+            result.append(intToString(it1->second.createCount)).append("/");
+            result.append(intToString(it1->second.failedCount)).append("\t");
             result.append(intToString(it1->second.trafficIdSet.size()));
-            result.append("\n");
+            result.append(" -> ");
+            result.append(it1->second.remoteHost).append(":");
+            result.append(intToString(it1->second.remotePort)).append("\n");
           }
           result.append("trafficSize\t");
           result.append(intToString(trafficMap.size()));
           result.append("\n");
           TrafficIt it2 = trafficMap.begin();
           for (; it2 != trafficMap.end(); ++it2) {
-            result.append(it2->second.buffer->toString()).append("\t->\t");
+            shared_ptr<Buffer>& buffer = it2->second.buffer;
+            result.append(intToString(buffer->getId())).append("\t");
+            result.append(buffer->getAddr()).append("\t");
+            result.append(buffer->isClosed() ? "CLOSED\t" :"OK\t");
+            result.append(formatTime(buffer->getTs())).append("\t");
+            result.append(intToString(buffer->getInputSize())).append("\t");
+            result.append(intToString(buffer->getOutputSize())).append("\t");
+            result.append("\t->\t");
             int tunnelId = it2->second.tunnelId;
             TunnelIt it3 = tunnelMap.find(tunnelId);
             if (it3 == tunnelMap.end()) {
               result.append("invalid\n");
             } else {
-              result.append(it3->second.buffer->getName());
-              result.append("\n");
+              result.append(it3->second.buffer->getAddr()).append("(");
+              result.append(it3->second.name).append(")\n");
             }
           }
           it->second.sendBuffer.append(result);
@@ -385,7 +410,7 @@ public:
           frame1.state = Frame::STATE_MONITOR_RESPONSE;
           frame1.message = monitorBuffer.sendBuffer;
           monitorBuffer.buffer->writeFrame(frame1);
-          log_debug << "send to monitor: " << monitorBuffer.buffer->getName()
+          log_debug << "send to monitor: " << monitorBuffer.buffer->getAddr()
 	           << ", cid: " << frame1.cid
              << ", state: " << frame1.getState()
              << ", message.size: " << frame1.message.size();
@@ -399,7 +424,7 @@ public:
           frame1.state = Frame::STATE_MONITOR_RESPONSE;
           frame1.message = monitorBuffer.sendBuffer.substr(0, writeSize);
           monitorBuffer.buffer->writeFrame(frame1);
-	        log_debug << "send to monitor: " << monitorBuffer.buffer->getName()
+	        log_debug << "send to monitor: " << monitorBuffer.buffer->getAddr()
             << ", cid: " << frame1.cid
             << ", state: " << frame1.getState()
             << ", message.size: " << frame1.message.size();
