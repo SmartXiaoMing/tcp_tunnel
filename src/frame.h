@@ -18,7 +18,7 @@ class Frame {
 public:
   static const uint8_t DefaultVersion = 1;
   static const int HeadLength = 10;
-  static const int MaxContentLength = 512 * 1024;
+  static const int MaxContentLength = 64 * 1024;
 
   static const uint8_t STATE_HEARTBEAT = 0;
   static const uint8_t STATE_TRAFFIC = 1;

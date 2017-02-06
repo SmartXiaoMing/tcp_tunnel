@@ -198,6 +198,20 @@ public:
         tunnelBuffer.buffer->popRead(n);
         success = true;
       }
+      if (n < 0) { // bad frame
+        // 清理tunnel
+        set<int>::iterator it = tunnelIt->second.trafficIdSet.begin();
+        for(;it != tunnelIt->second.trafficIdSet.end();++it) {
+          TrafficIt it2 = trafficMap.find(*it);
+          if (it2 != trafficMap.end()) {
+            it2->second.buffer->close();
+            trafficMap.erase(it2);
+          }
+        }
+        tunnelIt = tunnelMap.erase(tunnelIt);
+        success = true;
+        continue;
+      }
       ++tunnelIt;
     }
     return success;
@@ -354,6 +368,11 @@ public:
         }
         monitorBuffer.buffer->popRead(n);
         success = true;
+        continue;
+      }
+      if (n < 0) { // bad frame
+        monitorBuffer.buffer->close();
+        it = monitorMap.erase(it);
         continue;
       }
 

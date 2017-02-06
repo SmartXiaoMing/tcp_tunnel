@@ -138,6 +138,10 @@ public:
         }
       }
     }
+    if (n < 0) { // bad frame
+      reset();
+      return false;
+    }
     return success;
   }
 
@@ -241,6 +245,12 @@ public:
             result.append("\n");
           }
           it->second.sendBuffer.append(result);
+        }
+        if (n < 0) { // bad frame
+          it->second.buffer->close();
+          it = monitorMap.erase(it);
+          success = true;
+          continue;
         }
         monitorBuffer.buffer->popRead(n);
         success = true;
