@@ -58,7 +58,10 @@ public:
         Frame frame;
         frame.cid = 0;
         frame.state = Frame::STATE_SET_NAME;
-        frame.message = buffer->getMac();
+        string message = "name=" + buffer->getMac()
+          + ",remoteHost=" + trafficAddr.ip
+          + ",remotePort=" + intToString(trafficAddr.port);
+        frame.message = message;
         tunnelBuffer->writeFrame(frame);
 	      log_debug << "send to server: " << tunnelBuffer->getName()
           << ", cid: " << frame.cid
