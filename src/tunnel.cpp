@@ -1,5 +1,7 @@
 #include "frame.h"
 #include "tunnel_client.hpp"
+#include "tunnel_ping.hpp"
+#include "tunnel_echo.hpp"
 #include "tunnel_monitor.hpp"
 #include "tunnel_server.hpp"
 
@@ -18,7 +20,7 @@ void showUsage(int argc, char* argv[]) {
   cout << "\t--server.tunnel.connection=connection\tclient count, default 10\n";
   cout << "\t--server.traffic.address=[ip:]port\ttraffic bind ip:port[,port]\n";
   cout << "\t--server.monitor.address=[ip:]port\tserver monitor bind ip:port\n";
-  cout << "\t--server.map.mode=1ton\tmap rule, such as 1ton, 1to1, nto1\n";
+  cout << "\t--server.tunnel.share=1\tshared max count for traffic\n";
   cout << "options with mode=client:\n";
   cout << "\t--client.tunnel.address=[host]:port\ttunnel server host:port\n";
   cout << "\t--client.tunnel.retry.interval=number\tdefault 10 seconds\n";
@@ -87,9 +89,11 @@ int main(int argc, char * argv[]) {
       log_error << "server.monitor.address is invalid: " << monitorAddressStr;
       exit(EXIT_FAILURE);
     }
-    string mapMode = optValue(paramMap, "server.map.mode", "1ton");
+    string shareCountStr = optValue(paramMap, "server.tunnel.share", "1");
+	  int shareCount = stringToInt(shareCountStr);
+	  string ruleFile = optValue(paramMap, "server.tunnel.rule", "");
     TunnelServer server;
-    server.init(tunnelAddr, trafficAddrList, monitorAddr, mapMode);
+    server.init(tunnelAddr, trafficAddrList, monitorAddr, shareCount, ruleFile);
     server.run();
   } else if (mode == "client") {
     string pifFile = optValue(paramMap, "pid.file", "client.tunnel.pid");
@@ -131,6 +135,26 @@ int main(int argc, char * argv[]) {
     TunnelMonitor monitor;
     monitor.init(monitorAddr, cmd);
     monitor.run();
+  } else if (mode == "echo") {
+    string AddressStr = optValue(paramMap, "echo.server.address", "");
+    Addr address;
+    if (!address.parse(AddressStr)) {
+      log_error << "mirror.send.address is invalid: " << AddressStr;
+      exit(EXIT_FAILURE);
+    }
+    TunnelEcho echo;
+    echo.init(address);
+	  echo.run();
+  } else if (mode == "ping") {
+	  string addressStr = optValue(paramMap, "ping.server.address", "");
+	  Addr address;
+	  if (!address.parse(addressStr)) {
+		  log_error << "ping.server.address is invalid: " << addressStr;
+		  exit(EXIT_FAILURE);
+	  }
+	  TunnelPing ping;
+	  ping.init(address, 100);
+	  ping.run();
   } else {
     log_error << "invalid mode: " << mode;
     exit(EXIT_FAILURE);

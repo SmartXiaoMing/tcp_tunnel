@@ -59,10 +59,13 @@ string intToString(int n);
 bool isGoodCode();
 bool parseAddressList(vector<Addr>& addrList, const string& addressList);
 bool parseCommandLine(map<string, string> &result, int argc, char *argv[]);
-bool parseFile(map<string, string> &result, const string &file);
+bool parseFile(map<string, string>& result, const string &file);
+bool parseKVList(map<string, string>& result, const string& content);
 void savePid(const string& file);
 bool split(vector<string> &result, const string &str, char ch);
 int stringToInt(const string &str);
+bool split(vector<string>& result, const string& str, const string& charList);
+string skip(const string& str, const string& charList);
 string formatTime(time_t ts);
 bool getMac(string& mac, int sock);
 }

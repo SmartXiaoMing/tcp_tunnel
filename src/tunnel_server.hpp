@@ -12,6 +12,7 @@
 #include "common.h"
 #include "logger.h"
 #include "frame.h"
+#include "tunnel_rule.hpp"
 
 #include <set>
 
@@ -24,6 +25,9 @@ private:
     TunnelBuffer(){}
     TunnelBuffer(shared_ptr<Buffer> buffer_): buffer(buffer_) {}
     shared_ptr<Buffer> buffer;
+    string name;
+    string remoteHost;
+    int remotePort;
     set<int> trafficIdSet;
   };
   typedef map<int, TrafficBuffer>::iterator TrafficIt;
@@ -33,21 +37,20 @@ private:
   map<int, TunnelBuffer> tunnelMap;
   map<int, MonitorBuffer> monitorMap;
 
-  static const int MAP_MODE_1TON = 0;
-  static const int MAP_MODE_1TO1 = 1;
-  static const int MAP_MODE_NTO1 = 2;
-  int mapMode;
+  int tunnelSharedCount;
+	TunnelRule tunnelRule;
 
 public:
   void init(const Addr& tunnel, const vector<Addr>& trafficList,
-    const Addr& monitor, const string& modeStr) {
-    if (modeStr == "1to1") {
-      mapMode = MAP_MODE_1TO1;
-    } else if (modeStr == "nto1") {
-      mapMode = MAP_MODE_NTO1;
-    } else {
-      mapMode = MAP_MODE_1TON;
+    const Addr& monitor, int tunnelShared, const string& ruleFile) {
+    tunnelSharedCount = tunnelShared;
+    if (tunnelShared <= 0) {
+      log_error << "tunnel shared count cannot <= 0, use default 1 instead";
+      tunnelSharedCount = 1;
     }
+	  if (!ruleFile.empty() && !tunnelRule.parseFile(ruleFile)) {
+		  log_warn << "cannot to parse ruleFile: " << ruleFile;
+	  }
     for (size_t i = 0; i < trafficList.size(); ++i) {
       const Addr& addr = trafficList[i];
       listen(addr.ip, addr.port, DefaultConnection, FD_TYPE_TRAFFIC);
@@ -63,29 +66,9 @@ public:
         buffer->close();
         return;
       }
-      TrafficBuffer trafficBuffer(buffer);
-      trafficBuffer.state = TrafficBuffer::TRAFFIC_CREATING;
-      int totalCount = 0;
-      TunnelIt it = tunnelMap.begin();
-      for (; it != tunnelMap.end(); ++it) {
-        totalCount += it->second.trafficIdSet.size();
+      if (!chooseTunnel(buffer, info)) {
+        buffer->close();
       }
-      int ceil = totalCount / tunnelMap.size() + 1;
-      it = tunnelMap.begin();
-      for (; it != tunnelMap.end(); ++it) {
-        if (it->second.trafficIdSet.size() < ceil) {
-          // 选择第一个合适的连接
-          trafficBuffer.tunnelId = it->first;
-          trafficBuffer.state = TrafficBuffer::TRAFFIC_CREATING;
-          it->second.trafficIdSet.insert(buffer->getId());
-          trafficMap[buffer->getId()] = trafficBuffer;
-          log_info << "traffic:" << buffer->getId()
-            << " choose tunnel: " << it->first;
-          return;
-        }
-      }
-      log_error << "no available connection to assign";
-      buffer->close();
     } else if (info.type == FD_TYPE_TUNNEL) {
       tunnelMap[buffer->getId()] = TunnelBuffer(buffer);
       log_info << "new tunnel: " << buffer->getId();
@@ -94,20 +77,60 @@ public:
     }
   }
 
-  bool chooseTunnel() {
+  bool chooseTunnel(shared_ptr<Buffer> buffer, const ListenInfo& info) {
     // 当一个tunnel连接进来，根据规则，试图分配到一个traffic
     // 如果不能分配，就放到一个待连接池中，有一个永不用，有一个看时机
     // 当一个traffic断开或一个tunnel断开，重新分配
-    return false; // TODO
+    TrafficBuffer trafficBuffer(buffer);
+    trafficBuffer.state = TrafficBuffer::TRAFFIC_CREATING;
+    TunnelIt bestIt = tunnelMap.end();
+    TunnelIt it = tunnelMap.begin();
+    for (; it != tunnelMap.end(); ++it) {
+      if (it->second.trafficIdSet.size() >= tunnelSharedCount) {
+        continue;
+      }
+      bool r = tunnelRule.match(
+        it->second.name,
+        it->second.remoteHost,
+        it->second.remotePort,
+        info.port
+      );
+      if (!r) {
+        continue;
+      }
+      // 选择第一个合适的连接
+      if (bestIt == tunnelMap.end()) {
+        bestIt = it;
+        if (bestIt->second.trafficIdSet.empty()) { // found
+          break;
+        }
+        continue;
+      }
+      if (bestIt->second.trafficIdSet.size() > it->second.trafficIdSet.size()) {
+        bestIt = it; // found
+        break;
+      }
+    }
+    if (bestIt != tunnelMap.end()) {
+      trafficBuffer.tunnelId = bestIt->first;
+      trafficBuffer.state = TrafficBuffer::TRAFFIC_CREATING;
+      bestIt->second.trafficIdSet.insert(buffer->getId());
+      trafficMap[buffer->getId()] = trafficBuffer;
+      log_info << "traffic:" << buffer->getId()
+         << " choose tunnel: " << bestIt->first;
+      return true;
+    }
+    log_error << "no available connection to assign";
+    return false;
   }
 
   bool handleTunnelData() {
     bool success = false;
     TunnelIt tunnelIt = tunnelMap.begin();
     while (tunnelIt != tunnelMap.end()) {
-      shared_ptr<Buffer>& tunnelBuffer = tunnelIt->second.buffer;
+      TunnelBuffer& tunnelBuffer = tunnelIt->second;
       Frame frame;
-      if (tunnelBuffer->isClosed()) {
+      if (tunnelBuffer.buffer->isClosed()) {
         // 清理tunnel
         set<int>::iterator it = tunnelIt->second.trafficIdSet.begin();
         for(;it != tunnelIt->second.trafficIdSet.end();++it) {
@@ -122,19 +145,30 @@ public:
         continue;
       }
       int n = 0;
-      while ((n = tunnelBuffer->readFrame(frame)) > 0) {
-        log_debug << "recv from client: " << tunnelBuffer->getName()
+      while ((n = tunnelBuffer.buffer->readFrame(frame)) > 0) {
+        log_debug << "recv from client: " << tunnelBuffer.name
 	        << ", cid: " << frame.cid
           << ", state: " << frame.getState()
           << ", message.size: " << frame.message.size();
         if (frame.state == Frame::STATE_SET_NAME) {
-          tunnelBuffer->setName(frame.message);
-          tunnelBuffer->popRead(n);
+          map<string, string> kv;
+          parseKVList(kv, frame.message);
+          map<string, string>::iterator kvIt = kv.begin();
+          for (; kvIt != kv.end(); ++kvIt) {
+            if (kvIt->first == "name") {
+              tunnelBuffer.name = kvIt->second;
+            } else if (kvIt->first == "remoteHost") {
+              tunnelBuffer.remoteHost = kvIt->second;
+            } else if (kvIt->first == "remotePort") {
+              tunnelBuffer.remotePort = stringToInt(kvIt->second);
+            }
+          }
+          tunnelBuffer.buffer->popRead(n);
           success = true;
           continue;
         }
 	      if (frame.state == Frame::STATE_HEARTBEAT) {
-		      tunnelBuffer->popRead(n);
+		      tunnelBuffer.buffer->popRead(n);
 		      success = true;
 		      continue;
 	      }
@@ -161,7 +195,7 @@ public:
         } else {
 	        log_warn << "ignore state: " << (int) frame.state;
         }
-        tunnelBuffer->popRead(n);
+        tunnelBuffer.buffer->popRead(n);
         success = true;
       }
       ++tunnelIt;

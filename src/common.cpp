@@ -329,4 +329,52 @@ getMac(string& mac, int sock)  {
   }
   return false;
 }
+
+bool
+split(vector<string>& result, const string& str, const string& stopCharList) {
+	int lastPos = -1;
+	for (size_t i = 0; i < str.size(); ++i) {
+		int pos = stopCharList.find(str[i]);
+		if (pos == string::npos) { // valid char
+			if (lastPos == -1) {
+				lastPos = i;
+			}
+		} else { // stop char
+			if (lastPos != -1) {
+				result.push_back(string(str.c_str() + lastPos, str.c_str() + i));
+				lastPos = -1;
+			}
+		}
+	}
+	if (lastPos != -1) {
+		result.push_back(string(str.c_str() + lastPos, str.c_str() + str.size()));
+	}
+	return true;
+}
+
+string skip(const string& str, const string& charList) {
+	string result;
+	for (size_t i = 0; i < str.size(); ++i) {
+		if (charList.find(str[i]) == string::npos) {
+			result.push_back(str[i]);
+		}
+	}
+	return result;
+}
+
+bool
+parseKVList(map<string, string>& result, const string& content) {
+  string line = skip(content, " \t\r\n");
+  vector<string> list;
+  // a=x,b=xx,c=123
+  split(list, line, ",");
+  for (size_t i = 0; i < list.size(); ++i) {
+    vector<string> pair;
+    split(pair, list[i], "=");
+    if (pair.size() == 2) {
+      result[pair[0]] = pair[1];
+    }
+  }
+  return true;
+}
 }
