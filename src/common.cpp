@@ -6,8 +6,10 @@
 #include "logger.h"
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <net/if.h>
 #include <netdb.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
