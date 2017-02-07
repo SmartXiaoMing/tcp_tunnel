@@ -5,21 +5,13 @@
 #ifndef TCP_TUNNEL_COMMON_H
 #define TCP_TUNNEL_COMMON_H
 
-#include <arpa/inet.h>
-#include <net/if.h>
-#include <netinet/in.h>
 #include <stdint.h>
-#include <sys/socket.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
 #include <unistd.h>
-
 
 #include <map>
 #include <string>
 #include <vector>
-#include <sys/ioctl.h>
-#include <cstring>
 
 using namespace std;
 

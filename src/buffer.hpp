@@ -8,11 +8,13 @@
 #include "common.h"
 #include "frame.h"
 
+#include <cstring>
 #include <string>
 #include <memory>
 
 using namespace Common;
 using namespace std;
+
 class Stream {
 public:
   static const int MaxSize = 4096;

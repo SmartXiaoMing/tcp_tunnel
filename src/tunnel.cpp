@@ -1,13 +1,10 @@
 #include "frame.h"
 #include "tunnel_client.hpp"
-#include "tunnel_ping.hpp"
-#include "tunnel_echo.hpp"
 #include "tunnel_monitor.hpp"
 #include "tunnel_server.hpp"
 
-
-#include <string>
 #include <iostream>
+#include <string>
 
 using namespace std;
 using namespace Common;
@@ -135,26 +132,6 @@ int main(int argc, char * argv[]) {
     TunnelMonitor monitor;
     monitor.init(monitorAddr, cmd);
     monitor.run();
-  } else if (mode == "echo") {
-    string AddressStr = optValue(paramMap, "echo.server.address", "");
-    Addr address;
-    if (!address.parse(AddressStr)) {
-      log_error << "mirror.send.address is invalid: " << AddressStr;
-      exit(EXIT_FAILURE);
-    }
-    TunnelEcho echo;
-    echo.init(address);
-	  echo.run();
-  } else if (mode == "ping") {
-	  string addressStr = optValue(paramMap, "ping.server.address", "");
-	  Addr address;
-	  if (!address.parse(addressStr)) {
-		  log_error << "ping.server.address is invalid: " << addressStr;
-		  exit(EXIT_FAILURE);
-	  }
-	  TunnelPing ping;
-	  ping.init(address, 100);
-	  ping.run();
   } else {
     log_error << "invalid mode: " << mode;
     exit(EXIT_FAILURE);

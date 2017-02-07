@@ -6,12 +6,13 @@
 #define TCP_TUNNEL_CLIENT_H
 
 #include "buffer.hpp"
-#include "buffer_traffic.hpp"
-#include "event_manager.h"
-#include "common.h"
-#include "logger.h"
-#include "frame.h"
 #include "buffer_monitor.hpp"
+#include "buffer_traffic.hpp"
+
+#include "common.h"
+#include "event_manager.h"
+#include "frame.h"
+#include "logger.h"
 
 class TunnelClient : public EventManager {
 private:

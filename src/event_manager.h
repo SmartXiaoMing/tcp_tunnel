@@ -131,9 +131,9 @@ public:
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip.c_str());
     addr.sin_port = htons(port);
-    int result = ::connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr));
+    int r = ::connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr));
     shared_ptr<Buffer> buffer(new Buffer(fd));
-    if(result < 0) {
+    if(r < 0) {
       log_error << "failed to connect " << ip << ":" << port;
       buffer->close();
     } else {
@@ -149,9 +149,9 @@ public:
       return false;
     }
     shared_ptr<Buffer> buffer = it->second;
-    if ((events & EPOLLRDHUP) || (events & EPOLLERR)) {
+    if ((events & EPOLLERR) || (events & EPOLLHUP)) {
       log_debug << "event " << events << " occurs, close "
-        << buffer->getAddr() << ", fd: " << eventFd << ", error: " << errno;
+        << buffer->getAddr() << ", error: " << errno;
       buffer->close();
       return true;
     }
@@ -162,12 +162,13 @@ public:
         int len = recv(eventFd, buf, maxSize, 0);
         if (len > 0) {
           buffer->write(buf, len);
+          log_debug << "read bytes: " << len;
         } else if (len == 0) {
-          log_debug << "read EOF, close " << buffer->getAddr() << ", fd: " << eventFd;
+          log_debug << "read EOF, close " << buffer->getAddr();
           buffer->close();
           return true;
         } else if (!isGoodCode()) {
-          log_debug << "read error, close " << buffer->getAddr() << ", fd: " << eventFd;
+          log_debug << "read error, close " << buffer->getAddr();
           buffer->close();
           return true;
         }
@@ -177,19 +178,16 @@ public:
       int maxSize = buffer->readableSize();
       if (maxSize > 0) {
         int n = ::send(eventFd, buffer->getReadData(), maxSize, MSG_NOSIGNAL);
-          if (n > 0) {
-            log_debug << "write bytes: " << n << "/" << maxSize << "/"
-              << buffer->getReadBufferSize() << ", for " << buffer->getAddr();
-            buffer->popRead(n);
-          } else if (n < 0 && !isGoodCode()) {
-            log_debug << "write error, close " << buffer->getAddr()
-              << ", errno: " << errno;
-            buffer->close();
-            return true;
-          }
+        if (n > 0) {
           log_debug << "write bytes: " << n << "/" << maxSize << "/"
-            << buffer->getReadBufferSize() << ", for "
-            << buffer->getAddr();
+            << buffer->getReadBufferSize() << ", for " << buffer->getAddr();
+          buffer->popRead(n);
+        } else if (n < 0 && !isGoodCode()) {
+          log_debug << "write error, close " << buffer->getAddr()
+            << ", errno: " << errno;
+          buffer->close();
+          return true;
+        }
       }
     }
     return true;

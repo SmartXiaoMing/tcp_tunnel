@@ -5,12 +5,15 @@
 #ifndef TCP_TUNNEL_TUNNEL_RULE_HPP
 #define TCP_TUNNEL_TUNNEL_RULE_HPP
 
+#include "logger.h"
+
 #include <string>
 #include <vector>
 
 using namespace std;
 
 class TunnelRule {
+private:
 	struct Rule {
 		string name;
 		string remoteHost;
@@ -18,8 +21,8 @@ class TunnelRule {
 		int localPort;
 		Rule(): name(), remoteHost(), remotePort(0), localPort(0) {}
 	};
+  vector<Rule> ruleList;
 public:
-	vector<Rule> ruleList;
 	bool match(const string& name, const string& remoteHost,
      int remotePort, int localPort) {
 		if (ruleList.empty()) {

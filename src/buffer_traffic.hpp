@@ -7,8 +7,6 @@
 
 #include "buffer.hpp"
 
-#include <memory>
-
 using namespace std;
 class TrafficBuffer {
 public:

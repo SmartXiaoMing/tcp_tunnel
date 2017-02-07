@@ -9,7 +9,6 @@
 
 #include <stdint.h>
 
-#include <iostream>
 #include <string>
 
 using namespace std;

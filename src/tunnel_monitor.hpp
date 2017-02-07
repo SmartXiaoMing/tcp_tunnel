@@ -7,10 +7,10 @@
 
 #include "buffer.hpp"
 #include "buffer_traffic.hpp"
-#include "event_manager.h"
 #include "common.h"
-#include "logger.h"
+#include "event_manager.h"
 #include "frame.h"
+#include "logger.h"
 
 class TunnelMonitor : public EventManager {
 private:

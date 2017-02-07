@@ -8,10 +8,10 @@
 #include "buffer.hpp"
 #include "buffer_traffic.hpp"
 #include "buffer_monitor.hpp"
-#include "event_manager.h"
 #include "common.h"
-#include "logger.h"
+#include "event_manager.h"
 #include "frame.h"
+#include "logger.h"
 #include "tunnel_rule.hpp"
 
 #include <set>

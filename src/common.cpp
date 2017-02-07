@@ -6,15 +6,13 @@
 #include "logger.h"
 
 #include <arpa/inet.h>
-#include <errno.h>
+#include <net/if.h>
 #include <netdb.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 
+#include <cstring>
 #include <fstream>
-#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
@@ -286,8 +284,6 @@ savePid(const string &file) {
 
 string
 formatTime(time_t ts) {
-  struct tm* ptr;
-  time_t lt;
   struct tm* localTimePtr = localtime(&ts);
   char timeStr[80];
   strftime(timeStr, 80, "%F %T", localTimePtr);
