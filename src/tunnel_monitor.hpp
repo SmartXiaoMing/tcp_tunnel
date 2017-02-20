@@ -44,7 +44,7 @@ public:
       frame.cid = monitorBuffer->getId();
       frame.state = Frame::STATE_MONITOR_REQUEST;
       frame.message = cmd;
-      if (monitorBuffer->writableSize() >= cmd.size() + Frame::HeadLength) {
+      if (monitorBuffer->writableSize() >= frame.getPackageSize()) {
         monitorBuffer->writeFrame(frame);
         cmd.clear();
         success = true;

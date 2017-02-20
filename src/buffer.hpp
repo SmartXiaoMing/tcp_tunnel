@@ -176,7 +176,7 @@ public:
     if (n == -1) {
       return -1;
     }
-    if (n < frame.message.size() + Frame::HeadLength) {
+    if (n < frame.getPackageSize()) {
       return 0;
     }
     string result;

@@ -186,7 +186,7 @@ public:
         }
       }
       if (trafficBuffer.state == TrafficBuffer::TRAFFIC_CLOSING
-         || trafficBuffer.state == TrafficBuffer::TRAFFIC_CREATE_FAILURE) {
+        || trafficBuffer.state == TrafficBuffer::TRAFFIC_CREATE_FAILURE) {
         if (tunnelBuffer->writableSize() >= Frame::HeadLength) {
           Frame frame;
           frame.cid = cid;

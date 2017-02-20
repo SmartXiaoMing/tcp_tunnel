@@ -35,7 +35,7 @@ public:
   uint8_t state;
   string message;
 
-  const string& getState() {
+  const string& getState() const {
     static string traffic = "traffic";
     static string create = "create";
     static string create_failure = "create_failure";
@@ -62,6 +62,10 @@ public:
     }
   }
 
+  int getPackageSize() const {
+    return HeadLength + message.size();
+  }
+
   int encode(string& result) const {
     return encode(result, *this);
   }
@@ -78,7 +82,8 @@ public:
     return encode(result, package.cid, package.state, package.message);
   }
 
-  static int encode(string& result, int32_t cid, uint8_t state, const string& message) {
+  static int encode(string& result, int32_t cid, uint8_t state,
+    const string& message) {
     // 1byte version
     // 4bytes cid
     // 1byte state
