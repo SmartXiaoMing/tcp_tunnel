@@ -59,6 +59,7 @@ int stringToInt(const string &str);
 bool split(vector<string>& result, const string& str, const string& charList);
 string skip(const string& str, const string& charList);
 string formatTime(time_t ts);
+bool getMacByName(string& mac, int sock, const char* name);
 bool getMac(string& mac, int sock);
 }
 #endif //TCP_TUNNEL_COMMON_H
