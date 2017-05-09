@@ -196,6 +196,9 @@ public:
               << ", cid: " << frame.cid
               << ", state: " << frame.getState()
               << ", message.size: " << frame.message.size();
+          } else if (frame.state == Frame::STATE_CONTROL_RESPONSE) {
+            cout << "control response, id: " << tunnelIt->first 
+              << ", result: " << frame.message << endl;
           } else {
             log_warn << "ignore state: " << (int) frame.state;
           }
@@ -340,7 +343,16 @@ public:
           success = true;
           continue;
         }
-        if (frame.message == "list") {
+        // control:params
+        int p = frame.message.find(':');
+        string ctrl, params;
+        if (p == string::npos) {
+          ctrl = frame.message;
+        } else {
+          ctrl = frame.message.substr(0, p);
+          params = frame.message.substr(p + 1);
+        }
+        if (ctrl == "list") {
           if (it->second.sendBuffer.size() >= 102400) {
             // blocked and break
             break;
@@ -390,6 +402,21 @@ public:
             }
           }
           it->second.sendBuffer.append(result);
+        }
+        if (ctrl == "remote") {
+          map<string, string> input;
+          parseKVQuery(input, params);
+          string idStr = input["id"];
+          int id = stringToInt(idStr);
+          TunnelIt it = tunnelMap.find(id);
+          if (it != tunnelMap.end()) {
+            input.erase("id");
+            string query = makeQuery(input);
+            Frame frame;
+            frame.state = Frame::STATE_CONTROL_REQUEST;
+            frame.message = query;
+            it->second.buffer->writeFrame(frame);
+          }
         }
         monitorBuffer.buffer->popRead(n);
         success = true;

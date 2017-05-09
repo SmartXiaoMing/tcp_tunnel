@@ -386,4 +386,32 @@ parseKVList(map<string, string>& result, const string& content) {
   }
   return true;
 }
+
+bool
+parseKVQuery(map<string, string>& result, const string& line) {
+  // a=x&b=xx&c=123
+  vector<string> list;
+  split(list, line, "&");
+  for (size_t i = 0; i < list.size(); ++i) {
+    vector<string> pair;
+    split(pair, list[i], "=");
+    if (pair.size() == 2) {
+      result[pair[0]] = pair[1];
+    }
+  }
+  return true;
+}
+
+string
+makeQuery(map<string, string>& input) {
+  map<string, string>::iterator it = input.begin();
+  string query;
+  for (; it != input.end(); ++it) {
+    if (query.empty()) {
+      query.append("&");
+    }
+    query.append(it->first).append("=").append(it->second);
+  }
+  return query;
+}
 }

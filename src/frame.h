@@ -30,6 +30,8 @@ public:
   static const uint8_t STATE_MONITOR_REQUEST = 8;
   static const uint8_t STATE_MONITOR_RESPONSE = 9;
   static const uint8_t STATE_SET_NAME = 10;
+  static const uint8_t STATE_CONTROL_REQUEST = 11;
+  static const uint8_t STATE_CONTROL_RESPONSE = 12;
 
   uint32_t cid;
   uint8_t state;

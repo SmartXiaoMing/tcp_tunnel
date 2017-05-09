@@ -53,6 +53,8 @@ bool parseAddressList(vector<Addr>& addrList, const string& addressList);
 bool parseCommandLine(map<string, string> &result, int argc, char *argv[]);
 bool parseFile(map<string, string>& result, const string &file);
 bool parseKVList(map<string, string>& result, const string& content);
+bool parseKVQuery(map<string, string>& result, const string& line);
+string makeQuery(map<string, string>& result);
 void savePid(const string& file);
 bool split(vector<string> &result, const string &str, char ch);
 int stringToInt(const string &str);
