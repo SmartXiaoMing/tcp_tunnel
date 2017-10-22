@@ -197,7 +197,7 @@ public:
     int idleCount = 0;
     while(true) {
       struct epoll_event events[MAX_EVENTS];
-      int nfds = epoll_wait(epollFd, events, MAX_EVENTS, 2);
+      int nfds = epoll_wait(epollFd, events, MAX_EVENTS, 10);
       if(nfds == -1) {
         log_error << "failed to epoll_wait";
         exit(EXIT_FAILURE);
