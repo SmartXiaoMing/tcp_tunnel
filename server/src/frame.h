@@ -40,6 +40,7 @@ public:
   const string& getState() const {
     static string traffic = "traffic";
     static string create = "create";
+    static string create_success = "create_success";
     static string create_failure = "create_failure";
     static string close = "close";
     static string heartbeat = "heartbeat";
@@ -54,6 +55,7 @@ public:
       case STATE_TRAFFIC : return traffic;
       case STATE_CREATE : return create;
       case STATE_CREATE_FAILURE : return create_failure;
+      case STATE_CREATE_SUCCESS : return create_success;
       case STATE_CLOSE : return close;
       case STATE_CHALLENGE_REQUEST : return challenge_request;
       case STATE_CHALLENGE_RESPONSE : return challenge_response;

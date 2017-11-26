@@ -4,7 +4,7 @@ install: client build
 build:
 	mkdir -p ../build/
 
-client:
+client: tunnel_client.c
 	$(CC) tunnel_client.c -std=c99 -o client
 
 client_mipsel: build

@@ -92,6 +92,7 @@ trafficResetState(Traffic* traffic) {
   if (traffic->ev.events != trafficEvent) {
     traffic->ev.events = trafficEvent;
     epoll_ctl(context->epollFd, EPOLL_CTL_MOD, traffic->fd, &traffic->ev);
+    printf("reset traffic fd: %d, event: %d\n", traffic->fd, trafficEvent);
   }
 }
 
@@ -116,6 +117,7 @@ tunnelResetState(Tunnel* tunnel) {
   if (tunnel->ev.events != tunnelEvent) {
     tunnel->ev.events = tunnelEvent;
     epoll_ctl(context->epollFd, EPOLL_CTL_MOD, tunnel->fd, &tunnel->ev);
+    printf("reset tunnel event: %d\n", tunnelEvent);
   }
   if (tunnel->traffic) {
     trafficResetState(tunnel->traffic);
@@ -262,7 +264,8 @@ tunnelHandle(Tunnel* tunnel, int events) {
     Buffer* buffer = tunnel->output;
     if (buffer->size > 0) {
       int len = send(tunnel->fd, buffer->data, buffer->size, MSG_NOSIGNAL);
-      printf("send tunnel: %p, fd: %d, len:%d, buffer->size:%d, buffer:%.*s\n", tunnel, tunnel->fd, len, buffer->size, buffer->size, buffer->data);
+      printf("send tunnel: %p, fd: %d, len:%d, buffer->size:%d, buffer:%.*s\n",
+        tunnel, tunnel->fd, len, buffer->size, buffer->size, buffer->data);
       if (len > 0) {
         bufferPopFront(buffer, len);
       } else if (len < 0 && !isGoodCode()) {
@@ -423,6 +426,7 @@ int main(int argc, char** argv) {
         continue;
       }
       printf("success to connect server, tunnel:%p, host:%s, port:%d\n", tunnel, context->tunnelHost, context->tunnelPort);
+      tunnelResetState(tunnel);
     }
     const int MAX_EVENTS = 100;
     struct epoll_event events[MAX_EVENTS];
@@ -430,6 +434,11 @@ int main(int argc, char** argv) {
     if (n == -1) {
       WARN("failed to epoll_wait: %d\n", n);
       return 1;
+    }
+    printf("n = %d, tunnel->ev.events:%d, tunnel->traffic:%p, tunnel.input.size:%d, tunnel.output.size:%d\n", n, tunnel->ev.events, tunnel->traffic,
+           tunnel->input->size, tunnel->output->size);
+    if (tunnel->traffic) {
+      printf("tunnel->traffic->ev.events:%d", tunnel->traffic->ev.events);
     }
     // sleep(1);
     for (int i = 0; i < n; i++) {
@@ -454,6 +463,9 @@ int main(int argc, char** argv) {
       } else {
         trafficResetState(traffic);
       }
+    }
+    if (tunnel->input->size > 0) {
+      tunnelHandleFrame(tunnel); // TODO
     }
     tunnelResetState(tunnel);
   }

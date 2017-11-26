@@ -152,7 +152,9 @@ public:
         log_debug << "recv from client: " << tunnelBuffer.name
 	        << ", cid: " << frame.cid
           << ", state: " << frame.getState()
+          << "(" << (int)frame.state << ")"
           << ", message.size: " << frame.message.size();
+          // << ", msg: " << frame.message;
         if (frame.state == Frame::STATE_SET_NAME) {
           map<string, string> kv;
           parseKVList(kv, frame.message);
