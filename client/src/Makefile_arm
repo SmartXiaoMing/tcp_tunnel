@@ -1,0 +1,16 @@
+user=`whoami`
+TOOLCHAIN=/home/$(user)/work/sdk_package_arm/toolchain/
+AR=$(TOOLCHAIN)/bin/arm-xiaomi-linux-uclibcgnueabi-ar
+CC=$(TOOLCHAIN)/bin/arm-xiaomi-linux-uclibcgnueabi-gcc
+CXX=$(TOOLCHAIN)/bin/arm-xiaomi-linux-uclibcgnueabi-g++
+LINK=$(TOOLCHAIN)/bin/arm-xiaomi-linux-uclibcgnueabi-g++
+LD=$(TOOLCHAIN)/bin/arm-xiaomi-linux-uclibcgnueabi-ld
+
+LDFLAGS="-L$(TOOLCHAIN)/arm-xiaomi-linux-uclibcgnueabi/lib"
+CPPFLAGS="-I$(TOOLCHAIN)/arm-xiaomi-linux-uclibcgnueabi/include -fPIC"
+CXXFLAGS="$(CPPFLAGS)"
+CFLAGS="$(CPPFLAGS)"
+
+
+client_arm: 
+		$(CC) tunnel_client.c -std=c99 -o client_arm

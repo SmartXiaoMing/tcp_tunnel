@@ -1,8 +1,8 @@
 install: tunnel tunnel.conf build
-	cp tunnel.conf ../build/
+	cp tunnel.conf tunnel.rule ../build/
 	mv tunnel ../build/
 
-build: ../build/
+build: 
 	mkdir -p ../build
 
 tunnel: common.cpp logger.cpp buffer.hpp buffer_monitor.hpp buffer_traffic.hpp  tunnel_rule.hpp tunnel_client.hpp tunnel_server.hpp tunnel_monitor.hpp tunnel.cpp

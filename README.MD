@@ -9,7 +9,7 @@ We can visit a machine behind a NAT or firewall.
 
 ## Tunnel client side
 
-./tunnel --mode=client
+./client.sh 
 
 ## Server monitor side
 

@@ -1,0 +1,16 @@
+user=`whoami`
+TOOLCHAIN=/home/$(user)/work/sdk_package_mipsel/toolchain/
+AR=$(TOOLCHAIN)/bin//mipsel-openwrt-linux-uclibc-ar
+CC=$(TOOLCHAIN)/bin/mipsel-openwrt-linux-uclibc-gcc
+CXX=$(TOOLCHAIN)/bin/mipsel-openwrt-linux-uclibc-g++
+LINK=$(TOOLCHAIN)/bin/mipsel-openwrt-linux-uclibc-g++
+LD=$(TOOLCHAIN)/bin/mipsel-openwrt-linux-uclibc-ld
+
+LDFLAGS="-L$(TOOLCHAIN)/mipsel-openwrt-linux-uclibc/lib -L$(TOOLCHAIN)/lib"
+CPPFLAGS="-I$(TOOLCHAIN)/mipsel-openwrt-linux-uclibc/include -I$(TOOLCHAIN)/include -fPIC"
+CXXFLAGS="$(CPPFLAGS)"
+CFLAGS="$(CPPFLAGS)"
+
+
+client_mipsel: 
+		$(CC) tunnel_client.c -std=c99 -o client_mipsel
