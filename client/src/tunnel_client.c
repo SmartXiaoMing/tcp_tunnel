@@ -27,6 +27,8 @@ struct Traffic {
   int cid;
   bool closing;
   Tunnel* tunnel;
+  int written;
+  int read;
 };
 
 struct Tunnel {
@@ -37,6 +39,8 @@ struct Tunnel {
   Buffer* trafficBuffer;
   Traffic* traffic;
   List* trafficList;
+  int written;
+  int read;
 };
 
 typedef struct {
@@ -75,7 +79,8 @@ contextGet() {
 };
 
 void
-trafficResetState(Traffic* traffic) {
+trafficResetState(void* data) {
+  Traffic* traffic = (Traffic*) data;
   Context* context = contextGet();
   Tunnel* tunnel = traffic->tunnel;
   int trafficEvent = traffic->ev.events;
@@ -95,7 +100,6 @@ trafficResetState(Traffic* traffic) {
     printf("reset traffic fd: %d, event: %d\n", traffic->fd, trafficEvent);
   }
 }
-
 
 void
 tunnelResetState(Tunnel* tunnel) {
@@ -147,6 +151,8 @@ trafficConnect(char* ip, int port, int cid, Tunnel* tunnel) {
   traffic->cid = cid;
   traffic->closing = false;
   traffic->tunnel = tunnel;
+  traffic->read = 0;
+  traffic->written = 0;
   traffic->ev.events = (EPOLLERR | EPOLLHUP | EPOLLIN | EPOLLOUT);
   Iterator* it = listAdd(tunnel->trafficList, traffic);
   traffic->ev.data.ptr = it;
@@ -250,6 +256,7 @@ tunnelHandle(Tunnel* tunnel, int events) {
       if (len == 0) {
         return -1;
       } else if (len > 0) {
+        tunnel->read += len;
         bufferAdd(buffer, buf, len);
       } else if (!isGoodCode()) {
         return -1;
@@ -267,6 +274,7 @@ tunnelHandle(Tunnel* tunnel, int events) {
       printf("send tunnel: %p, fd: %d, len:%d, buffer->size:%d, buffer:%.*s\n",
         tunnel, tunnel->fd, len, buffer->size, buffer->size, buffer->data);
       if (len > 0) {
+        tunnel->written += len;
         bufferPopFront(buffer, len);
       } else if (len < 0 && !isGoodCode()) {
         return -1;
@@ -294,6 +302,7 @@ trafficHandle(Traffic* traffic, int events) {
       if (len == 0) {
         return -1;
       } else if (len > 0) {
+        traffic->read += len;
         frameEncodeAppend(traffic->cid, STATE_TRAFFIC, buf, len, buffer);
       } else if (!isGoodCode()) {
         return -1;
@@ -311,6 +320,7 @@ trafficHandle(Traffic* traffic, int events) {
         printf("send traffic: %p, len:%d\n", traffic, len);
         if (len > 0) {
           bufferPopFront(buffer, len);
+          traffic->written += len;
         } else if (len < 0 && !isGoodCode()) {
           return -1;
         }
@@ -349,6 +359,8 @@ tunnelConnect(const char* ip, int port) {
   tunnel->trafficList = listNew();
   tunnel->ev.events = (EPOLLERR | EPOLLHUP | EPOLLIN);
   tunnel->ev.data.ptr = tunnel;
+  tunnel->read = 0;
+  tunnel->written = 0;
   Context* context = contextGet();
   epoll_ctl(context->epollFd, EPOLL_CTL_ADD, tunnel->fd, &tunnel->ev);
   char mac[20] = "FF:FF:FF:FF:FF:FF";
@@ -370,12 +382,21 @@ tunnelConnect(const char* ip, int port) {
 void
 trafficRecycle(void* data) {
   Traffic* t = (Traffic*) data;
+  WARN("trafficRecycle:%p\n", t);
   close(t->fd);
   free(t);
 }
 
 void
+trafficPrint(void* data) {
+  Traffic* t = (Traffic*) data;
+  WARN("traffic, fd:%d, cid:%d, r/w:%d/%d, closing:%d, event:%d",
+       t->fd, t->cid, t->read, t->written, t->closing, t->ev.events);
+}
+
+void
 tunnelRecycle(Tunnel* tunnel) {
+  WARN("tunnelRecycle:%p\n", tunnel);
   List* trafficList = tunnel->trafficList;
   listForeach(trafficList, trafficRecycle);
   listClear(trafficList);
@@ -425,7 +446,8 @@ int main(int argc, char** argv) {
         sleep(30);
         continue;
       }
-      printf("success to connect server, tunnel:%p, host:%s, port:%d\n", tunnel, context->tunnelHost, context->tunnelPort);
+      WARN("success to connect server, tunnel:%p, host:%s, port:%d\n",
+        tunnel, context->tunnelHost, context->tunnelPort);
       tunnelResetState(tunnel);
     }
     const int MAX_EVENTS = 100;
@@ -435,14 +457,8 @@ int main(int argc, char** argv) {
       WARN("failed to epoll_wait: %d\n", n);
       return 1;
     }
-    printf("n = %d, tunnel->ev.events:%d, tunnel->traffic:%p, tunnel.input.size:%d, tunnel.output.size:%d\n", n, tunnel->ev.events, tunnel->traffic,
-           tunnel->input->size, tunnel->output->size);
-    if (tunnel->traffic) {
-      printf("tunnel->traffic->ev.events:%d", tunnel->traffic->ev.events);
-    }
     // sleep(1);
     for (int i = 0; i < n; i++) {
-      printf("event[%d].ptr:%p, event:%d\n", i, events[i].data.ptr, events[0].events);
       if (events[i].data.ptr == tunnel) {
         if (tunnelHandle(tunnel, events[i].events) < 0) {
           tunnelRecycle(tunnel);
@@ -456,18 +472,30 @@ int main(int argc, char** argv) {
       if (trafficHandle(traffic, events[i].events) < 0) {
         frameEncodeAppend(traffic->cid, STATE_CLOSE, NULL, 0, tunnel->output);
         if (tunnel->traffic == traffic) {
+          WARN("clear tunnel->traffic:%p\n", traffic);
           bufferReset(tunnel->trafficBuffer);
           tunnel->traffic = NULL;
         }
         trafficRecycle(traffic);
-      } else {
-        trafficResetState(traffic);
+        iteratorRemove(it);
       }
     }
     if (tunnel->input->size > 0) {
-      tunnelHandleFrame(tunnel); // TODO
+      tunnelHandleFrame(tunnel);
     }
     tunnelResetState(tunnel);
+    listForeach(tunnel->trafficList, trafficResetState);
+    INFO("tunnel:%p, fd:%d, r/w:%d/%d, event:%d, buffer: %d/%d, traffic:%p, buffer:%d, trafficList.size:%d\n",
+      tunnel, tunnel->fd, tunnel->read, tunnel->written, tunnel->ev.events,
+      tunnel->input->size, tunnel->output->size,
+      tunnel->traffic, tunnel->trafficBuffer->size,
+      tunnel->trafficList->size);
+    if (tunnel->traffic) {
+      Traffic* t = tunnel->traffic;
+      INFO("tunnel->traffic, fd:%d, cid:%d, r/w:%d/%d, closing:%d, event:%d",
+        t->fd, t->cid, t->read, t->written, t->closing, t->ev.events);
+    }
+    listForeach(tunnel->trafficList, trafficPrint);
   }
   return 0;
 }
