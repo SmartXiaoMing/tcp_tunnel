@@ -157,7 +157,7 @@ trafficConnect(char* ip, int port, int cid, Tunnel* tunnel) {
   Iterator* it = listAdd(tunnel->trafficList, traffic);
   traffic->ev.data.ptr = it;
   epoll_ctl(context->epollFd, EPOLL_CTL_ADD, traffic->fd, &traffic->ev);
-  printf("success to create traffic: %p, fd:%d, it:%p\n", traffic, traffic->fd, it);
+  INFO("success to create traffic: %p, fd:%d, it:%p\n", traffic, traffic->fd, it);
   return traffic;
 }
 
@@ -200,7 +200,7 @@ tunnelHandleFrame(Tunnel* tunnel) {
     }
     if (frame.cid > 0) {
       if (frame.state == STATE_CREATE) {
-        printf("try to create traffic, ip:%s, port:%d\n", context->trafficIp, context->trafficPort);
+        INFO("try to create traffic, ip:%s, port:%d\n", context->trafficIp, context->trafficPort);
         Traffic* traffic = trafficConnect(
             context->trafficIp,
             context->trafficPort,
@@ -243,7 +243,7 @@ tunnelHandleFrame(Tunnel* tunnel) {
 
 int
 tunnelHandle(Tunnel* tunnel, int events) {
-  printf("tunnel:%p, event:%d\n", tunnel, events);
+  DEBUG("tunnel:%p, event:%d\n", tunnel, events);
   if ((events & EPOLLERR) || (events & EPOLLHUP)) {
     return -1;
   }
@@ -252,7 +252,7 @@ tunnelHandle(Tunnel* tunnel, int events) {
     if (buffer->size < FULL_SIZE) {
       char buf[1024];
       int len = recv(tunnel->fd, buf, 1024, 0);
-      printf("recv tunnel: %p, fd: %d, len:%d, buffer->size:%d, buffer:%.*s\n", tunnel, tunnel->fd, len, buffer->size, buffer->size, buffer->data);
+      DEBUG("recv tunnel: %p, fd: %d, len:%d, buffer->size:%d, buffer:%.*s\n", tunnel, tunnel->fd, len, buffer->size, buffer->size, buffer->data);
       if (len == 0) {
         return -1;
       } else if (len > 0) {
@@ -263,7 +263,7 @@ tunnelHandle(Tunnel* tunnel, int events) {
       }
     }
     if (tunnelHandleFrame(tunnel) < 0) {
-      printf("tunnelHandleFrame error\n");
+      DEBUG("tunnelHandleFrame error\n");
       return -1;
     }
   }
@@ -271,7 +271,7 @@ tunnelHandle(Tunnel* tunnel, int events) {
     Buffer* buffer = tunnel->output;
     if (buffer->size > 0) {
       int len = send(tunnel->fd, buffer->data, buffer->size, MSG_NOSIGNAL);
-      printf("send tunnel: %p, fd: %d, len:%d, buffer->size:%d, buffer:%.*s\n",
+      DEBUG("send tunnel: %p, fd: %d, len:%d, buffer->size:%d, buffer:%.*s\n",
         tunnel, tunnel->fd, len, buffer->size, buffer->size, buffer->data);
       if (len > 0) {
         tunnel->written += len;
@@ -286,7 +286,7 @@ tunnelHandle(Tunnel* tunnel, int events) {
 
 int
 trafficHandle(Traffic* traffic, int events) {
-  printf("traffic:%p, event:%d\n", traffic, events);
+  DEBUG("traffic:%p, event:%d\n", traffic, events);
   if (traffic->closing) {
     return -1;
   }
@@ -298,7 +298,7 @@ trafficHandle(Traffic* traffic, int events) {
     if (buffer->size < FULL_SIZE) {
       char buf[1024];
       int len = recv(traffic->fd, buf, 1024, 0);
-      printf("recv traffic: %p, len:%d\n", traffic, len);
+      DEBUG("recv traffic: %p, len:%d\n", traffic, len);
       if (len == 0) {
         return -1;
       } else if (len > 0) {
@@ -311,13 +311,13 @@ trafficHandle(Traffic* traffic, int events) {
   }
   if (events & EPOLLOUT) {
     Tunnel* tunnel = traffic->tunnel;
-    printf("handle trafic:%p, tunnel->traffic:%p, tunnel:%p, buffer, size:%d\n", traffic, tunnel->traffic, tunnel, tunnel->trafficBuffer->size);
+    DEBUG("handle trafic:%p, tunnel->traffic:%p, tunnel:%p, buffer, size:%d\n", traffic, tunnel->traffic, tunnel, tunnel->trafficBuffer->size);
     if (tunnel->traffic == traffic) {
       Buffer* buffer = tunnel->trafficBuffer;
 
       if (buffer->size > 0) {
         int len = send(traffic->fd, buffer->data, buffer->size, MSG_NOSIGNAL);
-        printf("send traffic: %p, len:%d\n", traffic, len);
+        DEBUG("send traffic: %p, len:%d\n", traffic, len);
         if (len > 0) {
           bufferPopFront(buffer, len);
           traffic->written += len;
