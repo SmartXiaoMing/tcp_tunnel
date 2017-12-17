@@ -438,6 +438,8 @@ int main(int argc, char** argv) {
   }
 
   Tunnel* tunnel = NULL;
+  int epollWaitTime = 10000;
+  int idleTime = 0;
   while (true) {
     if (tunnel == NULL) {
       tunnel = tunnelConnect(context->tunnelHost, context->tunnelPort);
@@ -452,10 +454,18 @@ int main(int argc, char** argv) {
     }
     const int MAX_EVENTS = 100;
     struct epoll_event events[MAX_EVENTS];
-    int n = epoll_wait(context->epollFd, events, MAX_EVENTS, 10000);
+    int n = epoll_wait(context->epollFd, events, MAX_EVENTS, epollWaitTime);
     if (n == -1) {
       WARN("failed to epoll_wait: %d\n", n);
       return 1;
+    }
+    if (n == 0) {
+      idleTime += epollWaitTime;
+      if (idleTime >= 60000) {
+        frameEncodeAppend(0, STATE_HEARTBEAT, NULL, 0, tunnel->output);
+      }
+    } else {
+      idleTime = 0;
     }
     // sleep(1);
     for (int i = 0; i < n; i++) {
