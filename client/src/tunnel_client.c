@@ -157,7 +157,7 @@ trafficConnect(char* ip, int port, int cid, Tunnel* tunnel) {
   Iterator* it = listAdd(tunnel->trafficList, traffic);
   traffic->ev.data.ptr = it;
   epoll_ctl(context->epollFd, EPOLL_CTL_ADD, traffic->fd, &traffic->ev);
-  INFO("success to create traffic: %p, fd:%d, it:%p\n", traffic, traffic->fd, it);
+  DEBUG("success to create traffic: %p, fd:%d, it:%p\n", traffic, traffic->fd, it);
   return traffic;
 }
 
@@ -200,7 +200,7 @@ tunnelHandleFrame(Tunnel* tunnel) {
     }
     if (frame.cid > 0) {
       if (frame.state == STATE_CREATE) {
-        INFO("try to create traffic, ip:%s, port:%d\n", context->trafficIp, context->trafficPort);
+        DEBUG("try to create traffic, ip:%s, port:%d\n", context->trafficIp, context->trafficPort);
         Traffic* traffic = trafficConnect(
             context->trafficIp,
             context->trafficPort,
@@ -382,7 +382,7 @@ tunnelConnect(const char* ip, int port) {
 void
 trafficRecycle(void* data) {
   Traffic* t = (Traffic*) data;
-  WARN("trafficRecycle:%p\n", t);
+  DEBUG("trafficRecycle:%p\n", t);
   close(t->fd);
   free(t);
 }
@@ -390,7 +390,7 @@ trafficRecycle(void* data) {
 void
 trafficPrint(void* data) {
   Traffic* t = (Traffic*) data;
-  WARN("traffic, fd:%d, cid:%d, r/w:%d/%d, closing:%d, event:%d",
+  DEBUG("traffic, fd:%d, cid:%d, r/w:%d/%d, closing:%d, event:%d",
        t->fd, t->cid, t->read, t->written, t->closing, t->ev.events);
 }
 
@@ -472,7 +472,7 @@ int main(int argc, char** argv) {
       if (trafficHandle(traffic, events[i].events) < 0) {
         frameEncodeAppend(traffic->cid, STATE_CLOSE, NULL, 0, tunnel->output);
         if (tunnel->traffic == traffic) {
-          WARN("clear tunnel->traffic:%p\n", traffic);
+          DEBUG("clear tunnel->traffic:%p\n", traffic);
           bufferReset(tunnel->trafficBuffer);
           tunnel->traffic = NULL;
         }
@@ -485,14 +485,14 @@ int main(int argc, char** argv) {
     }
     tunnelResetState(tunnel);
     listForeach(tunnel->trafficList, trafficResetState);
-    INFO("tunnel:%p, fd:%d, r/w:%d/%d, event:%d, buffer: %d/%d, traffic:%p, buffer:%d, trafficList.size:%d\n",
+    DEBUG("tunnel:%p, fd:%d, r/w:%d/%d, event:%d, buffer: %d/%d, traffic:%p, buffer:%d, trafficList.size:%d\n",
       tunnel, tunnel->fd, tunnel->read, tunnel->written, tunnel->ev.events,
       tunnel->input->size, tunnel->output->size,
       tunnel->traffic, tunnel->trafficBuffer->size,
       tunnel->trafficList->size);
     if (tunnel->traffic) {
       Traffic* t = tunnel->traffic;
-      INFO("tunnel->traffic, fd:%d, cid:%d, r/w:%d/%d, closing:%d, event:%d",
+      DEBUG("tunnel->traffic, fd:%d, cid:%d, r/w:%d/%d, closing:%d, event:%d",
         t->fd, t->cid, t->read, t->written, t->closing, t->ev.events);
     }
     listForeach(tunnel->trafficList, trafficPrint);
