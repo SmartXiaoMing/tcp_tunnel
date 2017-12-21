@@ -178,7 +178,8 @@ isIpV4(const string& ip) {
       return false;
     }
   }
-  return true;}
+  return true;
+}
 
 bool
 parseCommandLine(map<string, string> &result, int argc, char *argv[]) {

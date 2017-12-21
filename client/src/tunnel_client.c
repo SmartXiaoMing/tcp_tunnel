@@ -334,11 +334,17 @@ trafficHandle(Traffic* traffic, int events) {
 }
 
 Tunnel*
-tunnelConnect(const char* ip, int port) {
+tunnelConnect(const char* host, int port) {
   int fd = socket(PF_INET, SOCK_STREAM, 0);
   if (fd < 0) {
     WARN("failed to socket: %d\n", fd);
     return NULL;
+  }
+  char ip[30];
+  if (selectIp(host, ip, sizeof(ip)) == NULL) {
+    WARN("invalid host: %s\n", host);
+  } else {
+    WARN("select ip: %s\n", ip);
   }
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));

@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <linux/if.h>
 #include <sys/ioctl.h>
+#include <time.h>
 
 int logEnabled = 0;
 
@@ -84,4 +85,46 @@ getMac(char mac[], int sock)  {
   }
   return false;
 }
+
+bool
+isIpV4(const char* ip) {
+  if (ip == NULL) {
+    return false;
+  }
+  int dot = 0;
+  while (*ip) {
+    if (*ip == '.') {
+      dot++;
+    } else if (*ip < '0' || *ip > '9') {
+      return false;
+    }
+    ++ip;
+  }
+  return dot == 3;
+}
+
+
+const char*
+selectIp(const char* host, char ipBuffer[], int size) {
+  if (isIpV4(host)) {
+    strcpy(ipBuffer, host);
+    return ipBuffer;
+  }
+  struct hostent* info = gethostbyname(host);
+  if (info == NULL || info->h_addrtype != AF_INET) {
+    WARN("invalid host: %s\n", host);
+    return NULL;
+  }
+  int ipCount = 0;
+  for (char** ptr = info->h_addr_list; *ptr != NULL; ++ptr) {
+    ipCount++;
+  }
+  int index = 0;
+  if (ipCount > 0) {
+    srand(time(0));
+    index = rand() % ipCount;
+  }
+  return inet_ntop(AF_INET, *(info->h_addr_list + index), ipBuffer, size);
+}
+
 #endif //TCP_TUNNEL_TUNNEL_UTILS_H
