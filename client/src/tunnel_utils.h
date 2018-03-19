@@ -34,6 +34,8 @@ int logEnabled = 0;
 #define WARN(fmt, args...) do {syslog(LOG_WARNING, fmt, ##args);} while (0);
 #endif
 
+const int FULL_SIZE = 8128;
+
 bool
 isGoodCode() {
   int code = errno;

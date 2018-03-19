@@ -386,4 +386,14 @@ bufferHexToInt(Buffer* buffer) {
   return value;
 }
 
+void
+bufferXor(Buffer* buffer, Buffer* secret) {
+  if (buffer == NULL || secret == NULL || secret->size == 0) {
+    return;
+  }
+  for (int i = 0; i < buffer->size; ++i) {
+    buffer->data[i] ^= secret->data[i % secret->size];
+  }
+}
+
 #endif //TUNNEL_BUFFER_H

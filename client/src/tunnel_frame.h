@@ -15,57 +15,41 @@ const int HeadLength = 10;
 const int MaxContentLength = 64 * 1024;
 
 enum FrameState {
-  STATE_HEARTBEAT = 0,
-  STATE_TRAFFIC = 1,
-  STATE_CREATE = 2,
-  STATE_CREATE_SUCCESS = 3,
-  STATE_CREATE_FAILURE = 4,
-  STATE_CLOSE = 5,
-  STATE_CHALLENGE_REQUEST = 6,
-  STATE_CHALLENGE_RESPONSE = 7,
-  STATE_MONITOR_REQUEST = 8,
-  STATE_MONITOR_RESPONSE = 9,
-  STATE_SET_NAME = 10,
-  STATE_CONTROL_REQUEST = 11,
-  STATE_CONTROL_RESPONSE = 12
+  STATE_NONE = 0,
+  STATE_OK = 1,
+  STATE_CONNECT = 2,
+  STATE_CLOSE = 3,
+  STATE_DATA = 4,
+  STATE_LOGIN = 5
 };
+
 typedef struct {
   uint32_t cid;
   uint8_t state;
-  Buffer message;
+  Buffer* message;
 } Frame;
+
+Frame*
+frameInit() {
+  Frame* frame = (Frame *) calloc(1, sizeof(Frame));
+  frame->cid = 0;
+  frame->state = STATE_NONE;
+  frame->message = bufferInit(4096);
+  return frame;
+}
+
+void
+frameRecycle(Frame* frame) {
+  if (!frame) {
+    return;
+  }
+  bufferRecycle(frame->message);
+  free(frame);
+}
 
 int
 framePackageSize(Frame* frame) {
-  return HeadLength + frame->message.size;
-}
-
-const char*
-frameState(Frame* frame) {
-  static char* traffic = "traffic";
-  static char* create = "create";
-  static char* create_failure = "create_failure";
-  static char* close = "close";
-  static char* heartbeat = "heartbeat";
-  static char* challenge_request = "challenge_request";
-  static char* challenge_response = "challenge_response";
-  static char* monitor_request = "monitor_request";
-  static char* monitor_response = "monitor_response";
-  static char* monitor_set_name = "set_name";
-  static char* unknown = "unknown";
-  switch(frame->state) {
-    case STATE_HEARTBEAT : return heartbeat;
-    case STATE_TRAFFIC : return traffic;
-    case STATE_CREATE : return create;
-    case STATE_CREATE_FAILURE : return create_failure;
-    case STATE_CLOSE : return close;
-    case STATE_CHALLENGE_REQUEST : return challenge_request;
-    case STATE_CHALLENGE_RESPONSE : return challenge_response;
-    case STATE_MONITOR_REQUEST : return monitor_request;
-    case STATE_MONITOR_RESPONSE : return monitor_response;
-    case STATE_SET_NAME : return monitor_set_name;
-    default : return unknown;
-  }
+  return HeadLength + frame->message->size;
 }
 
 int
@@ -96,12 +80,12 @@ frameEncodeAppend(int32_t cid, uint8_t state, char* data, int size, Buffer* buff
 
 int
 frameAppend(Frame* frame, Buffer* buffer) {
-  return frameEncodeAppend(frame->cid, frame->state, frame->message.data,
-    frame->message.size, buffer);
+  return frameEncodeAppend(frame->cid, frame->state, frame->message->data,
+    frame->message->size, buffer);
 }
 
 int
-frameDecode(Frame* frame,   char* result, int size) {
+frameDecode(Frame* frame, char* result, int size) {
   if (size < HeadLength) {
     return 0;
   }
@@ -126,7 +110,8 @@ frameDecode(Frame* frame,   char* result, int size) {
                | ((result[3] & 0xff)  << 8)
                | (result[4] & 0xff) ;
   frame->state = result[5];
-  bufferTempFromStr(&frame->message, result + HeadLength, length);
+  bufferReset(frame->message);
+  bufferAdd(frame->message, result + HeadLength, length);
   return packageLength;
 }
 #endif // TCP_TUNNEL_FRAME_H
