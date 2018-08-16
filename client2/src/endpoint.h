@@ -18,14 +18,18 @@ class Center;
 
 class Endpoint {
 public:
+  static const int TYPE_TUNNEL = 0;
+  static const int TYPE_TRAFFIC = 1;
+
   static void init();
-  static Endpoint* create(int id, const char* ip, int port);
+  static Endpoint* create(int id, int type, const char* ip, int port);
   static void loop();
   static void updateAll();
   static void recycle();
   static void setCenter(Center* center);
 
   int getId();
+  int getType();
   void handleEvent(int events);
   int getWriteBufferRemainSize();
   int appendDataToWriteBuffer(const char* data, int size);
@@ -44,6 +48,7 @@ private:
 
   int id_;
   int fd_;
+  int type_;
   bool eofForWrite_;
   bool broken_;
   struct epoll_event ev_;

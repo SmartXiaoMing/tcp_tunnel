@@ -14,7 +14,7 @@ ClientCenter::prepare(const char* host, int port, const char* group, const char*
     char ip[30];
     if (selectIp(host, ip, 29)) {
       INFO("success select ip:%s for host:%s\n", ip, host);
-      trunk_ = Endpoint::create(0, ip, port);
+      trunk_ = Endpoint::create(0, Endpoint::TYPE_TUNNEL, ip, port);
     } else {
       ERROR("failed to select ip for host:%s\n", host);
     }
@@ -143,7 +143,7 @@ ClientCenter::processFrame() {
           ERROR("invalid frame with state:CONNECT, message:%s\n", frame_.message.c_str());
           break;
         }
-        Endpoint* leaf = Endpoint::create(frame_.id, ip, port);
+        Endpoint* leaf = Endpoint::create(frame_.id, Endpoint::TYPE_TRAFFIC, ip, port);
         if (leaf == NULL) {
           ERROR("failed to create ip:%s, port:%d\n", ip, port);
           break;

@@ -52,7 +52,7 @@ Endpoint::recycle() {
 }
 
 Endpoint*
-Endpoint::create(int id, const char* ip, int port) {
+Endpoint::create(int id, int type, const char* ip, int port) {
   int fd = socket(PF_INET, SOCK_STREAM, 0);
   if (fd < 0) {
     WARN("failed to socket, ip:%s, port:%d\n", ip, port);
@@ -69,6 +69,7 @@ Endpoint::create(int id, const char* ip, int port) {
   } else {
     INFO("success to connect,ip:%s, port:%d\n", ip, port);
     Endpoint* leaf = new Endpoint;
+    leaf->type = type;
     leaf->id_ = id;
     leaf->fd_ = fd;
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
@@ -104,6 +105,11 @@ Endpoint::setCenter(Center* center) {
 int
 Endpoint::getId() {
   return id_;
+}
+
+int
+Endpoint::getType() {
+  return type_;
 }
 
 void

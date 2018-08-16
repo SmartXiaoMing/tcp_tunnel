@@ -19,13 +19,14 @@ class Endpoint;
 
 class ServerCenter: public Center {
 public:
-  void prepare(const char* host, int port, const char* group, const char* name);
+  void prepare(int tunnelPort, int trafficPort);
   int getRemainBufferSizeFor(Endpoint* endpoint);
   void appendDataToBufferFor(Endpoint* endpoint, const char* data, int size);
   void notifyWritableFor(Endpoint* endpoint);
   void notifyBrokenFor(Endpoint* endpoint);
   void sendDataToTunnel(uint8_t state, int id, const char* data, int size);
 private:
+
   void reset();
   void handleData();
   bool processFrame();
@@ -33,8 +34,10 @@ private:
   static const int BufferCapacity = 40960;
   string frameBuffer_;
   Frame frame_;
-  Endpoint* trunk_;
-  map<int, Endpoint*> leaves_;
+  int tunnelServerId;
+  int trafficServerId;
+  map<int, Endpoint*> clients_;
+  map<int, Endpoint*> users_;
 };
 
 #endif //TCP_TUNNEL_CENTER_SERVER_H

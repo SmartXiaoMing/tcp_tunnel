@@ -53,10 +53,10 @@ int main(int argc, char** argv) {
   }
 
   Endpoint::init();
-  ClientCenter* center = new ClientCenter();
+  ServerCenter* center = new ServerCenter();
   Endpoint::setCenter(center);
   while (true) {
-    center->prepare(serverHost, serverPort, group, name);
+    center->prepare(tunnelPort, serverPort);
     Endpoint::loop();
   }
   return 0;
