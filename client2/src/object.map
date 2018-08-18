@@ -5,8 +5,9 @@
 
 按需库被包含以满足文件 (符号) 引用
 
-libstdc++.so.6                /tmp/ccEPsA41.o (std::__throw_length_error(char const*)@@GLIBCXX_3.4)
-libc.so.6                     /tmp/ccEPsA41.o (socket@@GLIBC_2.2.5)
+libstdc++.so.6                /tmp/ccSKwm5u.o (std::__throw_length_error(char const*)@@GLIBCXX_3.4)
+libgcc_s.so.1                 /tmp/ccSKwm5u.o (_Unwind_Resume@@GCC_3.0)
+libc.so.6                     /tmp/ccSKwm5u.o (socket@@GLIBC_2.2.5)
 
 舍弃的输入节
 
@@ -23,47 +24,60 @@ libc.so.6                     /tmp/ccEPsA41.o (socket@@GLIBC_2.2.5)
  .data          0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
  .note.GNU-stack
                 0x0000000000000000        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
- .group         0x0000000000000000        0x8 /tmp/ccEPsA41.o
- .group         0x0000000000000000        0x8 /tmp/ccEPsA41.o
- .group         0x0000000000000000        0x8 /tmp/ccEPsA41.o
- .text          0x0000000000000000        0x0 /tmp/ccEPsA41.o
- .data          0x0000000000000000        0x0 /tmp/ccEPsA41.o
- .text._ZN8Endpoint6createEiPKci
-                0x0000000000000000      0x1ab /tmp/ccEPsA41.o
- .text._ZN8Endpoint18setWriterBufferEofEv
-                0x0000000000000000       0x45 /tmp/ccEPsA41.o
- .text._ZN8Endpoint9setBrokenEv
-                0x0000000000000000       0x45 /tmp/ccEPsA41.o
+ .group         0x0000000000000000        0x8 /tmp/cc3jsk0I.o
+ .group         0x0000000000000000        0x8 /tmp/cc3jsk0I.o
+ .text          0x0000000000000000        0x0 /tmp/cc3jsk0I.o
+ .data          0x0000000000000000        0x0 /tmp/cc3jsk0I.o
  .note.GNU-stack
-                0x0000000000000000        0x0 /tmp/ccEPsA41.o
- .group         0x0000000000000000        0x8 /tmp/ccGW4hqd.o
- .group         0x0000000000000000        0x8 /tmp/ccGW4hqd.o
- .group         0x0000000000000000        0x8 /tmp/ccGW4hqd.o
- .group         0x0000000000000000        0x8 /tmp/ccGW4hqd.o
- .group         0x0000000000000000        0x8 /tmp/ccGW4hqd.o
- .group         0x0000000000000000        0x8 /tmp/ccGW4hqd.o
- .text          0x0000000000000000        0x0 /tmp/ccGW4hqd.o
- .data          0x0000000000000000        0x0 /tmp/ccGW4hqd.o
- .bss           0x0000000000000000        0x0 /tmp/ccGW4hqd.o
+                0x0000000000000000        0x0 /tmp/cc3jsk0I.o
+ .group         0x0000000000000000        0x8 /tmp/ccSKwm5u.o
+ .group         0x0000000000000000        0x8 /tmp/ccSKwm5u.o
+ .group         0x0000000000000000        0x8 /tmp/ccSKwm5u.o
+ .group         0x0000000000000000        0x8 /tmp/ccSKwm5u.o
+ .group         0x0000000000000000        0x8 /tmp/ccSKwm5u.o
+ .group         0x0000000000000000        0x8 /tmp/ccSKwm5u.o
+ .group         0x0000000000000000        0x8 /tmp/ccSKwm5u.o
+ .group         0x0000000000000000        0x8 /tmp/ccSKwm5u.o
+ .text          0x0000000000000000        0x0 /tmp/ccSKwm5u.o
+ .data          0x0000000000000000        0x0 /tmp/ccSKwm5u.o
+ .text._ZN14EndpointClient7getTypeEv
+                0x0000000000000000        0x4 /tmp/ccSKwm5u.o
  .note.GNU-stack
-                0x0000000000000000        0x0 /tmp/ccGW4hqd.o
- .text          0x0000000000000000        0x0 /tmp/ccJoDcnp.o
- .data          0x0000000000000000        0x0 /tmp/ccJoDcnp.o
- .bss           0x0000000000000000        0x0 /tmp/ccJoDcnp.o
+                0x0000000000000000        0x0 /tmp/ccSKwm5u.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccnfQeai.o
+ .text          0x0000000000000000        0x0 /tmp/ccnfQeai.o
+ .data          0x0000000000000000        0x0 /tmp/ccnfQeai.o
+ .bss           0x0000000000000000        0x0 /tmp/ccnfQeai.o
+ .data.DW.ref.__gxx_personality_v0
+                0x0000000000000000        0x8 /tmp/ccnfQeai.o
  .note.GNU-stack
-                0x0000000000000000        0x0 /tmp/ccJoDcnp.o
- .text          0x0000000000000000        0x0 /tmp/ccIEuJsB.o
- .data          0x0000000000000000        0x0 /tmp/ccIEuJsB.o
- .text._Z6isIpV4PKc.part.0
-                0x0000000000000000       0x43 /tmp/ccIEuJsB.o
+                0x0000000000000000        0x0 /tmp/ccnfQeai.o
+ .group         0x0000000000000000        0x8 /tmp/ccOv6WR5.o
+ .group         0x0000000000000000        0x8 /tmp/ccOv6WR5.o
+ .text          0x0000000000000000        0x0 /tmp/ccOv6WR5.o
+ .data          0x0000000000000000        0x0 /tmp/ccOv6WR5.o
+ .bss           0x0000000000000000        0x0 /tmp/ccOv6WR5.o
+ .text._ZNSt8_Rb_treeIiSt4pairIKiP14EndpointClientESt10_Select1stIS4_ESt4lessIiESaIS4_EE8_M_eraseEPSt13_Rb_tree_nodeIS4_E
+                0x0000000000000000       0x3a /tmp/ccOv6WR5.o
+ .data.DW.ref.__gxx_personality_v0
+                0x0000000000000000        0x8 /tmp/ccOv6WR5.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 /tmp/ccOv6WR5.o
+ .text          0x0000000000000000        0x0 /tmp/ccycOmOT.o
+ .data          0x0000000000000000        0x0 /tmp/ccycOmOT.o
  .text._Z6isIpV4PKc
-                0x0000000000000000        0xd /tmp/ccIEuJsB.o
- .rodata.str1.1
-                0x0000000000000000       0x12 /tmp/ccIEuJsB.o
- .text._Z8selectIpPKcPci
-                0x0000000000000000       0xfc /tmp/ccIEuJsB.o
+                0x0000000000000000        0xd /tmp/ccycOmOT.o
  .note.GNU-stack
-                0x0000000000000000        0x0 /tmp/ccIEuJsB.o
+                0x0000000000000000        0x0 /tmp/ccycOmOT.o
  .data          0x0000000000000000        0x0 /usr/lib/x86_64-linux-gnu/libc_nonshared.a(elf-init.oS)
  .bss           0x0000000000000000        0x0 /usr/lib/x86_64-linux-gnu/libc_nonshared.a(elf-init.oS)
  .note.GNU-stack
@@ -89,10 +103,11 @@ libc.so.6                     /tmp/ccEPsA41.o (socket@@GLIBC_2.2.5)
 LOAD /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 LOAD /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crti.o
 LOAD /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
-LOAD /tmp/ccEPsA41.o
-LOAD /tmp/ccGW4hqd.o
-LOAD /tmp/ccJoDcnp.o
-LOAD /tmp/ccIEuJsB.o
+LOAD /tmp/cc3jsk0I.o
+LOAD /tmp/ccSKwm5u.o
+LOAD /tmp/ccnfQeai.o
+LOAD /tmp/ccOv6WR5.o
+LOAD /tmp/ccycOmOT.o
 LOAD /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 LOAD /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/libm.so
 START GROUP
@@ -143,285 +158,386 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
  *(.gnu.hash)
  .gnu.hash      0x0000000000000298       0x1c /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 
-.dynsym         0x00000000000002b8      0x330
+.dynsym         0x00000000000002b8      0x4c8
  *(.dynsym)
- .dynsym        0x00000000000002b8      0x330 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .dynsym        0x00000000000002b8      0x4c8 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 
-.dynstr         0x00000000000005e8      0x38d
+.dynstr         0x0000000000000780      0x4c8
  *(.dynstr)
- .dynstr        0x00000000000005e8      0x38d /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .dynstr        0x0000000000000780      0x4c8 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 
-.gnu.version    0x0000000000000976       0x44
+.gnu.version    0x0000000000000c48       0x66
  *(.gnu.version)
- .gnu.version   0x0000000000000976       0x44 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .gnu.version   0x0000000000000c48       0x66 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 
-.gnu.version_d  0x00000000000009c0        0x0
+.gnu.version_d  0x0000000000000cb0        0x0
  *(.gnu.version_d)
  .gnu.version_d
-                0x00000000000009c0        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000cb0        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 
-.gnu.version_r  0x00000000000009c0       0xb0
+.gnu.version_r  0x0000000000000cb0       0xd0
  *(.gnu.version_r)
  .gnu.version_r
-                0x00000000000009c0       0xb0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000cb0       0xd0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 
-.rela.dyn       0x0000000000000a70      0x1c8
+.rela.dyn       0x0000000000000d80      0x2e8
  *(.rela.init)
  *(.rela.text .rela.text.* .rela.gnu.linkonce.t.*)
  .rela.text._ZNSt8_Rb_treeIP8EndpointS1_St9_IdentityIS1_ESt4lessIS1_ESaIS1_EE8_M_eraseEPSt13_Rb_tree_nodeIS1_E
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text._ZN8Endpoint7recycleEv
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text._ZNSt3setIP8EndpointSt4lessIS1_ESaIS1_EED2Ev
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text._ZN8Endpoint11handleEventEi
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text._ZN8Endpoint23appendDataToWriteBufferEPKci
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text._ZN8Endpoint22notifyCenterIsWritableEv
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text._ZN8Endpoint11updateEventEv
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  .rela.text._ZN8Endpoint9updateAllEv
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN8Endpoint7recycleEv
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZNSt3setIP8EndpointSt4lessIS1_ESaIS1_EED2Ev
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  .rela.text.startup._GLOBAL__sub_I__ZN8Endpoint10sUpdateSetE
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text._ZNSt8_Rb_treeIiSt4pairIKiP8EndpointESt10_Select1stIS4_ESt4lessIiESaIS4_EE8_M_eraseEPSt13_Rb_tree_nodeIS4_E
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text._ZN12ServerCenter15notifyBrokenForEP8Endpoint
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN14EndpointClient6createEiiPKci
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN14EndpointClient11handleEventEi
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN14EndpointClient23appendDataToWriteBufferEPKci
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN14EndpointClient18setWriterBufferEofEv
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN14EndpointClient9setBrokenEv
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN14EndpointClient22notifyCenterIsWritableEv
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN14EndpointClient11updateEventEv
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZNSt8_Rb_treeIiSt4pairIKiP14EndpointClientESt10_Select1stIS4_ESt4lessIiESaIS4_EE8_M_eraseEPSt13_Rb_tree_nodeIS4_E
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN12CenterClient5resetEv
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN12CenterClient15notifyBrokenForEP14EndpointClient
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZNSt8_Rb_treeIiSt4pairIKiP14EndpointClientESt10_Select1stIS4_ESt4lessIiESaIS4_EE29_M_get_insert_hint_unique_posESt23_Rb_tree_const_iteratorIS4_ERS1_
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZNSt3mapIiP14EndpointClientSt4lessIiESaISt4pairIKiS1_EEEixEOi
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text._ZN12CenterClient12processFrameEv
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  .rela.text.startup.main
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.text     0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.text     0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  *(.rela.fini)
  *(.rela.rodata .rela.rodata.* .rela.gnu.linkonce.r.*)
  *(.rela.data .rela.data.* .rela.gnu.linkonce.d.*)
  .rela.data.rel.ro
-                0x0000000000000a70        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000d80        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  .rela.data.rel.local
-                0x0000000000000a70       0x18 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000d80       0x18 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.rel.ro._ZTI8Endpoint
+                0x0000000000000d98       0x30 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.rel.ro._ZTI14EndpointClient
+                0x0000000000000dc8       0x48 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.rel.ro._ZTV8Endpoint
+                0x0000000000000e10       0x48 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.rel.ro.local._ZTV14EndpointClient
+                0x0000000000000e58       0x48 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.DW.ref.__gxx_personality_v0
+                0x0000000000000ea0       0x18 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  .rela.data.rel.ro._ZTI6Center
-                0x0000000000000a88       0x30 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.data.rel.ro._ZTI12ServerCenter
-                0x0000000000000ab8       0x48 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .rela.data.rel.ro.local._ZTV12ServerCenter
-                0x0000000000000b00       0x78 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000000eb8       0x30 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.rel.ro._ZTI12CenterClient
+                0x0000000000000ee8       0x48 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.data.rel.ro.local._ZTV12CenterClient
+                0x0000000000000f30       0x78 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  *(.rela.tdata .rela.tdata.* .rela.gnu.linkonce.td.*)
  *(.rela.tbss .rela.tbss.* .rela.gnu.linkonce.tb.*)
  *(.rela.ctors)
  *(.rela.dtors)
  *(.rela.got)
- .rela.got      0x0000000000000b78       0x78 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.got      0x0000000000000fa8       0x78 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*)
- .rela.bss      0x0000000000000bf0        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.bss      0x0000000000001020        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  *(.rela.ldata .rela.ldata.* .rela.gnu.linkonce.l.*)
  *(.rela.lbss .rela.lbss.* .rela.gnu.linkonce.lb.*)
  *(.rela.lrodata .rela.lrodata.* .rela.gnu.linkonce.lr.*)
  *(.rela.ifunc)
- .rela.ifunc    0x0000000000000bf0        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.ifunc    0x0000000000001020        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  .rela.fini_array
-                0x0000000000000bf0       0x18 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000001020       0x18 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  .rela.init_array
-                0x0000000000000c08       0x30 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000001038       0x30 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.eh_frame
+                0x0000000000001068        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 
-.rela.plt       0x0000000000000c38      0x2d0
+.rela.plt       0x0000000000001068      0x3d8
  *(.rela.plt)
- .rela.plt      0x0000000000000c38      0x2d0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .rela.plt      0x0000000000001068      0x3d8 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
                 [!provide]                        PROVIDE (__rela_iplt_start, .)
  *(.rela.iplt)
                 [!provide]                        PROVIDE (__rela_iplt_end, .)
 
-.init           0x0000000000000f08       0x17
+.init           0x0000000000001440       0x17
  *(SORT(.init))
- .init          0x0000000000000f08       0x12 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crti.o
-                0x0000000000000f08                _init
- .init          0x0000000000000f1a        0x5 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
+ .init          0x0000000000001440       0x12 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crti.o
+                0x0000000000001440                _init
+ .init          0x0000000000001452        0x5 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
 
-.plt            0x0000000000000f20      0x1f0
+.plt            0x0000000000001460      0x2a0
  *(.plt)
- .plt           0x0000000000000f20      0x1f0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .plt           0x0000000000001460      0x2a0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  *(.iplt)
 
-.plt.got        0x0000000000001110        0x8
+.plt.got        0x0000000000001700        0x8
  *(.plt.got)
- .plt.got       0x0000000000001110        0x8 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .plt.got       0x0000000000001700        0x8 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 
 .plt.sec
  *(.plt.sec)
 
-.text           0x0000000000001120     0x10c2
+.text           0x0000000000001710     0x2322
  *(.text.unlikely .text.*_unlikely .text.unlikely.*)
  *(.text.exit .text.exit.*)
  *(.text.startup .text.startup.*)
  .text.startup._GLOBAL__sub_I__ZN8Endpoint10sUpdateSetE
-                0x0000000000001120       0xa0 /tmp/ccEPsA41.o
+                0x0000000000001710       0xa0 /tmp/cc3jsk0I.o
  .text.startup.main
-                0x00000000000011c0      0x2e3 /tmp/ccJoDcnp.o
-                0x00000000000011c0                main
+                0x00000000000017b0      0x36f /tmp/ccOv6WR5.o
+                0x00000000000017b0                main
  *(.text.hot .text.hot.*)
  *(.text .stub .text.* .gnu.linkonce.t.*)
- *fill*         0x00000000000014a3        0xd 
- .text          0x00000000000014b0       0x2b /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
-                0x00000000000014b0                _start
- *fill*         0x00000000000014db        0x5 
- .text          0x00000000000014e0       0xda /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
- *fill*         0x00000000000015ba        0x6 
+ *fill*         0x0000000000001b1f        0x1 
+ .text          0x0000000000001b20       0x2b /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000001b20                _start
+ *fill*         0x0000000000001b4b        0x5 
+ .text          0x0000000000001b50       0xda /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
+ *fill*         0x0000000000001c2a        0x6 
  .text._ZN8Endpoint4initEv
-                0x00000000000015c0       0x5f /tmp/ccEPsA41.o
-                0x00000000000015c0                Endpoint::init()
- *fill*         0x000000000000161f        0x1 
- .text._ZN8Endpoint9setCenterEP6Center
-                0x0000000000001620        0x8 /tmp/ccEPsA41.o
-                0x0000000000001620                Endpoint::setCenter(Center*)
- *fill*         0x0000000000001628        0x8 
- .text._ZN8Endpoint5getIdEv
-                0x0000000000001630        0x3 /tmp/ccEPsA41.o
-                0x0000000000001630                Endpoint::getId()
- *fill*         0x0000000000001633        0xd 
- .text._ZN8Endpoint24getWriteBufferRemainSizeEv
-                0x0000000000001640        0x9 /tmp/ccEPsA41.o
-                0x0000000000001640                Endpoint::getWriteBufferRemainSize()
- *fill*         0x0000000000001649        0x7 
+                0x0000000000001c30       0x5f /tmp/cc3jsk0I.o
+                0x0000000000001c30                Endpoint::init()
+ *fill*         0x0000000000001c8f        0x1 
  .text._ZNSt8_Rb_treeIP8EndpointS1_St9_IdentityIS1_ESt4lessIS1_ESaIS1_EE8_M_eraseEPSt13_Rb_tree_nodeIS1_E
-                0x0000000000001650       0x3a /tmp/ccEPsA41.o
-                0x0000000000001650                std::_Rb_tree<Endpoint*, Endpoint*, std::_Identity<Endpoint*>, std::less<Endpoint*>, std::allocator<Endpoint*> >::_M_erase(std::_Rb_tree_node<Endpoint*>*)
- *fill*         0x000000000000168a        0x6 
- .text._ZN8Endpoint7recycleEv
-                0x0000000000001690       0xd2 /tmp/ccEPsA41.o
-                0x0000000000001690                Endpoint::recycle()
- *fill*         0x0000000000001762        0xe 
- .text._ZNSt3setIP8EndpointSt4lessIS1_ESaIS1_EED2Ev
-                0x0000000000001770        0x9 /tmp/ccEPsA41.o
-                0x0000000000001770                std::set<Endpoint*, std::less<Endpoint*>, std::allocator<Endpoint*> >::~set()
-                0x0000000000001770                std::set<Endpoint*, std::less<Endpoint*>, std::allocator<Endpoint*> >::~set()
- *fill*         0x0000000000001779        0x7 
- .text._ZNSt8_Rb_treeIP8EndpointS1_St9_IdentityIS1_ESt4lessIS1_ESaIS1_EE16_M_insert_uniqueIS1_EESt4pairISt17_Rb_tree_iteratorIS1_EbEOT_
-                0x0000000000001780      0x117 /tmp/ccEPsA41.o
-                0x0000000000001780                std::pair<std::_Rb_tree_iterator<Endpoint*>, bool> std::_Rb_tree<Endpoint*, Endpoint*, std::_Identity<Endpoint*>, std::less<Endpoint*>, std::allocator<Endpoint*> >::_M_insert_unique<Endpoint*>(Endpoint*&&)
- *fill*         0x0000000000001897        0x9 
- .text._ZN8Endpoint11handleEventEi
-                0x00000000000018a0      0x2e4 /tmp/ccEPsA41.o
-                0x00000000000018a0                Endpoint::handleEvent(int)
- *fill*         0x0000000000001b84        0xc 
- .text._ZN8Endpoint23appendDataToWriteBufferEPKci
-                0x0000000000001b90       0x78 /tmp/ccEPsA41.o
-                0x0000000000001b90                Endpoint::appendDataToWriteBuffer(char const*, int)
- *fill*         0x0000000000001c08        0x8 
- .text._ZN8Endpoint22notifyCenterIsWritableEv
-                0x0000000000001c10       0x41 /tmp/ccEPsA41.o
-                0x0000000000001c10                Endpoint::notifyCenterIsWritable()
- *fill*         0x0000000000001c51        0xf 
- .text._ZN8Endpoint11updateEventEv
-                0x0000000000001c60       0xdd /tmp/ccEPsA41.o
-                0x0000000000001c60                Endpoint::updateEvent()
- *fill*         0x0000000000001d3d        0x3 
+                0x0000000000001c90       0x3a /tmp/cc3jsk0I.o
+                0x0000000000001c90                std::_Rb_tree<Endpoint*, Endpoint*, std::_Identity<Endpoint*>, std::less<Endpoint*>, std::allocator<Endpoint*> >::_M_erase(std::_Rb_tree_node<Endpoint*>*)
+ *fill*         0x0000000000001cca        0x6 
  .text._ZN8Endpoint9updateAllEv
-                0x0000000000001d40       0x77 /tmp/ccEPsA41.o
-                0x0000000000001d40                Endpoint::updateAll()
- *fill*         0x0000000000001db7        0x9 
+                0x0000000000001cd0       0x78 /tmp/cc3jsk0I.o
+                0x0000000000001cd0                Endpoint::updateAll()
+ *fill*         0x0000000000001d48        0x8 
+ .text._ZN8Endpoint7recycleEv
+                0x0000000000001d50       0xc2 /tmp/cc3jsk0I.o
+                0x0000000000001d50                Endpoint::recycle()
+ *fill*         0x0000000000001e12        0xe 
  .text._ZN8Endpoint4loopEv
-                0x0000000000001dc0       0xba /tmp/ccEPsA41.o
-                0x0000000000001dc0                Endpoint::loop()
- *fill*         0x0000000000001e7a        0x6 
- .text._ZN12ServerCenter22getRemainBufferSizeForEP8Endpoint
-                0x0000000000001e80       0x3a /tmp/ccGW4hqd.o
-                0x0000000000001e80                ServerCenter::getRemainBufferSizeFor(Endpoint*)
- *fill*         0x0000000000001eba        0x6 
- .text._ZN12ServerCenter17notifyWritableForEP8Endpoint
-                0x0000000000001ec0       0x52 /tmp/ccGW4hqd.o
-                0x0000000000001ec0                ServerCenter::notifyWritableFor(Endpoint*)
- *fill*         0x0000000000001f12        0xe 
- .text._ZN12ServerCenter21appendDataToBufferForEP8EndpointPKci
-                0x0000000000001f20       0x63 /tmp/ccGW4hqd.o
-                0x0000000000001f20                ServerCenter::appendDataToBufferFor(Endpoint*, char const*, int)
- *fill*         0x0000000000001f83        0xd 
- .text._ZNSt8_Rb_treeIiSt4pairIKiP8EndpointESt10_Select1stIS4_ESt4lessIiESaIS4_EE8_M_eraseEPSt13_Rb_tree_nodeIS4_E
-                0x0000000000001f90       0x3a /tmp/ccGW4hqd.o
-                0x0000000000001f90                std::_Rb_tree<int, std::pair<int const, Endpoint*>, std::_Select1st<std::pair<int const, Endpoint*> >, std::less<int>, std::allocator<std::pair<int const, Endpoint*> > >::_M_erase(std::_Rb_tree_node<std::pair<int const, Endpoint*> >*)
- *fill*         0x0000000000001fca        0x6 
- .text._ZN12ServerCenter15notifyBrokenForEP8Endpoint
-                0x0000000000001fd0      0x180 /tmp/ccGW4hqd.o
-                0x0000000000001fd0                ServerCenter::notifyBrokenFor(Endpoint*)
+                0x0000000000001e20       0xba /tmp/cc3jsk0I.o
+                0x0000000000001e20                Endpoint::loop()
+ *fill*         0x0000000000001eda        0x6 
+ .text._ZNSt3setIP8EndpointSt4lessIS1_ESaIS1_EED2Ev
+                0x0000000000001ee0        0x9 /tmp/cc3jsk0I.o
+                0x0000000000001ee0                std::set<Endpoint*, std::less<Endpoint*>, std::allocator<Endpoint*> >::~set()
+                0x0000000000001ee0                std::set<Endpoint*, std::less<Endpoint*>, std::allocator<Endpoint*> >::~set()
+ *fill*         0x0000000000001ee9        0x7 
+ .text._ZN14EndpointClient6createEiiPKci
+                0x0000000000001ef0      0x1e3 /tmp/ccSKwm5u.o
+                0x0000000000001ef0                EndpointClient::create(int, int, char const*, int)
+ *fill*         0x00000000000020d3        0xd 
+ .text._ZN14EndpointClient9setCenterEP6Center
+                0x00000000000020e0        0x8 /tmp/ccSKwm5u.o
+                0x00000000000020e0                EndpointClient::setCenter(Center*)
+ *fill*         0x00000000000020e8        0x8 
+ .text._ZN14EndpointClient5getIdEv
+                0x00000000000020f0        0x4 /tmp/ccSKwm5u.o
+                0x00000000000020f0                EndpointClient::getId()
+ *fill*         0x00000000000020f4        0xc 
+ .text._ZN14EndpointClient24getWriteBufferRemainSizeEv
+                0x0000000000002100        0x9 /tmp/ccSKwm5u.o
+                0x0000000000002100                EndpointClient::getWriteBufferRemainSize()
+ *fill*         0x0000000000002109        0x7 
+ .text._ZNSt8_Rb_treeIP8EndpointS1_St9_IdentityIS1_ESt4lessIS1_ESaIS1_EE16_M_insert_uniqueIS1_EESt4pairISt17_Rb_tree_iteratorIS1_EbEOT_
+                0x0000000000002110      0x117 /tmp/ccSKwm5u.o
+                0x0000000000002110                std::pair<std::_Rb_tree_iterator<Endpoint*>, bool> std::_Rb_tree<Endpoint*, Endpoint*, std::_Identity<Endpoint*>, std::less<Endpoint*>, std::allocator<Endpoint*> >::_M_insert_unique<Endpoint*>(Endpoint*&&)
+ *fill*         0x0000000000002227        0x9 
+ .text._ZN14EndpointClient11handleEventEi
+                0x0000000000002230      0x2ed /tmp/ccSKwm5u.o
+                0x0000000000002230                EndpointClient::handleEvent(int)
+ *fill*         0x000000000000251d        0x3 
+ .text._ZN14EndpointClient23appendDataToWriteBufferEPKci
+                0x0000000000002520       0x78 /tmp/ccSKwm5u.o
+                0x0000000000002520                EndpointClient::appendDataToWriteBuffer(char const*, int)
+ *fill*         0x0000000000002598        0x8 
+ .text._ZN14EndpointClient18setWriterBufferEofEv
+                0x00000000000025a0       0x45 /tmp/ccSKwm5u.o
+                0x00000000000025a0                EndpointClient::setWriterBufferEof()
+ *fill*         0x00000000000025e5        0xb 
+ .text._ZN14EndpointClient9setBrokenEv
+                0x00000000000025f0       0x45 /tmp/ccSKwm5u.o
+                0x00000000000025f0                EndpointClient::setBroken()
+ *fill*         0x0000000000002635        0xb 
+ .text._ZN14EndpointClient22notifyCenterIsWritableEv
+                0x0000000000002640       0x41 /tmp/ccSKwm5u.o
+                0x0000000000002640                EndpointClient::notifyCenterIsWritable()
+ *fill*         0x0000000000002681        0xf 
+ .text._ZN14EndpointClient11updateEventEv
+                0x0000000000002690       0xde /tmp/ccSKwm5u.o
+                0x0000000000002690                EndpointClient::updateEvent()
+ *fill*         0x000000000000276e        0x2 
+ .text._ZN12CenterClient22getRemainBufferSizeForEP14EndpointClient
+                0x0000000000002770       0x3a /tmp/ccnfQeai.o
+                0x0000000000002770                CenterClient::getRemainBufferSizeFor(EndpointClient*)
+ *fill*         0x00000000000027aa        0x6 
+ .text._ZN12CenterClient16sendDataToTunnelEhiPKci
+                0x00000000000027b0      0x515 /tmp/ccnfQeai.o
+                0x00000000000027b0                CenterClient::sendDataToTunnel(unsigned char, int, char const*, int)
+ *fill*         0x0000000000002cc5        0xb 
+ .text._ZN12CenterClient7prepareEPKciS1_S1_
+                0x0000000000002cd0      0x174 /tmp/ccnfQeai.o
+                0x0000000000002cd0                CenterClient::prepare(char const*, int, char const*, char const*)
+ *fill*         0x0000000000002e44        0xc 
+ .text._ZNSt8_Rb_treeIiSt4pairIKiP14EndpointClientESt10_Select1stIS4_ESt4lessIiESaIS4_EE8_M_eraseEPSt13_Rb_tree_nodeIS4_E
+                0x0000000000002e50       0x3a /tmp/ccnfQeai.o
+                0x0000000000002e50                std::_Rb_tree<int, std::pair<int const, EndpointClient*>, std::_Select1st<std::pair<int const, EndpointClient*> >, std::less<int>, std::allocator<std::pair<int const, EndpointClient*> > >::_M_erase(std::_Rb_tree_node<std::pair<int const, EndpointClient*> >*)
+ *fill*         0x0000000000002e8a        0x6 
+ .text._ZN12CenterClient5resetEv
+                0x0000000000002e90       0x87 /tmp/ccnfQeai.o
+                0x0000000000002e90                CenterClient::reset()
+ *fill*         0x0000000000002f17        0x9 
+ .text._ZN12CenterClient15notifyBrokenForEP14EndpointClient
+                0x0000000000002f20      0x180 /tmp/ccnfQeai.o
+                0x0000000000002f20                CenterClient::notifyBrokenFor(EndpointClient*)
+ .text._ZNSt8_Rb_treeIiSt4pairIKiP14EndpointClientESt10_Select1stIS4_ESt4lessIiESaIS4_EE24_M_get_insert_unique_posERS1_
+                0x00000000000030a0       0x89 /tmp/ccnfQeai.o
+                0x00000000000030a0                std::_Rb_tree<int, std::pair<int const, EndpointClient*>, std::_Select1st<std::pair<int const, EndpointClient*> >, std::less<int>, std::allocator<std::pair<int const, EndpointClient*> > >::_M_get_insert_unique_pos(int const&)
+ *fill*         0x0000000000003129        0x7 
+ .text._ZNSt8_Rb_treeIiSt4pairIKiP14EndpointClientESt10_Select1stIS4_ESt4lessIiESaIS4_EE29_M_get_insert_hint_unique_posESt23_Rb_tree_const_iteratorIS4_ERS1_
+                0x0000000000003130       0xe0 /tmp/ccnfQeai.o
+                0x0000000000003130                std::_Rb_tree<int, std::pair<int const, EndpointClient*>, std::_Select1st<std::pair<int const, EndpointClient*> >, std::less<int>, std::allocator<std::pair<int const, EndpointClient*> > >::_M_get_insert_hint_unique_pos(std::_Rb_tree_const_iterator<std::pair<int const, EndpointClient*> >, int const&)
+ .text._ZNSt3mapIiP14EndpointClientSt4lessIiESaISt4pairIKiS1_EEEixEOi
+                0x0000000000003210       0xe8 /tmp/ccnfQeai.o
+                0x0000000000003210                std::map<int, EndpointClient*, std::less<int>, std::allocator<std::pair<int const, EndpointClient*> > >::operator[](int&&)
+ *fill*         0x00000000000032f8        0x8 
+ .text._ZN12CenterClient12processFrameEv
+                0x0000000000003300      0x37a /tmp/ccnfQeai.o
+                0x0000000000003300                CenterClient::processFrame()
+ *fill*         0x000000000000367a        0x6 
+ .text._ZN12CenterClient10handleDataEv
+                0x0000000000003680       0xf7 /tmp/ccnfQeai.o
+                0x0000000000003680                CenterClient::handleData()
+ *fill*         0x0000000000003777        0x9 
+ .text._ZN12CenterClient21appendDataToBufferForEP14EndpointClientPKci
+                0x0000000000003780       0x63 /tmp/ccnfQeai.o
+                0x0000000000003780                CenterClient::appendDataToBufferFor(EndpointClient*, char const*, int)
+ *fill*         0x00000000000037e3        0xd 
+ .text._ZN12CenterClient17notifyWritableForEP14EndpointClient
+                0x00000000000037f0       0x52 /tmp/ccnfQeai.o
+                0x00000000000037f0                CenterClient::notifyWritableFor(EndpointClient*)
+ *fill*         0x0000000000003842        0xe 
+ .text._Z6isIpV4PKc.part.0
+                0x0000000000003850       0x43 /tmp/ccycOmOT.o
+ *fill*         0x0000000000003893        0xd 
  .text._Z10isGoodCodev
-                0x0000000000002150       0x1e /tmp/ccIEuJsB.o
-                0x0000000000002150                isGoodCode()
- *fill*         0x000000000000216e        0x2 
- .text          0x0000000000002170       0x72 /usr/lib/x86_64-linux-gnu/libc_nonshared.a(elf-init.oS)
-                0x0000000000002170                __libc_csu_init
-                0x00000000000021e0                __libc_csu_fini
+                0x00000000000038a0       0x1e /tmp/ccycOmOT.o
+                0x00000000000038a0                isGoodCode()
+ *fill*         0x00000000000038be        0x2 
+ .text._Z8selectIpPKcPci
+                0x00000000000038c0       0xfc /tmp/ccycOmOT.o
+                0x00000000000038c0                selectIp(char const*, char*, int)
+ *fill*         0x00000000000039bc        0x4 
+ .text          0x00000000000039c0       0x72 /usr/lib/x86_64-linux-gnu/libc_nonshared.a(elf-init.oS)
+                0x00000000000039c0                __libc_csu_init
+                0x0000000000003a30                __libc_csu_fini
  *(.gnu.warning)
 
-.fini           0x00000000000021e4        0x9
+.fini           0x0000000000003a34        0x9
  *(SORT(.fini))
- .fini          0x00000000000021e4        0x4 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crti.o
-                0x00000000000021e4                _fini
- .fini          0x00000000000021e8        0x5 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
+ .fini          0x0000000000003a34        0x4 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crti.o
+                0x0000000000003a34                _fini
+ .fini          0x0000000000003a38        0x5 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
                 [!provide]                        PROVIDE (__etext, .)
                 [!provide]                        PROVIDE (_etext, .)
                 [!provide]                        PROVIDE (etext, .)
 
-.rodata         0x00000000000021f0      0x410
+.rodata         0x0000000000003a40      0x65a
  *(.rodata .rodata.* .gnu.linkonce.r.*)
  .rodata.str1.1
-                0x00000000000021f0       0xe1 /tmp/ccEPsA41.o
- *fill*         0x00000000000022d1        0x7 
+                0x0000000000003a40       0x4b /tmp/cc3jsk0I.o
+ *fill*         0x0000000000003a8b        0x5 
  .rodata.str1.8
-                0x00000000000022d8       0xe3 /tmp/ccEPsA41.o
+                0x0000000000003a90       0xe3 /tmp/ccSKwm5u.o
  .rodata.str1.1
-                0x00000000000023bb       0x15 /tmp/ccGW4hqd.o
- *fill*         0x00000000000023bb        0x5 
+                0x0000000000003b73       0x96 /tmp/ccSKwm5u.o
+ *fill*         0x0000000000003c09        0x7 
+ .rodata._ZTS8Endpoint
+                0x0000000000003c10        0xa /tmp/ccSKwm5u.o
+                0x0000000000003c10                typeinfo name for Endpoint
+ *fill*         0x0000000000003c1a        0x6 
+ .rodata._ZTS14EndpointClient
+                0x0000000000003c20       0x11 /tmp/ccSKwm5u.o
+                0x0000000000003c20                typeinfo name for EndpointClient
+ .rodata.str1.1
+                0x0000000000003c31       0x33 /tmp/ccnfQeai.o
+                                         0x48 (松开之前的大小)
+ *fill*         0x0000000000003c64        0x4 
+ .rodata.str1.8
+                0x0000000000003c68      0x1dc /tmp/ccnfQeai.o
+ *fill*         0x0000000000003e44        0x4 
  .rodata._ZTS6Center
-                0x00000000000023c0        0x8 /tmp/ccGW4hqd.o
-                0x00000000000023c0                typeinfo name for Center
- .rodata._ZTS12ServerCenter
-                0x00000000000023c8        0xf /tmp/ccGW4hqd.o
-                0x00000000000023c8                typeinfo name for ServerCenter
+                0x0000000000003e48        0x8 /tmp/ccnfQeai.o
+                0x0000000000003e48                typeinfo name for Center
+ .rodata._ZTS12CenterClient
+                0x0000000000003e50        0xf /tmp/ccnfQeai.o
+                0x0000000000003e50                typeinfo name for CenterClient
  .rodata.str1.1
-                0x00000000000023d7       0x6c /tmp/ccJoDcnp.o
- *fill*         0x0000000000002443        0x5 
+                0x0000000000003e5f       0x6c /tmp/ccOv6WR5.o
+ *fill*         0x0000000000003ecb        0x5 
  .rodata.str1.8
-                0x0000000000002448      0x1b8 /tmp/ccJoDcnp.o
+                0x0000000000003ed0      0x1b8 /tmp/ccOv6WR5.o
                                         0x1b3 (松开之前的大小)
+ .rodata.str1.1
+                0x0000000000004088       0x12 /tmp/ccycOmOT.o
 
 .rodata1
  *(.rodata1)
 
-.eh_frame_hdr   0x0000000000002600       0xe4
+.eh_frame_hdr   0x000000000000409c      0x14c
  *(.eh_frame_hdr)
- .eh_frame_hdr  0x0000000000002600       0xe4 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
-                0x0000000000002600                __GNU_EH_FRAME_HDR
+ .eh_frame_hdr  0x000000000000409c      0x14c /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x000000000000409c                __GNU_EH_FRAME_HDR
  *(.eh_frame_entry .eh_frame_entry.*)
 
-.eh_frame       0x00000000000026e8      0x480
+.eh_frame       0x00000000000041e8      0x7d0
  *(.eh_frame)
- .eh_frame      0x00000000000026e8       0x30 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .eh_frame      0x00000000000041e8       0x30 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
                                          0x2c (松开之前的大小)
- *fill*         0x0000000000002718        0x0 
- .eh_frame      0x0000000000002718       0x40 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
- .eh_frame      0x0000000000002758       0x18 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ *fill*         0x0000000000004218        0x0 
+ .eh_frame      0x0000000000004218       0x40 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .eh_frame      0x0000000000004258       0x18 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
                                          0x30 (松开之前的大小)
- .eh_frame      0x0000000000002770      0x250 /tmp/ccEPsA41.o
-                                        0x2e8 (松开之前的大小)
- .eh_frame      0x00000000000029c0       0xf8 /tmp/ccGW4hqd.o
-                                        0x110 (松开之前的大小)
- .eh_frame      0x0000000000002ab8       0x38 /tmp/ccJoDcnp.o
-                                         0x50 (松开之前的大小)
- .eh_frame      0x0000000000002af0       0x18 /tmp/ccIEuJsB.o
+ .eh_frame      0x0000000000004270      0x108 /tmp/cc3jsk0I.o
+                                        0x120 (松开之前的大小)
+ .eh_frame      0x0000000000004378      0x1f8 /tmp/ccSKwm5u.o
+                                        0x220 (松开之前的大小)
+ .eh_frame      0x0000000000004570      0x310 /tmp/ccnfQeai.o
+                                        0x348 (松开之前的大小)
+ .eh_frame      0x0000000000004880       0x38 /tmp/ccOv6WR5.o
+                                         0xa0 (松开之前的大小)
+ .eh_frame      0x00000000000048b8       0xa0 /tmp/ccycOmOT.o
                                          0xd0 (松开之前的大小)
- .eh_frame      0x0000000000002b08       0x5c /usr/lib/x86_64-linux-gnu/libc_nonshared.a(elf-init.oS)
+ .eh_frame      0x0000000000004958       0x5c /usr/lib/x86_64-linux-gnu/libc_nonshared.a(elf-init.oS)
                                          0x78 (松开之前的大小)
- .eh_frame      0x0000000000002b64        0x4 /usr/lib/gcc/x86_64-linux-gnu/7/crtendS.o
+ .eh_frame      0x00000000000049b4        0x4 /usr/lib/gcc/x86_64-linux-gnu/7/crtendS.o
  *(.eh_frame.*)
 
 .gcc_except_table
+                0x00000000000049b8       0x3f
  *(.gcc_except_table .gcc_except_table.*)
+ .gcc_except_table._ZN14EndpointClient6createEiiPKci
+                0x00000000000049b8       0x14 /tmp/ccSKwm5u.o
+ .gcc_except_table._ZN12CenterClient16sendDataToTunnelEhiPKci
+                0x00000000000049cc       0x16 /tmp/ccnfQeai.o
+ .gcc_except_table.main
+                0x00000000000049e2       0x15 /tmp/ccOv6WR5.o
 
 .gnu_extab
  *(.gnu_extab*)
 
 .exception_ranges
  *(.exception_ranges .exception_ranges*)
-                0x0000000000202c60                . = DATA_SEGMENT_ALIGN (CONSTANT (MAXPAGESIZE), CONSTANT (COMMONPAGESIZE))
+                0x0000000000204b90                . = DATA_SEGMENT_ALIGN (CONSTANT (MAXPAGESIZE), CONSTANT (COMMONPAGESIZE))
 
 .eh_frame
  *(.eh_frame)
@@ -443,24 +559,24 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
  *(.tbss .tbss.* .gnu.linkonce.tb.*)
  *(.tcommon)
 
-.preinit_array  0x0000000000202c60        0x0
+.preinit_array  0x0000000000204b90        0x0
                 [!provide]                        PROVIDE (__preinit_array_start, .)
  *(.preinit_array)
                 [!provide]                        PROVIDE (__preinit_array_end, .)
 
-.init_array     0x0000000000202c60       0x10
-                0x0000000000202c60                PROVIDE (__init_array_start, .)
+.init_array     0x0000000000204b90       0x10
+                0x0000000000204b90                PROVIDE (__init_array_start, .)
  *(SORT(.init_array.*) SORT(.ctors.*))
  *(.init_array EXCLUDE_FILE(*crtend?.o *crtend.o *crtbegin?.o *crtbegin.o) .ctors)
- .init_array    0x0000000000202c60        0x8 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
- .init_array    0x0000000000202c68        0x8 /tmp/ccEPsA41.o
-                0x0000000000202c70                PROVIDE (__init_array_end, .)
+ .init_array    0x0000000000204b90        0x8 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
+ .init_array    0x0000000000204b98        0x8 /tmp/cc3jsk0I.o
+                0x0000000000204ba0                PROVIDE (__init_array_end, .)
 
-.fini_array     0x0000000000202c70        0x8
+.fini_array     0x0000000000204ba0        0x8
                 [!provide]                        PROVIDE (__fini_array_start, .)
  *(SORT(.fini_array.*) SORT(.dtors.*))
  *(.fini_array EXCLUDE_FILE(*crtend?.o *crtend.o *crtbegin?.o *crtbegin.o) .dtors)
- .fini_array    0x0000000000202c70        0x8 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
+ .fini_array    0x0000000000204ba0        0x8 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
                 [!provide]                        PROVIDE (__fini_array_end, .)
 
 .ctors
@@ -480,89 +596,106 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
 .jcr
  *(.jcr)
 
-.data.rel.ro    0x0000000000202c78       0x58
+.data.rel.ro    0x0000000000204ba8       0xc0
  *(.data.rel.ro.local* .gnu.linkonce.d.rel.ro.local.*)
- .data.rel.ro.local._ZTV12ServerCenter
-                0x0000000000202c78       0x30 /tmp/ccGW4hqd.o
-                0x0000000000202c78                vtable for ServerCenter
+ .data.rel.ro.local._ZTV14EndpointClient
+                0x0000000000204ba8       0x20 /tmp/ccSKwm5u.o
+                0x0000000000204ba8                vtable for EndpointClient
+ .data.rel.ro.local._ZTV12CenterClient
+                0x0000000000204bc8       0x30 /tmp/ccnfQeai.o
+                0x0000000000204bc8                vtable for CenterClient
  *(.data.rel.ro .data.rel.ro.* .gnu.linkonce.d.rel.ro.*)
- .data.rel.ro   0x0000000000202ca8        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .data.rel.ro   0x0000000000204bf8        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .data.rel.ro._ZTI8Endpoint
+                0x0000000000204bf8       0x10 /tmp/ccSKwm5u.o
+                0x0000000000204bf8                typeinfo for Endpoint
+ .data.rel.ro._ZTI14EndpointClient
+                0x0000000000204c08       0x18 /tmp/ccSKwm5u.o
+                0x0000000000204c08                typeinfo for EndpointClient
+ .data.rel.ro._ZTV8Endpoint
+                0x0000000000204c20       0x20 /tmp/ccSKwm5u.o
+                0x0000000000204c20                vtable for Endpoint
  .data.rel.ro._ZTI6Center
-                0x0000000000202ca8       0x10 /tmp/ccGW4hqd.o
-                0x0000000000202ca8                typeinfo for Center
- .data.rel.ro._ZTI12ServerCenter
-                0x0000000000202cb8       0x18 /tmp/ccGW4hqd.o
-                0x0000000000202cb8                typeinfo for ServerCenter
+                0x0000000000204c40       0x10 /tmp/ccnfQeai.o
+                0x0000000000204c40                typeinfo for Center
+ .data.rel.ro._ZTI12CenterClient
+                0x0000000000204c50       0x18 /tmp/ccnfQeai.o
+                0x0000000000204c50                typeinfo for CenterClient
 
-.dynamic        0x0000000000202cd0      0x200
+.dynamic        0x0000000000204c68      0x210
  *(.dynamic)
- .dynamic       0x0000000000202cd0      0x200 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
-                0x0000000000202cd0                _DYNAMIC
+ .dynamic       0x0000000000204c68      0x210 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000204c68                _DYNAMIC
 
-.got            0x0000000000202ed0      0x130
+.got            0x0000000000204e78      0x188
  *(.got.plt)
- .got.plt       0x0000000000202ed0      0x108 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
-                0x0000000000202ed0                _GLOBAL_OFFSET_TABLE_
+ .got.plt       0x0000000000204e78      0x160 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+                0x0000000000204e78                _GLOBAL_OFFSET_TABLE_
  *(.igot.plt)
  *(.got)
- .got           0x0000000000202fd8       0x28 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .got           0x0000000000204fd8       0x28 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  *(.igot)
-                0x0000000000203000                . = DATA_SEGMENT_RELRO_END (., 0x0)
+                0x0000000000205000                . = DATA_SEGMENT_RELRO_END (., 0x0)
 
-.data           0x0000000000203000        0x8
+.data           0x0000000000205000       0x10
  *(.data .data.* .gnu.linkonce.d.*)
  .data.rel.local
-                0x0000000000203000        0x8 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
-                0x0000000000203000                __dso_handle
+                0x0000000000205000        0x8 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
+                0x0000000000205000                __dso_handle
+ .data.DW.ref.__gxx_personality_v0
+                0x0000000000205008        0x8 /tmp/ccSKwm5u.o
+                0x0000000000205008                DW.ref.__gxx_personality_v0
 
 .tm_clone_table
-                0x0000000000203008        0x0
+                0x0000000000205010        0x0
  .tm_clone_table
-                0x0000000000203008        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
+                0x0000000000205010        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
  .tm_clone_table
-                0x0000000000203008        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/crtendS.o
+                0x0000000000205010        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/crtendS.o
 
 .data1
  *(.data1)
-                0x0000000000203008                _edata = .
+                0x0000000000205010                _edata = .
                 [!provide]                        PROVIDE (edata, .)
-                0x0000000000203008                . = .
-                0x0000000000203008                __bss_start = .
+                0x0000000000205010                . = .
+                0x0000000000205010                __bss_start = .
 
-.bss            0x0000000000203020       0xb8
+.bss            0x0000000000205020       0xc0
  *(.dynbss)
- .dynbss        0x0000000000203020        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
+ .dynbss        0x0000000000205020        0x0 /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
  *(.bss .bss.* .gnu.linkonce.b.*)
- .bss           0x0000000000203020        0x1 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
- *fill*         0x0000000000203021       0x1f 
- .bss           0x0000000000203040       0x90 /tmp/ccEPsA41.o
-                0x0000000000203040                Endpoint::sEpollFd
-                0x0000000000203048                Endpoint::sCenter
-                0x0000000000203060                Endpoint::sRecycleSet
-                0x00000000002030a0                Endpoint::sUpdateSet
- .bss           0x00000000002030d0        0x4 /tmp/ccIEuJsB.o
-                0x00000000002030d0                logLevel
+ .bss           0x0000000000205020        0x1 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
+ *fill*         0x0000000000205021       0x1f 
+ .bss           0x0000000000205040       0x90 /tmp/cc3jsk0I.o
+                0x0000000000205040                Endpoint::sId
+                0x0000000000205044                Endpoint::sEpollFd
+                0x0000000000205060                Endpoint::sRecycleSet
+                0x00000000002050a0                Endpoint::sUpdateSet
+ .bss           0x00000000002050d0        0x8 /tmp/ccSKwm5u.o
+                0x00000000002050d0                EndpointClient::sCenter
+ .bss           0x00000000002050d8        0x4 /tmp/ccycOmOT.o
+                0x00000000002050d8                logLevel
  *(COMMON)
-                0x00000000002030d8                . = ALIGN ((. != 0x0)?0x8:0x1)
- *fill*         0x00000000002030d4        0x4 
+                0x00000000002050e0                . = ALIGN ((. != 0x0)?0x8:0x1)
+ *fill*         0x00000000002050dc        0x4 
 
 .lbss
  *(.dynlbss)
  *(.lbss .lbss.* .gnu.linkonce.lb.*)
  *(LARGE_COMMON)
-                0x00000000002030d8                . = ALIGN (0x8)
-                0x00000000002030d8                . = SEGMENT_START ("ldata-segment", .)
+                0x00000000002050e0                . = ALIGN (0x8)
+                0x00000000002050e0                . = SEGMENT_START ("ldata-segment", .)
 
 .lrodata
  *(.lrodata .lrodata.* .gnu.linkonce.lr.*)
 
-.ldata          0x00000000006030d8        0x0
+.ldata          0x00000000006050e0        0x0
  *(.ldata .ldata.* .gnu.linkonce.l.*)
-                0x00000000006030d8                . = ALIGN ((. != 0x0)?0x8:0x1)
-                0x00000000006030d8                . = ALIGN (0x8)
-                0x00000000006030d8                _end = .
+                0x00000000006050e0                . = ALIGN ((. != 0x0)?0x8:0x1)
+                0x00000000006050e0                . = ALIGN (0x8)
+                0x00000000006050e0                _end = .
                 [!provide]                        PROVIDE (end, .)
-                0x00000000006030d8                . = DATA_SEGMENT_END (.)
+                0x00000000006050e0                . = DATA_SEGMENT_END (.)
 
 .stab
  *(.stab)
@@ -586,10 +719,11 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
  *(.comment)
  .comment       0x0000000000000000       0x25 /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
                                          0x26 (松开之前的大小)
- .comment       0x0000000000000025       0x26 /tmp/ccEPsA41.o
- .comment       0x0000000000000025       0x26 /tmp/ccGW4hqd.o
- .comment       0x0000000000000025       0x26 /tmp/ccJoDcnp.o
- .comment       0x0000000000000025       0x26 /tmp/ccIEuJsB.o
+ .comment       0x0000000000000025       0x26 /tmp/cc3jsk0I.o
+ .comment       0x0000000000000025       0x26 /tmp/ccSKwm5u.o
+ .comment       0x0000000000000025       0x26 /tmp/ccnfQeai.o
+ .comment       0x0000000000000025       0x26 /tmp/ccOv6WR5.o
+ .comment       0x0000000000000025       0x26 /tmp/ccycOmOT.o
  .comment       0x0000000000000025       0x26 /usr/lib/gcc/x86_64-linux-gnu/7/crtendS.o
 
 .debug
@@ -662,7 +796,7 @@ LOAD /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crtn.o
  *(.note.GNU-stack)
  *(.gnu_debuglink)
  *(.gnu.lto_*)
-OUTPUT(tunnel_server elf64-x86-64)
+OUTPUT(tunnel_client elf64-x86-64)
 
 交叉引用表
 
@@ -681,31 +815,53 @@ CXXABI_1.3.8                                      /usr/lib/gcc/x86_64-linux-gnu/
 CXXABI_1.3.9                                      /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 CXXABI_FLOAT128                                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 CXXABI_TM_1                                       /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-Endpoint::appendDataToWriteBuffer(char const*, int) /tmp/ccEPsA41.o
-                                                  /tmp/ccGW4hqd.o
-Endpoint::create(int, char const*, int)           /tmp/ccEPsA41.o
-Endpoint::getId()                                 /tmp/ccEPsA41.o
-                                                  /tmp/ccGW4hqd.o
-Endpoint::getWriteBufferRemainSize()              /tmp/ccEPsA41.o
-                                                  /tmp/ccGW4hqd.o
-Endpoint::handleEvent(int)                        /tmp/ccEPsA41.o
-Endpoint::init()                                  /tmp/ccEPsA41.o
-                                                  /tmp/ccJoDcnp.o
-Endpoint::loop()                                  /tmp/ccEPsA41.o
-                                                  /tmp/ccJoDcnp.o
-Endpoint::notifyCenterIsWritable()                /tmp/ccEPsA41.o
-                                                  /tmp/ccGW4hqd.o
-Endpoint::recycle()                               /tmp/ccEPsA41.o
-Endpoint::sCenter                                 /tmp/ccEPsA41.o
-Endpoint::sEpollFd                                /tmp/ccEPsA41.o
-Endpoint::sRecycleSet                             /tmp/ccEPsA41.o
-Endpoint::sUpdateSet                              /tmp/ccEPsA41.o
-Endpoint::setBroken()                             /tmp/ccEPsA41.o
-Endpoint::setCenter(Center*)                      /tmp/ccEPsA41.o
-                                                  /tmp/ccJoDcnp.o
-Endpoint::setWriterBufferEof()                    /tmp/ccEPsA41.o
-Endpoint::updateAll()                             /tmp/ccEPsA41.o
-Endpoint::updateEvent()                           /tmp/ccEPsA41.o
+CenterClient::appendDataToBufferFor(EndpointClient*, char const*, int) /tmp/ccnfQeai.o
+CenterClient::getRemainBufferSizeFor(EndpointClient*) /tmp/ccnfQeai.o
+CenterClient::handleData()                        /tmp/ccnfQeai.o
+CenterClient::notifyBrokenFor(EndpointClient*)    /tmp/ccnfQeai.o
+CenterClient::notifyWritableFor(EndpointClient*)  /tmp/ccnfQeai.o
+CenterClient::prepare(char const*, int, char const*, char const*) /tmp/ccnfQeai.o
+                                                  /tmp/ccOv6WR5.o
+CenterClient::processFrame()                      /tmp/ccnfQeai.o
+CenterClient::reset()                             /tmp/ccnfQeai.o
+                                                  /tmp/ccOv6WR5.o
+CenterClient::sendDataToTunnel(unsigned char, int, char const*, int) /tmp/ccnfQeai.o
+DW.ref.__gxx_personality_v0                       /tmp/ccSKwm5u.o
+                                                  /tmp/ccOv6WR5.o
+                                                  /tmp/ccnfQeai.o
+Endpoint::init()                                  /tmp/cc3jsk0I.o
+                                                  /tmp/ccOv6WR5.o
+Endpoint::loop()                                  /tmp/cc3jsk0I.o
+                                                  /tmp/ccOv6WR5.o
+Endpoint::recycle()                               /tmp/cc3jsk0I.o
+Endpoint::sEpollFd                                /tmp/cc3jsk0I.o
+                                                  /tmp/ccSKwm5u.o
+Endpoint::sId                                     /tmp/cc3jsk0I.o
+Endpoint::sRecycleSet                             /tmp/cc3jsk0I.o
+                                                  /tmp/ccSKwm5u.o
+Endpoint::sUpdateSet                              /tmp/cc3jsk0I.o
+                                                  /tmp/ccSKwm5u.o
+Endpoint::updateAll()                             /tmp/cc3jsk0I.o
+EndpointClient::appendDataToWriteBuffer(char const*, int) /tmp/ccSKwm5u.o
+                                                  /tmp/ccnfQeai.o
+EndpointClient::create(int, int, char const*, int) /tmp/ccSKwm5u.o
+                                                  /tmp/ccnfQeai.o
+EndpointClient::getId()                           /tmp/ccSKwm5u.o
+                                                  /tmp/ccnfQeai.o
+EndpointClient::getType()                         /tmp/ccSKwm5u.o
+EndpointClient::getWriteBufferRemainSize()        /tmp/ccSKwm5u.o
+                                                  /tmp/ccnfQeai.o
+EndpointClient::handleEvent(int)                  /tmp/ccSKwm5u.o
+EndpointClient::notifyCenterIsWritable()          /tmp/ccSKwm5u.o
+                                                  /tmp/ccnfQeai.o
+EndpointClient::sCenter                           /tmp/ccSKwm5u.o
+EndpointClient::setBroken()                       /tmp/ccSKwm5u.o
+                                                  /tmp/ccnfQeai.o
+EndpointClient::setCenter(Center*)                /tmp/ccSKwm5u.o
+                                                  /tmp/ccOv6WR5.o
+EndpointClient::setWriterBufferEof()              /tmp/ccSKwm5u.o
+                                                  /tmp/ccnfQeai.o
+EndpointClient::updateEvent()                     /tmp/ccSKwm5u.o
 GCC_3.0                                           /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
 GCC_3.3                                           /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
 GCC_3.3.1                                         /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
@@ -782,14 +938,6 @@ GLIBC_2.8                                         /lib/x86_64-linux-gnu/libc.so.
 GLIBC_2.9                                         /lib/x86_64-linux-gnu/libc.so.6
 GLIBC_PRIVATE                                     /lib/x86_64-linux-gnu/libc.so.6
                                                   /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-ServerCenter::appendDataToBufferFor(Endpoint*, char const*, int) /tmp/ccGW4hqd.o
-ServerCenter::getRemainBufferSizeFor(Endpoint*)   /tmp/ccGW4hqd.o
-ServerCenter::handleData()                        /tmp/ccGW4hqd.o
-ServerCenter::notifyBrokenFor(Endpoint*)          /tmp/ccGW4hqd.o
-ServerCenter::notifyWritableFor(Endpoint*)        /tmp/ccGW4hqd.o
-ServerCenter::prepare(char const*, int, char const*, char const*) /tmp/ccJoDcnp.o
-ServerCenter::reset()                             /tmp/ccGW4hqd.o
-ServerCenter::sendDataToTunnel(unsigned char, int, char const*, int) /tmp/ccGW4hqd.o
 VTT for std::__cxx11::basic_istringstream<char, std::char_traits<char>, std::allocator<char> > /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 VTT for std::__cxx11::basic_istringstream<char, std::char_traits<char>, std::allocator<char> >@@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 VTT for std::__cxx11::basic_istringstream<char, std::char_traits<char>, std::allocator<char> >@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -877,10 +1025,11 @@ _Exit@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.
 _Exit@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 _GLOBAL_OFFSET_TABLE_                             /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
                                                   /usr/lib/x86_64-linux-gnu/libc_nonshared.a(elf-init.oS)
-                                                  /tmp/ccIEuJsB.o
-                                                  /tmp/ccJoDcnp.o
-                                                  /tmp/ccGW4hqd.o
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccycOmOT.o
+                                                  /tmp/ccOv6WR5.o
+                                                  /tmp/ccnfQeai.o
+                                                  /tmp/ccSKwm5u.o
+                                                  /tmp/cc3jsk0I.o
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crti.o
 _IO_fprintf                                       /lib/x86_64-linux-gnu/libc.so.6
@@ -890,21 +1039,21 @@ _IO_stdin_used                                    /usr/lib/gcc/x86_64-linux-gnu/
 _ITM_RU1                                          /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 _ITM_RU8                                          /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 _ITM_addUserCommitAction                          /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-_ITM_deregisterTMCloneTable                       /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
-                                                  /lib/x86_64-linux-gnu/libm.so.6
+_ITM_deregisterTMCloneTable                       /lib/x86_64-linux-gnu/libm.so.6
+                                                  /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
 _ITM_memcpyRnWt                                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 _ITM_memcpyRtWn                                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-_ITM_registerTMCloneTable                         /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
-                                                  /lib/x86_64-linux-gnu/libm.so.6
+_ITM_registerTMCloneTable                         /lib/x86_64-linux-gnu/libm.so.6
+                                                  /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
 _Jv_RegisterClasses                               /lib/x86_64-linux-gnu/libm.so.6
 _LIB_VERSION                                      /lib/x86_64-linux-gnu/libm.so.6
 _LIB_VERSION@@GLIBC_2.2.5                         /lib/x86_64-linux-gnu/libm.so.6
 _LIB_VERSION@GLIBC_2.2.5                          /lib/x86_64-linux-gnu/libm.so.6
-__GNU_EH_FRAME_HDR                                tunnel_server
+__GNU_EH_FRAME_HDR                                tunnel_client
 __TMC_END__                                       /usr/lib/gcc/x86_64-linux-gnu/7/crtendS.o
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
 __after_morecore_hook                             /lib/x86_64-linux-gnu/libc.so.6
@@ -923,7 +1072,7 @@ __cxxabiv1::__pbase_type_info::__pointer_catch(__cxxabiv1::__pbase_type_info con
 __cxxabiv1::__pbase_type_info::__pointer_catch(__cxxabiv1::__pbase_type_info const*, void**, unsigned int) const@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 __data_start                                      /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 __dso_handle                                      /usr/lib/gcc/x86_64-linux-gnu/7/crtbeginS.o
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/cc3jsk0I.o
 __fcntl                                           /lib/x86_64-linux-gnu/libc.so.6
 __fcntl@@GLIBC_2.2.5                              /lib/x86_64-linux-gnu/libc.so.6
 __fcntl@GLIBC_2.2.5                               /lib/x86_64-linux-gnu/libc.so.6
@@ -933,8 +1082,8 @@ __free_hook@GLIBC_2.2.5                           /lib/x86_64-linux-gnu/libc.so.
 __getdelim                                        /lib/x86_64-linux-gnu/libc.so.6
 __getdelim@@GLIBC_2.2.5                           /lib/x86_64-linux-gnu/libc.so.6
 __getdelim@GLIBC_2.2.5                            /lib/x86_64-linux-gnu/libc.so.6
-__gmon_start__                                    /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
-                                                  /lib/x86_64-linux-gnu/libm.so.6
+__gmon_start__                                    /lib/x86_64-linux-gnu/libm.so.6
+                                                  /usr/lib/gcc/x86_64-linux-gnu/7/libgcc_s.so.1
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/crti.o
 __gnu_cxx::stdio_sync_filebuf<char, std::char_traits<char> >::file() /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -1705,7 +1854,7 @@ clone                                             /lib/x86_64-linux-gnu/libc.so.
 clone@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 clone@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 close                                             /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/cc3jsk0I.o
 close@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 close@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 closedir                                          /lib/x86_64-linux-gnu/libc.so.6
@@ -1724,7 +1873,7 @@ conjl                                             /lib/x86_64-linux-gnu/libm.so.
 conjl@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libm.so.6
 conjl@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libm.so.6
 connect                                           /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccSKwm5u.o
 connect@@GLIBC_2.2.5                              /lib/x86_64-linux-gnu/libc.so.6
 connect@GLIBC_2.2.5                               /lib/x86_64-linux-gnu/libc.so.6
 copysign                                          /lib/x86_64-linux-gnu/libc.so.6
@@ -2046,7 +2195,8 @@ fcloseall                                         /lib/x86_64-linux-gnu/libc.so.
 fcloseall@@GLIBC_2.2.5                            /lib/x86_64-linux-gnu/libc.so.6
 fcloseall@GLIBC_2.2.5                             /lib/x86_64-linux-gnu/libc.so.6
 fcntl                                             /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccSKwm5u.o
+                                                  /tmp/cc3jsk0I.o
 fcntl@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 fcntl@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 fcvt_r                                            /lib/x86_64-linux-gnu/libc.so.6
@@ -2612,7 +2762,7 @@ index                                             /lib/x86_64-linux-gnu/libc.so.
 index@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 index@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 inet_addr                                         /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccSKwm5u.o
 inet_addr@@GLIBC_2.2.5                            /lib/x86_64-linux-gnu/libc.so.6
 inet_addr@GLIBC_2.2.5                             /lib/x86_64-linux-gnu/libc.so.6
 inet_aton                                         /lib/x86_64-linux-gnu/libc.so.6
@@ -2634,9 +2784,9 @@ ioctl                                             /lib/x86_64-linux-gnu/libc.so.
 ioctl@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 ioctl@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-isGoodCode()                                      /tmp/ccIEuJsB.o
-                                                  /tmp/ccEPsA41.o
-isIpV4(char const*)                               /tmp/ccIEuJsB.o
+isGoodCode()                                      /tmp/ccycOmOT.o
+                                                  /tmp/ccSKwm5u.o
+isIpV4(char const*)                               /tmp/ccycOmOT.o
 isalnum_l                                         /lib/x86_64-linux-gnu/libc.so.6
 isalnum_l@@GLIBC_2.3                              /lib/x86_64-linux-gnu/libc.so.6
 isalnum_l@GLIBC_2.3                               /lib/x86_64-linux-gnu/libc.so.6
@@ -2928,9 +3078,11 @@ log2l@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libm.so.
 log2l@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libm.so.6
 log@@GLIBC_2.2.5                                  /lib/x86_64-linux-gnu/libm.so.6
 log@GLIBC_2.2.5                                   /lib/x86_64-linux-gnu/libm.so.6
-logLevel                                          /tmp/ccIEuJsB.o
-                                                  /tmp/ccJoDcnp.o
-                                                  /tmp/ccEPsA41.o
+logLevel                                          /tmp/ccycOmOT.o
+                                                  /tmp/ccOv6WR5.o
+                                                  /tmp/ccnfQeai.o
+                                                  /tmp/ccSKwm5u.o
+                                                  /tmp/cc3jsk0I.o
 logb                                              /lib/x86_64-linux-gnu/libm.so.6
 logb@@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libm.so.6
 logb@GLIBC_2.2.5                                  /lib/x86_64-linux-gnu/libm.so.6
@@ -2995,7 +3147,7 @@ lseek@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.
 madvise                                           /lib/x86_64-linux-gnu/libc.so.6
 madvise@@GLIBC_2.2.5                              /lib/x86_64-linux-gnu/libc.so.6
 madvise@GLIBC_2.2.5                               /lib/x86_64-linux-gnu/libc.so.6
-main                                              /tmp/ccJoDcnp.o
+main                                              /tmp/ccOv6WR5.o
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o
 makecontext                                       /lib/x86_64-linux-gnu/libc.so.6
 makecontext@@GLIBC_2.2.5                          /lib/x86_64-linux-gnu/libc.so.6
@@ -3391,8 +3543,9 @@ putc@@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.
 putc@GLIBC_2.2.5                                  /lib/x86_64-linux-gnu/libc.so.6
                                                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 puts                                              /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccJoDcnp.o
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccOv6WR5.o
+                                                  /tmp/ccnfQeai.o
+                                                  /tmp/cc3jsk0I.o
 puts@@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 puts@GLIBC_2.2.5                                  /lib/x86_64-linux-gnu/libc.so.6
 pututline                                         /lib/x86_64-linux-gnu/libc.so.6
@@ -3483,7 +3636,7 @@ reallocarray                                      /lib/x86_64-linux-gnu/libc.so.
 reallocarray@@GLIBC_2.26                          /lib/x86_64-linux-gnu/libc.so.6
 reallocarray@GLIBC_2.26                           /lib/x86_64-linux-gnu/libc.so.6
 recv                                              /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccSKwm5u.o
 recv@@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 recv@GLIBC_2.2.5                                  /lib/x86_64-linux-gnu/libc.so.6
 recvfrom                                          /lib/x86_64-linux-gnu/libc.so.6
@@ -3654,9 +3807,10 @@ seed48_r@GLIBC_2.2.5                              /lib/x86_64-linux-gnu/libc.so.
 select                                            /lib/x86_64-linux-gnu/libc.so.6
 select@@GLIBC_2.2.5                               /lib/x86_64-linux-gnu/libc.so.6
 select@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
-selectIp(char const*, char*, int)                 /tmp/ccIEuJsB.o
+selectIp(char const*, char*, int)                 /tmp/ccycOmOT.o
+                                                  /tmp/ccnfQeai.o
 send                                              /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccSKwm5u.o
 send@@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 send@GLIBC_2.2.5                                  /lib/x86_64-linux-gnu/libc.so.6
 sendfile64                                        /lib/x86_64-linux-gnu/libc.so.6
@@ -3841,13 +3995,14 @@ sinl                                              /lib/x86_64-linux-gnu/libm.so.
 sinl@@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libm.so.6
 sinl@GLIBC_2.2.5                                  /lib/x86_64-linux-gnu/libm.so.6
 sleep                                             /lib/x86_64-linux-gnu/libc.so.6
+                                                  /tmp/ccnfQeai.o
 sleep@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 sleep@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
 snprintf                                          /lib/x86_64-linux-gnu/libc.so.6
 snprintf@@GLIBC_2.2.5                             /lib/x86_64-linux-gnu/libc.so.6
 snprintf@GLIBC_2.2.5                              /lib/x86_64-linux-gnu/libc.so.6
 socket                                            /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccSKwm5u.o
 socket@@GLIBC_2.2.5                               /lib/x86_64-linux-gnu/libc.so.6
 socket@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 socketpair                                        /lib/x86_64-linux-gnu/libc.so.6
@@ -3869,7 +4024,7 @@ sqrtl                                             /lib/x86_64-linux-gnu/libm.so.
 sqrtl@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libm.so.6
 sqrtl@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libm.so.6
 srand                                             /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccIEuJsB.o
+                                                  /tmp/ccycOmOT.o
 srand48_r                                         /lib/x86_64-linux-gnu/libc.so.6
 srand48_r@@GLIBC_2.2.5                            /lib/x86_64-linux-gnu/libc.so.6
 srand48_r@GLIBC_2.2.5                             /lib/x86_64-linux-gnu/libc.so.6
@@ -3896,8 +4051,11 @@ statvfs64@@GLIBC_2.2.5                            /lib/x86_64-linux-gnu/libc.so.
 statvfs64@GLIBC_2.2.5                             /lib/x86_64-linux-gnu/libc.so.6
 statvfs@@GLIBC_2.2.5                              /lib/x86_64-linux-gnu/libc.so.6
 statvfs@GLIBC_2.2.5                               /lib/x86_64-linux-gnu/libc.so.6
-std::_Rb_tree<Endpoint*, Endpoint*, std::_Identity<Endpoint*>, std::less<Endpoint*>, std::allocator<Endpoint*> >::_M_erase(std::_Rb_tree_node<Endpoint*>*) /tmp/ccEPsA41.o
-std::_Rb_tree<int, std::pair<int const, Endpoint*>, std::_Select1st<std::pair<int const, Endpoint*> >, std::less<int>, std::allocator<std::pair<int const, Endpoint*> > >::_M_erase(std::_Rb_tree_node<std::pair<int const, Endpoint*> >*) /tmp/ccGW4hqd.o
+std::_Rb_tree<Endpoint*, Endpoint*, std::_Identity<Endpoint*>, std::less<Endpoint*>, std::allocator<Endpoint*> >::_M_erase(std::_Rb_tree_node<Endpoint*>*) /tmp/cc3jsk0I.o
+std::_Rb_tree<int, std::pair<int const, EndpointClient*>, std::_Select1st<std::pair<int const, EndpointClient*> >, std::less<int>, std::allocator<std::pair<int const, EndpointClient*> > >::_M_erase(std::_Rb_tree_node<std::pair<int const, EndpointClient*> >*) /tmp/ccnfQeai.o
+                                                  /tmp/ccOv6WR5.o
+std::_Rb_tree<int, std::pair<int const, EndpointClient*>, std::_Select1st<std::pair<int const, EndpointClient*> >, std::less<int>, std::allocator<std::pair<int const, EndpointClient*> > >::_M_get_insert_hint_unique_pos(std::_Rb_tree_const_iterator<std::pair<int const, EndpointClient*> >, int const&) /tmp/ccnfQeai.o
+std::_Rb_tree<int, std::pair<int const, EndpointClient*>, std::_Select1st<std::pair<int const, EndpointClient*> >, std::less<int>, std::allocator<std::pair<int const, EndpointClient*> > >::_M_get_insert_unique_pos(int const&) /tmp/ccnfQeai.o
 std::__cxx11::basic_istringstream<char, std::char_traits<char>, std::allocator<char> >::basic_istringstream(std::_Ios_Openmode) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_istringstream<char, std::char_traits<char>, std::allocator<char> >::basic_istringstream(std::_Ios_Openmode) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_istringstream<char, std::char_traits<char>, std::allocator<char> >::basic_istringstream(std::_Ios_Openmode)@@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -4088,8 +4246,8 @@ std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >:
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_Alloc_hider::_Alloc_hider(char*, std::allocator<char>&&)@GLIBCXX_3.4.23 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_Alloc_hider::_Alloc_hider(char*, std::allocator<char>&&)@GLIBCXX_3.4.23 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_append(char const*, unsigned long) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-                                                  /tmp/ccGW4hqd.o
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccnfQeai.o
+                                                  /tmp/ccSKwm5u.o
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_append(char const*, unsigned long)@@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_append(char const*, unsigned long)@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_assign(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -4129,7 +4287,8 @@ std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >:
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_dispose()@@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_dispose()@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_erase(unsigned long, unsigned long) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-                                                  /tmp/ccEPsA41.o
+                                                  /tmp/ccnfQeai.o
+                                                  /tmp/ccSKwm5u.o
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_erase(unsigned long, unsigned long)@@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_erase(unsigned long, unsigned long)@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_get_allocator() /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -4154,9 +4313,11 @@ std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >:
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_local_data()@@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_local_data()@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_mutate(unsigned long, unsigned long, char const*, unsigned long) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
+                                                  /tmp/ccnfQeai.o
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_mutate(unsigned long, unsigned long, char const*, unsigned long)@@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_mutate(unsigned long, unsigned long, char const*, unsigned long)@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_replace(unsigned long, unsigned long, char const*, unsigned long) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
+                                                  /tmp/ccnfQeai.o
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_replace(unsigned long, unsigned long, char const*, unsigned long)@@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_replace(unsigned long, unsigned long, char const*, unsigned long)@GLIBCXX_3.4.21 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_replace_aux(unsigned long, unsigned long, unsigned long, char) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -10120,6 +10281,7 @@ std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> > std::num_get<wchar
 std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> > std::num_get<wchar_t, std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> > >::_M_extract_int<unsigned short>(std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::ios_base&, std::_Ios_Iostate&, unsigned short&) const /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> > std::num_get<wchar_t, std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> > >::_M_extract_int<unsigned short>(std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::ios_base&, std::_Ios_Iostate&, unsigned short&) const@@GLIBCXX_3.4 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> > std::num_get<wchar_t, std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> > >::_M_extract_int<unsigned short>(std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::istreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::ios_base&, std::_Ios_Iostate&, unsigned short&) const@GLIBCXX_3.4 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
+std::map<int, EndpointClient*, std::less<int>, std::allocator<std::pair<int const, EndpointClient*> > >::operator[](int&&) /tmp/ccnfQeai.o
 std::messages<char> const& std::use_facet<std::messages<char> >(std::locale const&) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::messages<char> const& std::use_facet<std::messages<char> >(std::locale const&)@@GLIBCXX_3.4 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::messages<char> const& std::use_facet<std::messages<char> >(std::locale const&)@GLIBCXX_3.4 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -11395,9 +11557,9 @@ std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> > std::num_put<wchar
 std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> > std::num_put<wchar_t, std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> > >::_M_insert_int<unsigned long>(std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::ios_base&, wchar_t, unsigned long) const /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> > std::num_put<wchar_t, std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> > >::_M_insert_int<unsigned long>(std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::ios_base&, wchar_t, unsigned long) const@@GLIBCXX_3.4 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> > std::num_put<wchar_t, std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> > >::_M_insert_int<unsigned long>(std::ostreambuf_iterator<wchar_t, std::char_traits<wchar_t> >, std::ios_base&, wchar_t, unsigned long) const@GLIBCXX_3.4 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-std::pair<std::_Rb_tree_iterator<Endpoint*>, bool> std::_Rb_tree<Endpoint*, Endpoint*, std::_Identity<Endpoint*>, std::less<Endpoint*>, std::allocator<Endpoint*> >::_M_insert_unique<Endpoint*>(Endpoint*&&) /tmp/ccEPsA41.o
-std::set<Endpoint*, std::less<Endpoint*>, std::allocator<Endpoint*> >::~set() /tmp/ccEPsA41.o
-std::set<Endpoint*, std::less<Endpoint*>, std::allocator<Endpoint*> >::~set() /tmp/ccEPsA41.o
+std::pair<std::_Rb_tree_iterator<Endpoint*>, bool> std::_Rb_tree<Endpoint*, Endpoint*, std::_Identity<Endpoint*>, std::less<Endpoint*>, std::allocator<Endpoint*> >::_M_insert_unique<Endpoint*>(Endpoint*&&) /tmp/ccSKwm5u.o
+std::set<Endpoint*, std::less<Endpoint*>, std::allocator<Endpoint*> >::~set() /tmp/cc3jsk0I.o
+std::set<Endpoint*, std::less<Endpoint*>, std::allocator<Endpoint*> >::~set() /tmp/cc3jsk0I.o
 std::string::_Alloc_hider::_Alloc_hider(char*, std::allocator<char> const&) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::string::_Alloc_hider::_Alloc_hider(char*, std::allocator<char> const&) /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 std::string::_Alloc_hider::_Alloc_hider(char*, std::allocator<char> const&)@@GLIBCXX_3.4 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -12223,7 +12385,7 @@ strtok_r                                          /lib/x86_64-linux-gnu/libc.so.
 strtok_r@@GLIBC_2.2.5                             /lib/x86_64-linux-gnu/libc.so.6
 strtok_r@GLIBC_2.2.5                              /lib/x86_64-linux-gnu/libc.so.6
 strtol                                            /lib/x86_64-linux-gnu/libc.so.6
-                                                  /tmp/ccJoDcnp.o
+                                                  /tmp/ccOv6WR5.o
 strtol@@GLIBC_2.2.5                               /lib/x86_64-linux-gnu/libc.so.6
 strtol@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 strtol_l                                          /lib/x86_64-linux-gnu/libc.so.6
@@ -12407,8 +12569,10 @@ ttyname_r@GLIBC_2.2.5                             /lib/x86_64-linux-gnu/libc.so.
 twalk                                             /lib/x86_64-linux-gnu/libc.so.6
 twalk@@GLIBC_2.2.5                                /lib/x86_64-linux-gnu/libc.so.6
 twalk@GLIBC_2.2.5                                 /lib/x86_64-linux-gnu/libc.so.6
-typeinfo for Center                               /tmp/ccGW4hqd.o
-typeinfo for ServerCenter                         /tmp/ccGW4hqd.o
+typeinfo for Center                               /tmp/ccnfQeai.o
+typeinfo for CenterClient                         /tmp/ccnfQeai.o
+typeinfo for Endpoint                             /tmp/ccSKwm5u.o
+typeinfo for EndpointClient                       /tmp/ccSKwm5u.o
 typeinfo for __cxxabiv1::__array_type_info        /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 typeinfo for __cxxabiv1::__array_type_info@@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 typeinfo for __cxxabiv1::__array_type_info@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -13189,8 +13353,10 @@ typeinfo for wchar_t*@@CXXABI_1.3                 /usr/lib/gcc/x86_64-linux-gnu/
 typeinfo for wchar_t*@CXXABI_1.3                  /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 typeinfo for wchar_t@@CXXABI_1.3                  /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 typeinfo for wchar_t@CXXABI_1.3                   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-typeinfo name for Center                          /tmp/ccGW4hqd.o
-typeinfo name for ServerCenter                    /tmp/ccGW4hqd.o
+typeinfo name for Center                          /tmp/ccnfQeai.o
+typeinfo name for CenterClient                    /tmp/ccnfQeai.o
+typeinfo name for Endpoint                        /tmp/ccSKwm5u.o
+typeinfo name for EndpointClient                  /tmp/ccSKwm5u.o
 typeinfo name for __cxxabiv1::__array_type_info   /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 typeinfo name for __cxxabiv1::__array_type_info@@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 typeinfo name for __cxxabiv1::__array_type_info@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -14150,13 +14316,16 @@ vsscanf@GLIBC_2.2.5                               /lib/x86_64-linux-gnu/libc.so.
 vswprintf                                         /lib/x86_64-linux-gnu/libc.so.6
 vswprintf@@GLIBC_2.2.5                            /lib/x86_64-linux-gnu/libc.so.6
 vswprintf@GLIBC_2.2.5                             /lib/x86_64-linux-gnu/libc.so.6
-vtable for ServerCenter                           /tmp/ccGW4hqd.o
-                                                  /tmp/ccJoDcnp.o
+vtable for CenterClient                           /tmp/ccnfQeai.o
+                                                  /tmp/ccOv6WR5.o
+vtable for Endpoint                               /tmp/ccSKwm5u.o
+vtable for EndpointClient                         /tmp/ccSKwm5u.o
 vtable for __cxxabiv1::__array_type_info          /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__array_type_info@@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__array_type_info@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__class_type_info          /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-                                                  /tmp/ccGW4hqd.o
+                                                  /tmp/ccnfQeai.o
+                                                  /tmp/ccSKwm5u.o
 vtable for __cxxabiv1::__class_type_info@@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__class_type_info@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__enum_type_info           /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
@@ -14178,7 +14347,8 @@ vtable for __cxxabiv1::__pointer_type_info        /usr/lib/gcc/x86_64-linux-gnu/
 vtable for __cxxabiv1::__pointer_type_info@@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__pointer_type_info@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__si_class_type_info       /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
-                                                  /tmp/ccGW4hqd.o
+                                                  /tmp/ccnfQeai.o
+                                                  /tmp/ccSKwm5u.o
 vtable for __cxxabiv1::__si_class_type_info@@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__si_class_type_info@CXXABI_1.3 /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so
 vtable for __cxxabiv1::__vmi_class_type_info      /usr/lib/gcc/x86_64-linux-gnu/7/libstdc++.so

@@ -8,51 +8,35 @@
 #include <string>
 #include <set>
 #include <sys/epoll.h>
+#include <fcntl.h>
 
-#include "center.h"
 #include "utils.h"
 
 using namespace std;
 
-class Center;
-
 class Endpoint {
 public:
-  static const int TYPE_TUNNEL = 0;
-  static const int TYPE_TRAFFIC = 1;
-
   static void init();
-  static Endpoint* create(int id, int type, const char* ip, int port);
   static void loop();
   static void updateAll();
   static void recycle();
-  static void setCenter(Center* center);
 
-  int getId();
-  int getType();
-  void handleEvent(int events);
-  int getWriteBufferRemainSize();
-  int appendDataToWriteBuffer(const char* data, int size);
-  void setWriterBufferEof();
-  void setBroken();
-  void notifyCenterIsWritable();
+  Endpoint(int fd): fd_(fd) {
+    fcntl(fd_, F_SETFL, fcntl(fd_, F_GETFL, 0) | O_NONBLOCK);
+    epoll_ctl(sEpollFd, EPOLL_CTL_ADD, fd_, &ev_);
+  }
+  virtual void handleEvent(int events) = 0;
+  virtual void updateEvent() = 0;
 
-private:
-  void updateEvent();
-
+protected:
   static const int BufferCapacity = 4096;
   static int sEpollFd;
+  static int sId;
   static set<Endpoint*> sUpdateSet;
   static set<Endpoint*> sRecycleSet;
-  static Center* sCenter;
 
-  int id_;
   int fd_;
-  int type_;
-  bool eofForWrite_;
-  bool broken_;
   struct epoll_event ev_;
-  string buffer_;
 };
 
 

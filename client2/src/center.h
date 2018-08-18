@@ -8,17 +8,17 @@
 #include <map>
 #include <string>
 
-#include "endpoint.h"
+#include "endpoint_client.h"
 
 using namespace std;
 
-class Endpoint;
+class EndpointClient;
 
 class Center {
 public:
-  virtual int getRemainBufferSizeFor(Endpoint* endpoint) = 0;
-  virtual void appendDataToBufferFor(Endpoint* endpoint, const char* data, int size) = 0;
-  virtual void notifyWritableFor(Endpoint* endpoint) = 0;
-  virtual void notifyBrokenFor(Endpoint* endpoint) = 0;
+  virtual int getRemainBufferSizeFor(EndpointClient* endpoint) = 0;
+  virtual void appendDataToBufferFor(EndpointClient* endpoint, const char* data, int size) = 0;
+  virtual void notifyWritableFor(EndpointClient* endpoint) = 0;
+  virtual void notifyBrokenFor(EndpointClient* endpoint) = 0;
 };
 #endif //TCP_TUNNEL_CENTER_H

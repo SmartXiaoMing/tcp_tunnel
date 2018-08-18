@@ -8,36 +8,41 @@
 #include <map>
 #include <string>
 
-#include "endpoint.h"
+#include "endpoint_client.h"
+#include "endpoint_server.h"
 #include "frame.hpp"
 #include "utils.h"
 #include "center.h"
 
 using namespace std;
 
-class Endpoint;
+class EndpointServer;
 
-class ServerCenter: public Center {
+struct TunnelInfo {
+  int localPort;
+  string group;
+  string name;
+  string remoteIp;
+  int remotePort;
+  string buffer;
+};
+
+class CenterServer: public Center {
 public:
   void prepare(int tunnelPort, int trafficPort);
-  int getRemainBufferSizeFor(Endpoint* endpoint);
-  void appendDataToBufferFor(Endpoint* endpoint, const char* data, int size);
-  void notifyWritableFor(Endpoint* endpoint);
-  void notifyBrokenFor(Endpoint* endpoint);
-  void sendDataToTunnel(uint8_t state, int id, const char* data, int size);
+  int getRemainBufferSizeFor(EndpointClient* endpoint);
+  void appendDataToBufferFor(EndpointClient* endpoint, const char* data, int size);
+  void notifyWritableFor(EndpointClient* endpoint);
+  void notifyBrokenFor(EndpointClient* endpoint);
+  void notifyNewClient(EndpointClient* endpoint);
 private:
 
-  void reset();
-  void handleData();
-  bool processFrame();
-
   static const int BufferCapacity = 40960;
-  string frameBuffer_;
-  Frame frame_;
-  int tunnelServerId;
-  int trafficServerId;
-  map<int, Endpoint*> clients_;
-  map<int, Endpoint*> users_;
+  EndpointServer* traffic_;
+  set<EndpointServer*> trafficServerSet_;
+  EndpointServer* tunnel_;
+  map<int, pair<EndpointClient*, string>> trafficClients_;
+  map<EndpointClient*, EndpointClient*> tunnelClients_;
 };
 
 #endif //TCP_TUNNEL_CENTER_SERVER_H

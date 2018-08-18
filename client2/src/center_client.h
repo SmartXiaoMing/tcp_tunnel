@@ -8,24 +8,24 @@
 #include <map>
 #include <string>
 
-#include "endpoint.h"
+#include "endpoint_client.h"
 #include "frame.hpp"
 #include "center.h"
 
 using namespace std;
 
-class Endpoint;
+class EndpointClient;
 
-class ClientCenter: public Center {
+class CenterClient: public Center {
 public:
-  ClientCenter() {
+  CenterClient() {
     reset();
   }
   void prepare(const char* host, int port, const char* group, const char* name);
-  int getRemainBufferSizeFor(Endpoint* endpoint);
-  void appendDataToBufferFor(Endpoint* endpoint, const char* data, int size);
-  void notifyWritableFor(Endpoint* endpoint);
-  void notifyBrokenFor(Endpoint* endpoint);
+  int getRemainBufferSizeFor(EndpointClient* endpoint);
+  void appendDataToBufferFor(EndpointClient* endpoint, const char* data, int size);
+  void notifyWritableFor(EndpointClient* endpoint);
+  void notifyBrokenFor(EndpointClient* endpoint);
   void sendDataToTunnel(uint8_t state, int id, const char* data, int size);
 private:
   void reset();
@@ -35,8 +35,8 @@ private:
   static const int BufferCapacity = 40960;
   string frameBuffer_;
   Frame frame_;
-  Endpoint* trunk_;
-  map<int, Endpoint*> leaves_;
+  EndpointClient* trunk_;
+  map<int, EndpointClient*> leaves_;
 };
 
 #endif //TCP_TUNNEL_CENTER_CLIENT_H
