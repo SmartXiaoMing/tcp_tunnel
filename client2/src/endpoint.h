@@ -23,6 +23,7 @@ public:
 
   Endpoint(int fd): fd_(fd) {
     fcntl(fd_, F_SETFL, fcntl(fd_, F_GETFL, 0) | O_NONBLOCK);
+    ev_.data.ptr = this;
     epoll_ctl(sEpollFd, EPOLL_CTL_ADD, fd_, &ev_);
   }
   virtual void handleEvent(int events) = 0;

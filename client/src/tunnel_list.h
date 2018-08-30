@@ -29,17 +29,23 @@ iteratorRemove(Iterator* it) {
     return false;
   }
   List* list = it->list;
-  if (it->pre) {
-    it->pre->next = it->next;
+  if (!it->pre) { // the first
+    if (!it->next) { // the only one
+      list->first = list->last = NULL;
+    } else {
+      list->first = it->next;
+      list->first->pre = NULL;
+    }
   } else {
-    list->first = it->next;
+    if (!it->next) { // the last
+      list->last = it->pre;
+      list->last->next = NULL;
+    } else {
+      it->pre->next = it->next;
+      it->next->pre = it->pre;
+    }
   }
-  if (it->next) {
-    it->next->pre = it->pre;
-  } else {
-    list->last = it->pre;
-  }
-  --it->list->size;
+  --list->size;
   free(it);
   return true;
 }
@@ -117,7 +123,7 @@ listAdd(List* list, void* data) {
 bool
 listRemove(List* list, void* data, EqF f) {
   Iterator* it = listGet(list, data, f);
-  return iteratorRemove(it);
+  return it ? iteratorRemove(it) : false;
 }
 
 void
@@ -132,11 +138,13 @@ listForeach(List* list, DataDo dataDo) {
 void
 listClear(List* list) {
   Iterator* it = list->first;
-  while (it != NULL) {
+  while (it) {
     Iterator* t = it->next;
     free(it);
     it = t;
   }
+  list->first = list->last = NULL;
+  list->size = 0;
 }
 
 #endif //TCP_TUNNEL_LIST_H

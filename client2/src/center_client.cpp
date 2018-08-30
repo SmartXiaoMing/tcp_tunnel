@@ -18,14 +18,15 @@ CenterClient::prepare(const char* host, int port, const char* group, const char*
     } else {
       ERROR("failed to select ip for host:%s\n", host);
     }
-    if (trunk_) {
+    if (trunk_ == NULL) {
       ERROR("failed to prepare and wait 30 seoncds ...\n");
       sleep(30);
+    } else {
+      char data[256];
+      int size = sprintf(data, "group=%s&name=%s", group, name);
+      sendDataToTunnel(STATE_LOGIN, 0, data, size);
     }
   }
-  char data[256];
-  int size = sprintf(data, "group=%s&name=%s", group, name);
-  sendDataToTunnel(STATE_LOGIN, 0, data, size);
 }
 
 int
@@ -49,7 +50,9 @@ CenterClient::appendDataToBufferFor(EndpointClient* endpoint, const char* data, 
     frameBuffer_.append(data, size);
     handleData();
   } else {
-    trunk_->appendDataToWriteBuffer(data, size);
+    string buffer;
+    Frame::encodeTo(buffer, STATE_DATA, endpoint->getId(), data, size);
+    trunk_->appendDataToWriteBuffer(buffer.data(), buffer.size());
   }
 }
 
@@ -84,10 +87,11 @@ CenterClient::notifyBrokenFor(EndpointClient* endpoint) {
 }
 
 void
-CenterClient::sendDataToTunnel(uint8_t state, int id, const char* data, int size) {
+CenterClient::sendDataToTunnel(uint8_t state, int64_t id, const char* data, int size) {
   if (trunk_ == NULL) {
     return;
   }
+  DEBUG("sendDataToTunnel state:%d, id:%ld, data size:%d\n", state, id, size);
   string buffer;
   Frame::encodeTo(buffer, state, id, data, size);
   trunk_->appendDataToWriteBuffer(buffer.data(), buffer.size());
@@ -104,8 +108,10 @@ void CenterClient::reset() {
     it++;
   }
   leaves_.clear();
-  trunk_->setBroken();
-  trunk_ = NULL;
+  if (trunk_) {
+    trunk_->setBroken();
+    trunk_ = NULL;
+  }
 }
 
 void
@@ -127,19 +133,25 @@ CenterClient::processFrame() {
   if (frame_.state == STATE_NONE) {
     return true;
   }
-  DEBUG("process frame, state:%d, id:%d, message.size:%zd\n", frame_.state, frame_.id, frame_.message.size());
+  DEBUG("process frame, state:%d, id:%ld, message.size:%zd\n", frame_.state, frame_.id, frame_.message.size());
   if (frame_.id == 0) {
     frame_.state = STATE_NONE;
     return true;
   }
   if (frame_.state == STATE_CONNECT) {
-    DEBUG("process frame, state:CONNECT, id:%d, message:%s\n", frame_.id, frame_.message.c_str());
+    DEBUG("process frame, state:CONNECT, id:%ld, message:%s\n", frame_.id, frame_.message.c_str());
     map<int, EndpointClient*>::iterator it = leaves_.find(frame_.id);
     if (it == leaves_.end()) { // must not exist
-      char ip[30];
-      int port;
       do {
-        if (sscanf(frame_.message.c_str(), "%s:%d", ip, &port) != 2) {
+        int colon = frame_.message.find(':');
+        if (colon < 0) {
+          ERROR("invalid frame with state:CONNECT, message:%s\n", frame_.message.c_str());
+          break;
+        }
+        frame_.message[colon] = '\0';
+        const char* ip = frame_.message.data();
+        int port = 80;
+        if (sscanf(frame_.message.data() + colon + 1, "%d", &port) != 1) {
           ERROR("invalid frame with state:CONNECT, message:%s\n", frame_.message.c_str());
           break;
         }
@@ -153,7 +165,7 @@ CenterClient::processFrame() {
     }
   } else if (frame_.state == STATE_DATA) {
     map<int, EndpointClient*>::iterator it = leaves_.find(frame_.id);
-    DEBUG("process frame, state:DATA, id:%d, message.size:%zd\n", frame_.id, frame_.message.size());
+    DEBUG("process frame, state:DATA, id:%ld, message.size:%zd\n", frame_.id, frame_.message.size());
     if (it != leaves_.end()) {
       if (it->second->getWriteBufferRemainSize() > 0) {
         it->second->appendDataToWriteBuffer(frame_.message.data(), frame_.message.size());
@@ -163,7 +175,7 @@ CenterClient::processFrame() {
       }
     }
   } else if (frame_.state == STATE_CLOSE) {
-    DEBUG("process frame, state:CLOSE, id:%d, message.size:%zd\n", frame_.id, frame_.message.size());
+    DEBUG("process frame, state:CLOSE, id:%ld, message.size:%zd\n", frame_.id, frame_.message.size());
     map<int, EndpointClient*>::iterator it = leaves_.find(frame_.id);
     if (it != leaves_.end()) {
       it->second->setWriterBufferEof();

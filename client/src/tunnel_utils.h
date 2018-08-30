@@ -32,6 +32,7 @@ int logEnabled = 0;
 #define DEBUG(fmt, args...) do {if(logEnabled) syslog(LOG_DEBUG, fmt, ##args);} while (0)
 #define INFO(fmt, args...) do {if(logEnabled) syslog(LOG_INFO, fmt, ##args);} while (0);
 #define WARN(fmt, args...) do {syslog(LOG_WARNING, fmt, ##args);} while (0);
+#define ERROR(fmt, args...) do {syslog(LOG_ERR, fmt, ##args);} while (0);
 #endif
 
 const int FULL_SIZE = 8128;
@@ -39,7 +40,6 @@ const int FULL_SIZE = 8128;
 bool
 isGoodCode() {
   int code = errno;
-  printf("code == %d\n", code);
   return code == EAGAIN || code == EWOULDBLOCK || code == EINTR;
 }
 

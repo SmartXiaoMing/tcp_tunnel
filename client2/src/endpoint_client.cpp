@@ -14,7 +14,7 @@
 Center* EndpointClient::sCenter = NULL;
 
 EndpointClient*
-EndpointClient::create(int id, int type, const char* ip, int port) {
+EndpointClient::create(int64_t id, int type, const char* ip, int port) {
   int fd = socket(PF_INET, SOCK_STREAM, 0);
   if (fd < 0) {
     WARN("failed to socket, ip:%s, port:%d\n", ip, port);
@@ -40,7 +40,7 @@ EndpointClient::setCenter(Center* center) {
   sCenter = center;
 }
 
-int
+int64_t
 EndpointClient::getId() {
   return id_;
 }
@@ -52,7 +52,7 @@ EndpointClient::getType() {
 
 void
 EndpointClient::handleEvent(int events) {
-  DEBUG("handleEvent:%d, for id:%d\n", events, id_);
+  DEBUG("handleEvent:%d, for id:%ld\n", events, id_);
   sUpdateSet.insert(this);
   if (broken_) {
     return;
@@ -66,13 +66,13 @@ EndpointClient::handleEvent(int events) {
   if (events & EPOLLIN) {
     while (true) {
       int remain = sCenter->getRemainBufferSizeFor(this);
-      DEBUG("readableSize:%d, for id:%d\n", remain, id_);
+      DEBUG("readableSize:%d, for id:%ld\n", remain, id_);
       if (remain <= 0) {
         break;
       }
       char buf[remain];
       int len = recv(fd_, buf, remain, 0);
-      DEBUG("readSize:%d, for id:%d\n", len, id_);
+      DEBUG("readSize:%d, for id:%ld\n", len, id_);
       if (len == 0) {
         broken_ = true;
         sCenter->notifyBrokenFor(this);
@@ -81,7 +81,7 @@ EndpointClient::handleEvent(int events) {
         sCenter->appendDataToBufferFor(this, buf, len);
       } else if (len < 0) {
         if (!isGoodCode()) {
-          DEBUG("read error, for id:%d\n", id_);
+          DEBUG("read error, for id:%ld\n", id_);
           broken_ = true;
           sCenter->notifyBrokenFor(this);
           return;
@@ -92,23 +92,24 @@ EndpointClient::handleEvent(int events) {
   }
   if (events & EPOLLOUT) {
     int size = buffer_.size();
-    DEBUG("writabeSize:%d, for id:%d\n", size, id_);
+    DEBUG("writabeSize:%d, for id:%ld\n", size, id_);
     if (size > 0) {
       int len = send(fd_, buffer_.data(), size, MSG_NOSIGNAL);
       if (len < 0) {
         if  (!isGoodCode()) {
-          DEBUG("write error, for id:%d, fd:%d\n", id_, fd_);
+          DEBUG("write error, for id:%ld, fd:%d\n", id_, fd_);
           broken_ = true;
           sCenter->notifyBrokenFor(this);
         }
         // else ignore for EAGAIN
       } else if (len > 0) {
         buffer_.erase(0, len);
+        DEBUG("success to write, size:%d, for id:%ld, left size:%zd\n", size, id_, buffer_.size());
         sCenter->notifyWritableFor(this);
       }
     }
     if (eofForWrite_ && buffer_.empty()) {
-      DEBUG("write finished, for id:%d, fd:%d\n", id_, fd_);
+      DEBUG("write finished, for id:%ld, fd:%d\n", id_, fd_);
       broken_ = true;
       sCenter->notifyBrokenFor(this);
       return;
@@ -163,7 +164,7 @@ EndpointClient::updateEvent() {
     newEvent &= ~EPOLLOUT;
   }
   if (newEvent != ev_.events) {
-    DEBUG("update event:%d, for id:%d, fd:%d\n", newEvent, id_, fd_);
+    DEBUG("update event:%d, for id:%ld, fd:%d\n", newEvent, id_, fd_);
     ev_.events = newEvent;
     epoll_ctl(sEpollFd, EPOLL_CTL_MOD, fd_, &ev_);
   }

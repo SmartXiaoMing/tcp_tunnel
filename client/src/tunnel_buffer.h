@@ -396,4 +396,36 @@ bufferXor(Buffer* buffer, Buffer* secret) {
   }
 }
 
+int
+bufferToStr(Buffer* buffer, char* str) {
+  int i = 0;
+  while (i < buffer->size) {
+    str[i] = buffer->data[i];
+    ++i;
+  }
+  str[i] = '\0';
+  return i;
+}
+
+int
+bufferToHexStr(Buffer* buffer, char* str) {
+  int i = 0, j = 0;
+  while (i < buffer->size) {
+    char c = buffer->data[i];
+    str[j] = ((c >> 4) & 0xf);
+    str[j + 1] = (c & 0xf);
+    j += 2;
+    ++i;
+  }
+  str[j] = '\0';
+  for (int i = 0; i < j; ++i) {
+    if (str[i] < 10) {
+      str[i] += '0';
+    } else {
+      str[i] += 'a' - 10;
+    }
+  }
+  return j;
+}
+
 #endif //TUNNEL_BUFFER_H

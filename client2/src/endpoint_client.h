@@ -22,11 +22,11 @@ public:
   static const int TYPE_TUNNEL = 0;
   static const int TYPE_TRAFFIC = 1;
 
-  static EndpointClient* create(int id, int type, const char* ip, int port);
+  static EndpointClient* create(int64_t id, int type, const char* ip, int port);
   static void setCenter(Center* center);
 
-  EndpointClient(int id, int type, int fd): id_(id), type_(type), Endpoint(fd) {}
-  int getId();
+  EndpointClient(int64_t id, int type, int fd): id_(id), type_(type), Endpoint(fd) {}
+  int64_t getId();
   int getType();
   void handleEvent(int events);
   int getWriteBufferRemainSize();
@@ -40,7 +40,7 @@ private:
 
   static Center* sCenter;
 
-  int id_;
+  int64_t id_;
   int type_;
   bool eofForWrite_;
   bool broken_;

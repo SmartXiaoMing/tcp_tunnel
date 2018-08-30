@@ -26,13 +26,13 @@ public:
   void appendDataToBufferFor(EndpointClient* endpoint, const char* data, int size);
   void notifyWritableFor(EndpointClient* endpoint);
   void notifyBrokenFor(EndpointClient* endpoint);
-  void sendDataToTunnel(uint8_t state, int id, const char* data, int size);
+  void sendDataToTunnel(uint8_t state, int64_t id, const char* data, int size);
 private:
   void reset();
   void handleData();
   bool processFrame();
 
-  static const int BufferCapacity = 40960;
+  static const int BufferCapacity = 409600;
   string frameBuffer_;
   Frame frame_;
   EndpointClient* trunk_;
