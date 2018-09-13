@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "center_client.h"
+#include "center.h"
 #include "endpoint.h"
 
 using namespace std;
@@ -53,8 +53,8 @@ int main(int argc, char** argv) {
   }
 
   Endpoint::init();
-  CenterClient* center = new CenterClient();
-  EndpointClient::setCenter(center);
+  Center* center = new Center();
+  Endpoint::setCenter(center);
   while (true) {
     center->prepare(serverHost, serverPort, group, name);
     Endpoint::loop();

@@ -22,25 +22,35 @@ enum FrameState {
   STATE_CONNECT = 3,
   STATE_CLOSE = 4,
   STATE_DATA = 5,
+  STATE_SIZE = 6,
 };
 
 class Frame {
 public:
   uint8_t version;
   uint8_t state;
-  uint64_t id;
+  uint8_t addr[6];
   string message;
 
-  static int encodeTo(string& buffer, uint8_t state, uint64_t id, const char* data, int size) {
+  static int encodeTo(string& buffer, uint8_t state, const uint8_t* addr, const char* data, int size) {
     do {
       buffer.push_back(DefaultVersion);
       buffer.push_back(state);
-      buffer.push_back((id >> 40) & 0xff);
-      buffer.push_back((id >> 32) & 0xff);
-      buffer.push_back((id >> 24) & 0xff);
-      buffer.push_back((id >> 16) & 0xff);
-      buffer.push_back((id >> 8) & 0xff);
-      buffer.push_back(id & 0xff);
+      if (addr == NULL) {
+        buffer.push_back(0);
+        buffer.push_back(0);
+        buffer.push_back(0);
+        buffer.push_back(0);
+        buffer.push_back(0);
+        buffer.push_back(0);
+      } else {
+        buffer.push_back(addr[0]);
+        buffer.push_back(addr[1]);
+        buffer.push_back(addr[2]);
+        buffer.push_back(addr[3]);
+        buffer.push_back(addr[4]);
+        buffer.push_back(addr[5]);
+      }
       if (size <= FrameMaxDataSize) {
         buffer.push_back((size >> 8) & 0xff);
         buffer.push_back(size & 0xff);
@@ -71,15 +81,29 @@ public:
     }
     frame.version = buffer[0];
     frame.state = buffer[1];
-    frame.id = ((int64_t)(buffer[2] & 0xff) << 40) + ((int64_t)(buffer[3] & 0xff) << 32) + ((buffer[4] & 0xff) << 24)
-      + ((buffer[5] & 0xff) << 16) + ((buffer[6] & 0xff) << 8) + (buffer[7] & 0xff);
+    frame.addr[0] = buffer[2];
+    frame.addr[1] = buffer[3];
+    frame.addr[2] = buffer[4];
+    frame.addr[3] = buffer[5];
+    frame.addr[4] = buffer[6];
+    frame.addr[5] = buffer[7];
     frame.message.assign(buffer.begin() + FrameHeadSize, buffer.begin() + frameSize);
     return frameSize;
   }
 
   void reset() {
     state = STATE_NONE;
-    id = 0;
+    memset(addr, 0, sizeof(addr));
+  }
+
+  const char* stateToStr() {
+    static const char* table[] {
+        "NONE", "OK", "LOGIN", "CONNECT", "CLOSE", "DATA"
+    };
+    if (0 <= state && state < STATE_SIZE) {
+      return table[state];
+    }
+    return "UNKNOWN";
   }
 
 };

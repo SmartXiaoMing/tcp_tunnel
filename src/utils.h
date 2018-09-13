@@ -19,5 +19,7 @@ bool isGoodCode();
 
 bool isIpV4(const char* ip);
 const char* selectIp(const char* host, char ipBuffer[], int size);
+const char* addrToStr(const uint8_t* b);
+const char* eventToStr(int event);
 
 #endif //TCP_TUNNEL_UTILS_H
