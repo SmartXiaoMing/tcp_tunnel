@@ -5,6 +5,8 @@
 #ifndef TCP_TUNNEL_FRAME_HPP
 #define TCP_TUNNEL_FRAME_HPP
 
+#include <string.h>
+
 #include <string>
 
 #include "utils.h"
@@ -22,7 +24,8 @@ enum FrameState {
   STATE_CONNECT = 3,
   STATE_CLOSE = 4,
   STATE_DATA = 5,
-  STATE_SIZE = 6,
+  STATE_ACK = 6,
+  STATE_SIZE,
 };
 
 class Frame {
@@ -52,13 +55,17 @@ public:
         buffer.push_back(addr[5]);
       }
       if (size <= FrameMaxDataSize) {
-        buffer.push_back((size >> 8) & 0xff);
-        buffer.push_back(size & 0xff);
+        char two[2];
+        intToBytes(size, two, 2);
+        buffer.push_back(two[0]);
+        buffer.push_back(two[1]);
         buffer.append(data, size);
         break;
       } else {
-        buffer.push_back(FrameMaxDataSize & 0xff);
-        buffer.push_back(FrameMaxDataSize & 0xff);
+        char two[2];
+        intToBytes(FrameMaxDataSize, two, 2);
+        buffer.push_back(two[0]);
+        buffer.push_back(two[1]);
         buffer.append(data, FrameMaxDataSize);
         size -= FrameMaxDataSize;
       }
@@ -66,17 +73,17 @@ public:
     return FrameHeadSize + size;
   }
 
-  static int parse(Frame& frame, const string& buffer) {
-    if (buffer.size() < FrameHeadSize) {
+  static int parse(Frame& frame, const char* buffer, int bufferSize) {
+    if (bufferSize < FrameHeadSize) {
       return 0;
     }
-    int size = ((buffer[8] & 0xff) << 8) + (buffer[9] & 0xff);
-    if (size < 0 || size > FrameMaxDataSize) {
+    int size = bytesToInt(buffer + 8, 2);
+    if (size < 0 || size > FrameMaxDataSize || size > bufferSize - FrameHeadSize) {
       ERROR("invalid frame with size:%d\n", size);
       return -1;
     }
     int frameSize =  size + FrameHeadSize;
-    if (buffer.size() < frameSize) {
+    if (bufferSize < frameSize) {
       return 0;
     }
     frame.version = buffer[0];
@@ -87,7 +94,7 @@ public:
     frame.addr[3] = buffer[5];
     frame.addr[4] = buffer[6];
     frame.addr[5] = buffer[7];
-    frame.message.assign(buffer.begin() + FrameHeadSize, buffer.begin() + frameSize);
+    frame.message.assign(buffer + FrameHeadSize, buffer + frameSize);
     return frameSize;
   }
 

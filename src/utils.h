@@ -6,6 +6,7 @@
 #define TCP_TUNNEL_UTILS_H
 
 #include <stdio.h>
+#include <string.h>
 
 extern int logLevel;
 
@@ -19,7 +20,26 @@ bool isGoodCode();
 
 bool isIpV4(const char* ip);
 const char* selectIp(const char* host, char ipBuffer[], int size);
+int create(const char* ip, int port);
 const char* addrToStr(const uint8_t* b);
 const char* eventToStr(int event);
+uint32_t bytesToInt(const char* b, int size);
+const char* intToBytes(int v, char* b, int size);
+
+class AddrCompare {
+public:
+  bool operator() (const uint8_t* a, const uint8_t* b) const {
+    if (a == b) {
+      return false;
+    }
+    if (a == NULL) {
+      return true;
+    }
+    if (b == NULL) {
+      return false;
+    }
+    return strncmp((const char*)a, (const char*)b, 6);
+  }
+};
 
 #endif //TCP_TUNNEL_UTILS_H

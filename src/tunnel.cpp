@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "center.h"
-#include "endpoint.h"
+#include "tunnel_trunk.h"
+#include "event_manager.h"
 
 using namespace std;
 
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
       printf("  --port (0~65535)         the server port, default %d\n", dServerPort);
       printf("  --group group            the group name, default %s\n", dGroup);
       printf("  --name name              the name, default %s\n", dName);
-      printf("  --v [0-5]                set log level, 0-3 means OFF, ERROR, WARN, INFO, DEBUG, default %d\n", dLevel);
+      printf("  --v [0-5]                set log level, 0-5 means OFF, ERROR, WARN, INFO, DEBUG, default %d\n", dLevel);
       printf("  --help                   show the usage then exit\n");
       printf("\n");
       printf("version 1.0, report bugs to SmartXiaoMing(95813422@qq.com)\n");
@@ -52,12 +52,10 @@ int main(int argc, char** argv) {
     }
   }
 
-  Endpoint::init();
-  Center* center = new Center();
-  Endpoint::setCenter(center);
+  EventManager::sSingle->init();
   while (true) {
-    center->prepare(serverHost, serverPort, group, name);
-    Endpoint::loop();
+    Trunk::prepare(serverHost, serverPort, group, name);
+    EventManager::sSingle->loop();
   }
   return 0;
 }

@@ -63,6 +63,24 @@ selectIp(const char* host, char ipBuffer[], int size) {
   return inet_ntop(AF_INET, *(info->h_addr_list + index), ipBuffer, size);
 }
 
+int
+create(const char* ip, int port) {
+  int fd = socket(PF_INET, SOCK_STREAM, 0);
+  if (fd < 0) {
+    return fd;
+  }
+  struct sockaddr_in saddr;
+  memset(&saddr, 0, sizeof(saddr));
+  saddr.sin_family = AF_INET;
+  saddr.sin_addr.s_addr = inet_addr(ip);
+  saddr.sin_port = htons(port);
+  if (connect(fd, (struct sockaddr *) &saddr, sizeof(struct sockaddr)) < 0) {
+    return -1;
+  } else {
+  }
+  return fd;
+}
+
 const char*
 addrToStr(const uint8_t* b) {
   static uint8_t last[6] = {255, 0, 0, 0, 0, 0};
@@ -132,4 +150,21 @@ eventToStr(int event) {
     lastEvent = event;
   }
   return str;
+}
+
+uint32_t bytesToInt(const char* b, int size) {
+  uint32_t v = b[0];
+  for (int i = 1; i < size; ++i) {
+    v = (v << 8);
+    v |= b[i];
+  }
+  return v;
+}
+
+const char* intToBytes(int v, char* b, int size) {
+  while (size--) {
+    b[size] = (v & 0xff);
+    v = (v >> 8);
+  }
+  return b;
 }
