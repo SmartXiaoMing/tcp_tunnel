@@ -3,20 +3,22 @@ Another TCP-TUNNEL
 We can visit a machine behind a NAT or firewall.
 
 
-## Tunnle server side
+## how to use
 
-./tunnel --mode=server
+    # start tunnel broker
+    ./tunnel_broker --port 8120
 
-## Tunnel client side
+    # start tunel agent peers
+    ./tunnel_agent --brokerPort 8120 --serverPort 9000 --targetAddress 127.0.0.1:22 --name jack
+    ./tunnel_agent --brokerPort 8120 --name jack
 
-./client.sh 
+    # try below
+    ssh 127.0.0.1:9000
 
-## Server monitor side
+## note
 
-./tunnel --mode=monitor
-
-## TODO list
-
-* not yet
+the two tunnel_agent with the same name is a pair.
+we can visit A.serverPort to reach A.targetAddress through B.
+when A.targetAddress is not provided, the agent A will guess.
 
 Report tunnel bugs to 95813422(at)qq.com.

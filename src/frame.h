@@ -13,33 +13,31 @@
 
 using namespace std;
 
-const uint8_t DefaultVersion = 1;
 const int FrameHeadSize = 10;
 const int FrameMaxDataSize = 4096;
 
 enum FrameState {
   STATE_NONE = 0,
-  STATE_OK = 1,
-  STATE_LOGIN = 2,
-  STATE_CONNECT = 3,
-  STATE_CLOSE = 4,
-  STATE_DATA = 5,
-  STATE_ACK = 6,
-  STATE_SIZE,
+  STATE_LOGIN = 1,
+  STATE_CONNECT = 2,
+  STATE_DATA = 3,
+  STATE_ACK = 4,
+  STATE_CLOSE = 5,
+  STATE_RESET = 6,
+  STATE_SIZE
 };
 
 class Frame {
 public:
-  uint8_t version;
   uint8_t state;
-  uint8_t addr[6];
+  Addr addr;
   string message;
 
   static int encodeTo(string& buffer, uint8_t state, const uint8_t* addr, const char* data, int size) {
     do {
-      buffer.push_back(DefaultVersion);
       buffer.push_back(state);
       if (addr == NULL) {
+        buffer.push_back(0);
         buffer.push_back(0);
         buffer.push_back(0);
         buffer.push_back(0);
@@ -53,6 +51,7 @@ public:
         buffer.push_back(addr[3]);
         buffer.push_back(addr[4]);
         buffer.push_back(addr[5]);
+        buffer.push_back(addr[6]);
       }
       if (size <= FrameMaxDataSize) {
         char two[2];
@@ -78,7 +77,7 @@ public:
       return 0;
     }
     int size = bytesToInt(buffer + 8, 2);
-    if (size < 0 || size > FrameMaxDataSize || size > bufferSize - FrameHeadSize) {
+    if (size < 0 || size > FrameMaxDataSize) {
       ERROR("invalid frame with size:%d\n", size);
       return -1;
     }
@@ -86,26 +85,26 @@ public:
     if (bufferSize < frameSize) {
       return 0;
     }
-    frame.version = buffer[0];
-    frame.state = buffer[1];
-    frame.addr[0] = buffer[2];
-    frame.addr[1] = buffer[3];
-    frame.addr[2] = buffer[4];
-    frame.addr[3] = buffer[5];
-    frame.addr[4] = buffer[6];
-    frame.addr[5] = buffer[7];
+    frame.state = buffer[0];
+    frame.addr.b[0] = buffer[1];
+    frame.addr.b[1] = buffer[2];
+    frame.addr.b[2] = buffer[3];
+    frame.addr.b[3] = buffer[4];
+    frame.addr.b[4] = buffer[5];
+    frame.addr.b[5] = buffer[6];
+    frame.addr.b[6] = buffer[7];
     frame.message.assign(buffer + FrameHeadSize, buffer + frameSize);
     return frameSize;
   }
 
   void reset() {
     state = STATE_NONE;
-    memset(addr, 0, sizeof(addr));
+    memset(&addr, 0, sizeof(addr));
   }
 
   const char* stateToStr() {
     static const char* table[] {
-        "NONE", "OK", "LOGIN", "CONNECT", "CLOSE", "DATA"
+        "NONE", "LOGIN", "CONNECT", "DATA", "ACK", "CLOSE"
     };
     if (0 <= state && state < STATE_SIZE) {
       return table[state];
@@ -113,6 +112,15 @@ public:
     return "UNKNOWN";
   }
 
+  static const char* stateToStr(int state) {
+    static const char* table[] {
+        "NONE", "LOGIN", "CONNECT", "DATA", "ACK", "CLOSE"
+    };
+    if (0 <= state && state < STATE_SIZE) {
+      return table[state];
+    }
+    return "UNKNOWN";
+  }
 };
 
 #endif //TCP_TUNNEL_FRAME_HPP
