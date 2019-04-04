@@ -83,6 +83,8 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
           tunnel->writeData(NULL, 0); // close the tunnel client
           return;
         }
+      } if (frame.state == STATE_LOGIN) {
+        continue;
       } else {
         if (tunnel->peer == NULL) {
           tunnel->sendData(STATE_CLOSE, frame.addr.b, NULL, 0);

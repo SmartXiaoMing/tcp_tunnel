@@ -22,10 +22,10 @@ extern int logLevel;
 typedef struct Addr {
   uint8_t b[7];
   bool operator < (const Addr& that) const {
-    return strncmp((const char*)b, (const char*)that.b, 6) < 0;
+    return memcmp((const char*)b, (const char*)that.b, 7) < 0;
   }
   bool operator == (const Addr& that) const {
-    return strncmp((const char*)b, (const char*)that.b, 6) == 0;
+    return memcmp((const char*)b, (const char*)that.b, 7) == 0;
   }
 } Addr;
 

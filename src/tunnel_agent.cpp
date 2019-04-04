@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <map>
 
 #include "endpoint.h"
@@ -87,7 +88,7 @@ public:
         > Proxy-Connection: Keep-Alive
         >
     */
-    INFO("guess data:%.*s", size, data);
+    // INFO("guess data:%.*s", size, data);
     if (tunnel == NULL) { // TODO
       return false;
     }
@@ -152,7 +153,7 @@ public:
     if (method == "CONNECT") {
       if (size > headerSize > 0) {
         tunnel->sendData(STATE_DATA, traffic->addr.b, data + headerSize, size - headerSize);
-        INFO("[traffic %s] send frame, state:=DATA, dataSize=%d", addrToStr(traffic->addr.b), size - headerSize);
+        INFO("[traffic %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size - headerSize);
       }
       string response = "HTTP/1.1 200 Connection Established\r\n\r\n";
       traffic->writeData(response.data(), response.size());
@@ -182,6 +183,10 @@ void onNewClientTraffic(EndpointServer* endpoint, int acfd) {
   EndpointServer* serverTraffic = (EndpointServer*) endpoint;
   EndpointClientTraffic* traffic = new EndpointClientTraffic(acfd);
   traffic->addr = sockFdToAddr(acfd);
+  map<Addr, EndpointClientTraffic*>::iterator it = manager.trafficMap.find(traffic->addr);
+  if (it != manager.trafficMap.end()) {
+    ERROR("!!!!! addr exists %s", addrToStr(traffic->addr.b));
+  }
   manager.trafficMap[traffic->addr] = traffic;
 }
 
@@ -370,9 +375,15 @@ int main(int argc, char** argv) {
   if (serverPort > 0 && manager.createTrafficServer(serverIp, serverPort) == NULL) {
     exit(1);
   }
+  int startTime = time(0);
   while (true) {
     manager.prepare(brokerHost, brokerPort, name);
     Endpoint::loop();
+    int now = time(0);
+    if (now - startTime > 120 || now - startTime < 0) {
+      manager.tunnel->sendData(STATE_NONE, NULL, NULL, 0);
+      startTime = now;
+    }
   }
   return 0;
 }
