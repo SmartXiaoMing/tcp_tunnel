@@ -69,6 +69,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
     Frame frame;
     while (tunnel->parseFrame(frame) > 0) {
       if (frame.state == STATE_LOGIN) {
+        INFO("[tunnel] recv frame, state=LOGIN, name:%s", frame.message.c_str());
         string& name = frame.message;
         map<string, EndpointClientTunnelPeer *>::iterator it = manager.tunnelPeerMap.find(name);
         if (it == manager.tunnelPeerMap.end()) {
@@ -83,15 +84,20 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
           tunnel->writeData(NULL, 0); // close the tunnel client
           return;
         }
-      } if (frame.state == STATE_LOGIN) {
+      } if (frame.state == STATE_NONE) {
+        INFO("[tunnel] recv frame, state=NONE");
         continue;
       } else {
+        INFO("[tunnel %s] recv frame, state=%s", addrToStr(frame.addr.b), Frame::stateToStr(frame.state));
         if (tunnel->peer == NULL) {
           tunnel->sendData(STATE_CLOSE, frame.addr.b, NULL, 0);
+          INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(frame.addr.b));
           continue;
         } else {
           frame.addr.b[6] = 1 - frame.addr.b[6]; // NOTE haha, make a reverse
           tunnel->peer->sendData(frame.state, frame.addr.b, frame.message.data(), frame.message.size());
+          INFO("[tunnel %s] send frame, state=%s, dataSize=%d",
+               addrToStr(frame.addr.b), Frame::stateToStr(frame.state), (int) frame.message.size());
         }
       }
     }
