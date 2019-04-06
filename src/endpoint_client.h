@@ -22,14 +22,14 @@ public:
       callback_(callback), readableSize_(MaxBufferSize), eofForWrite_(false) {
     create(fd);
   }
-  EndpointClient(const char* ip, int port, EndpointClientCallback callback):
+  EndpointClient(EndpointClientCallback callback):
       callback_(callback), readableSize_(MaxBufferSize), eofForWrite_(false) {
-    createClient(ip, port);
   }
   virtual ~EndpointClient() {}
   void writeData(const char* data, int size);
   void popReadData(int size);
   virtual void addReadableSize(int size);
+  bool createClient(const char *ip, int port);
 protected:
   void create(int fd);
   void handleEvent(int events);

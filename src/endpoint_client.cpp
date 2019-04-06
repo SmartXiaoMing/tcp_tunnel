@@ -12,6 +12,31 @@
 
 #include "utils.h"
 
+bool
+EndpointClient::createClient(const char *ip, int port) {
+  fd_ = socket(PF_INET, SOCK_STREAM, 0);
+  if (fd_ < 0) {
+    discard();
+    return false;
+  }
+  fcntl(fd_, F_SETFL, fcntl(fd_, F_GETFL, 0) | O_NONBLOCK);
+  struct sockaddr_in saddr;
+  memset(&saddr, 0, sizeof(saddr));
+  saddr.sin_family = AF_INET;
+  saddr.sin_addr.s_addr = inet_addr(ip);
+  saddr.sin_port = htons(port);
+  ev_.data.ptr = this;
+  ev_.events = (EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLHUP | EPOLLERR);
+  epoll_ctl(Endpoint::epollFd, EPOLL_CTL_ADD, fd_, &ev_);
+  int res = connect(fd_, (struct sockaddr *) &saddr, sizeof(struct sockaddr));
+  if (res < 0 && errno != EINPROGRESS) {
+    INFO("failed to connect %s:%d", ip, port);
+    discard();
+    return false;
+  }
+  return true;
+}
+
 void
 EndpointClient::create(int fd) {
   fd_ = fd;
@@ -95,6 +120,9 @@ EndpointClient::updateEvent() {
   } else {
     newEvent &= ~EPOLLOUT;
   }
+  INFO("fd:%d, old:%s -> new:%s, bufferRead.size:%d, readableSize_:%d, bufferWrite.size:%d, eof:%d", fd_,
+       eventToStr(ev_.events), eventToStr(newEvent),
+       (int)bufferRead.size(), readableSize_, (int)bufferWrite.size(), eofForWrite_);
   if (newEvent != ev_.events) {
     ev_.events = newEvent;
     epoll_ctl(Endpoint::epollFd, EPOLL_CTL_MOD, fd_, &ev_);

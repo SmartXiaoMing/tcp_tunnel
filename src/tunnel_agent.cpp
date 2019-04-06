@@ -22,7 +22,7 @@ void onNewClientTraffic(EndpointServer* endpoint, int acfd);
 class EndpointClientTraffic: public EndpointClient {
 public:
   EndpointClientTraffic(int fd): EndpointClient(fd, onTrafficChanged), firstData(true) {}
-  EndpointClientTraffic(const char* ip, int port): EndpointClient(ip, port, onTrafficChanged), firstData(true) {}
+  EndpointClientTraffic(): EndpointClient(onTrafficChanged), firstData(true) {}
   Addr addr;
   bool firstData;
 };
@@ -164,6 +164,7 @@ public:
       traffic->writeData(response.data(), response.size());
     } else {
       tunnel->sendData(STATE_DATA, traffic->addr.b, data, size);
+      INFO("[traffic %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size);
     }
     traffic->popReadData(size);
     traffic->addReadableSize(size);
@@ -282,10 +283,16 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
           if (it2 != manager.trafficMap.end()) {
             ERROR("!!!! addr exsists:%s !!!", addrToStr(frame.addr.b));
           }
-          EndpointClientTraffic* endpointTraffic = new EndpointClientTraffic(ip, port);
-          endpointTraffic->addr = frame.addr;
-          endpointTraffic->firstData = false;
-          manager.trafficMap[frame.addr] = endpointTraffic;
+          EndpointClientTraffic* endpointTraffic = new EndpointClientTraffic();
+          if (endpointTraffic->createClient(ip, port)) {
+            endpointTraffic->addr = frame.addr;
+            endpointTraffic->firstData = false;
+            manager.trafficMap[frame.addr] = endpointTraffic;
+          } else {
+            INFO("[traffic %s] failed to connect %s:%d, so", addrToStr(frame.addr.b), ip, port);
+            INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(frame.addr.b));
+            tunnel->sendData(STATE_CLOSE, frame.addr.b, NULL, 0);
+          }
         } else {
           INFO("[traffic %s] failed to parse host=%s, so", addrToStr(frame.addr.b), frame.message.c_str());
           INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(frame.addr.b));

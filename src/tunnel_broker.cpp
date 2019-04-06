@@ -43,7 +43,7 @@ public:
     serverPort = port;
     int fd = createServer(ip, port, 1000000);
     if (fd < 0) {
-      printf("failed to create tunnel server:%s:%d", ip, port);
+      printf("failed to create tunnel server:%s:%d\n", ip, port);
       exit(1);
     }
     EndpointServer* tunnelServer = new EndpointServer(fd, onNewClientTunnel);
@@ -141,8 +141,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
 int main(int argc, char** argv) {
   const char* dServerIp = "0.0.0.0";
   int dServerPort = 8120;
-  int dLevel = 0;
-
+  int dLevel = 3;
   const char* serverIp = dServerIp;
   int serverPort = dServerPort;
   logLevel = dLevel;
