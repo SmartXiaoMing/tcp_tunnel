@@ -19,7 +19,6 @@ EndpointServer::create(int fd) {
   ev_.events = (EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLHUP | EPOLLERR);
   epoll_ctl(Endpoint::epollFd, EPOLL_CTL_ADD, fd_, &ev_);
   char str[30];
-  INFO("[tcp] %s --- * listen", fdToLocalAddr(fd_, str));
 }
 
 void
@@ -32,7 +31,6 @@ EndpointServer::handleEvent(int events) {
       return;
     }
     char s1[30], s2[30];
-    INFO("[tcp] %s <--- %s connected", fdToLocalAddr(acfd, s1), fdToPeerAddr(acfd, s2));
     callback_(this, acfd);
   }
 }

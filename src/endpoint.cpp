@@ -27,11 +27,11 @@ void Endpoint::loop() {
   update();
   recycle();
   const int MAX_EVENTS = 100;
-  int epollWaitTime = 50;
+  int epollWaitTime = 1000;
   struct epoll_event events[MAX_EVENTS];
   int n = epoll_wait(Endpoint::epollFd, events, MAX_EVENTS, epollWaitTime);
   if (n == -1) {
-    ERROR("failed to wait, then exit\n");
+    ERROR("failed to wait, then exit");
     exit(EXIT_FAILURE);
     return;
   }

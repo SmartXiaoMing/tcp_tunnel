@@ -31,7 +31,6 @@ public:
   void popReadData(int size);
   virtual void addReadableSize(int size);
 protected:
-  void createClient(const char *ip, int port);
   void create(int fd);
   void handleEvent(int events);
   virtual void updateEvent();
@@ -40,7 +39,5 @@ protected:
   int readableSize_;
   bool eofForWrite_;
   EndpointClientCallback callback_;
-  char localAddr_[30];
-  char peerAddr_[30];
   void discard();
 };

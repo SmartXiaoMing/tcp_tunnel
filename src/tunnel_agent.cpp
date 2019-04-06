@@ -29,9 +29,14 @@ public:
 
 class Manager {
 public:
-  Manager(): tunnel(NULL) {}
+  Manager(): tunnel(NULL), firstConnection(true) {}
   void prepare(const char* host, int port, const char* name) {
     while (tunnel == NULL) {
+      if (!firstConnection) {
+        ERROR("[Manager] prepare and wait 30 seoncds ...");
+        sleep(30);
+      }
+      firstConnection = false;
       char ip[30];
       if (selectIp(host, ip, 29)) {
         INFO("[Manager] success to select tunnel server, host:%s -> ip:%s", host, ip);
@@ -114,7 +119,7 @@ public:
     const char* methodStart = offset;
     const char* methodEnd = (const char* )memmem(offset, protoSize, " ", 1);
     if (methodEnd == NULL) {
-      INFO("no proto method, %.*s", 20, methodStart);
+      INFO("no proto method, %.*s, offset:%d, protoSize:%d", 20, methodStart, (int)(offset - data), protoSize);
       return false;
     }
 
@@ -131,7 +136,7 @@ public:
 
     const char* hostEnd = (const char* )memmem(offset, leftSize, "\r\n", 2);
     if (hostEnd == NULL) {
-      INFO("no proto method, %.*s", 20, hostStart);
+      INFO("no proto host, %.*s, offset:%d, protoSize:%d", 20, hostStart, (int)(offset - data), protoSize);
       return false;
     }
     // trim host(hostStart, hostEnd)
@@ -175,6 +180,7 @@ public:
   EndpointClientTunnel* tunnel;
   string targetAddress;
   map<Addr, EndpointClientTraffic*> trafficMap;
+  bool firstConnection;
 };
 
 Manager manager;
@@ -201,7 +207,7 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
   }
   if (event == EVENT_READ) {
     if (size > 0) {
-      INFO("[traffic %s] read dataSize=%d, data:%s", addrToStr(traffic->addr.b), size, data); // TODO
+      INFO("[traffic %s] read dataSize=%d", addrToStr(traffic->addr.b), size);
       if (traffic->firstData) {
         traffic->firstData = false;
         if (!manager.targetAddress.empty()) {
@@ -245,6 +251,7 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
 
 void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int size) {
   if (event == EVENT_ERROR || event == EVENT_CLOSED) {
+    INFO("[Manager] tunnel disconnected");
     manager.resetTraffic();
     manager.tunnel = NULL;
     return;
@@ -271,6 +278,10 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
             break;
           }
           INFO("[traffic %s] connect to %s:%d", addrToStr(frame.addr.b), ip, port);
+          map<Addr, EndpointClientTraffic*>::iterator it2 = manager.trafficMap.find(frame.addr);
+          if (it2 != manager.trafficMap.end()) {
+            ERROR("!!!! addr exsists:%s !!!", addrToStr(frame.addr.b));
+          }
           EndpointClientTraffic* endpointTraffic = new EndpointClientTraffic(ip, port);
           endpointTraffic->addr = frame.addr;
           endpointTraffic->firstData = false;
@@ -323,7 +334,7 @@ int main(int argc, char** argv) {
   int dServerPort = 0;
   const char* dName = "anonymous";
   int dLevel = 0;
-  const char* dTargetAddress = NULL;
+  const char* dTargetAddress = "guess";
 
   const char* brokerHost = dBrokerHost;
   int brokerPort = dBrokerPort;
@@ -354,12 +365,12 @@ int main(int argc, char** argv) {
         printf("\nunknown option: %s\n", argv[i]);
       }
       printf("usage: %s [options]\n\n", argv[0]);
-      printf("  --brokerHost domain.com        the server host, default %s\n", dBrokerHost);
-      printf("  --brokerPort (0~65535)         the server port, default %d\n", dBrokerPort);
-      printf("  --serverIp 0.0.0.0             the server ip, default disabled\n");
-      printf("  --serverPport (0~65535)        the server port, default disabled\n");
-      printf("  --name name                    the name, default %s\n", dName);
-      printf("  --targetAddress 127.0.0.1:22   the name, default disabled\n");
+      printf("  --brokerHost domain.com  the server host, default %s\n", dBrokerHost);
+      printf("  --brokerPort (0~65535)   the server port, default %d\n", dBrokerPort);
+      printf("  --serverIp 0.0.0.0       the server ip, default disabled\n");
+      printf("  --serverPort (0~65535)   the server port, default disabled\n");
+      printf("  --name name              the name, default %s\n", dName);
+      printf("  --targetAddress ip:port  the name, default %s\n", dTargetAddress);
       printf("  --v [0-5]                set log level, 0-5 means OFF, ERROR, WARN, INFO, DEBUG, default %d\n", dLevel);
       printf("  --help                   show the usage then exit\n");
       printf("\n");
@@ -369,8 +380,10 @@ int main(int argc, char** argv) {
   }
 
   Endpoint::init();
-  if (targetAddress != NULL) {
+  if (targetAddress != NULL && targetAddress != dTargetAddress) {
     manager.targetAddress = targetAddress;
+  } else {
+    targetAddress = "";
   }
   if (serverPort > 0 && manager.createTrafficServer(serverIp, serverPort) == NULL) {
     exit(1);
