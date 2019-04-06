@@ -120,9 +120,9 @@ EndpointClient::updateEvent() {
   } else {
     newEvent &= ~EPOLLOUT;
   }
-  INFO("fd:%d, old:%s -> new:%s, bufferRead.size:%d, readableSize_:%d, bufferWrite.size:%d, eof:%d", fd_,
-       eventToStr(ev_.events), eventToStr(newEvent),
-       (int)bufferRead.size(), readableSize_, (int)bufferWrite.size(), eofForWrite_);
+  //INFO("fd:%d, old:%s -> new:%s, bufferRead.size:%d, readableSize_:%d, bufferWrite.size:%d, eof:%d", fd_,
+  //     eventToStr(ev_.events), eventToStr(newEvent),
+  //     (int)bufferRead.size(), readableSize_, (int)bufferWrite.size(), eofForWrite_);
   if (newEvent != ev_.events) {
     ev_.events = newEvent;
     epoll_ctl(Endpoint::epollFd, EPOLL_CTL_MOD, fd_, &ev_);
