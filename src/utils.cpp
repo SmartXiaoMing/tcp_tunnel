@@ -91,6 +91,8 @@ createServer(const char *ip, int port, int connectionCount) {
   saddr.sin_family = AF_INET;
   saddr.sin_addr.s_addr = inet_addr(ip);
   saddr.sin_port = htons(port);
+  int opt = 1;
+  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&opt, sizeof(opt));
   if (bind(fd, (struct sockaddr *) &saddr, sizeof(saddr)) < 0) {
     return -1;
   }
