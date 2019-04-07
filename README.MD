@@ -17,32 +17,38 @@ We can visit a machine behind a NAT or firewall.
 
 ## note
 
-the two tunnel_agent with the same name (A, A`) is a pair.
-we can visit A.serverPort to reach A.targetAddress through A`.
+the two tunnel_agent with the same name (A, B) is a pair.
+we can visit A.serverPort to reach A.targetAddress through B.
 when A.targetAddress is not provided, the agent A will guess.
 
 ## graph
 
-agentA <---------> broker <---------> agentA`
+agentA <---------> broker <---------> agentB
 
 ## what can it do
 
-1) cross the NAT,
+1. cross the NAT,
 
---NAT--|--------internet---------|-------NAT----------
-user <-|-> agentA <---> broker <-|-> agentA` <---> app
--------|-------------------------|--------------------
+    ```
+    --NAT--|---internet--------|-----NAT-----
+    user <-|-> A <--> broker <-|-> B <--> app
+    -------|-------------------|-------------
+    ```
 
-2) make a VPN
+2. make a VPN
 
---NAT---------------|--internet--|-------NAT----------
-user <---> agentA <-|-> broker <-|-> agentA` <---> app
-------confidential--|------------|---confidential-----
+    ```
+    --NAT---------|--internet--|-----NAT-----
+    user <--> A <-|-> broker <-|-> B <--> app
+    -confidential-|------------|-confidential
+    ```
 
-3) make a PROXY
+3. make a PROXY
 
---NAT---------------|--internet----------------|------
-user <---> agentA <-|-> broker <---> agentA` <-|-> app
-------confidential--|--------------------------|------
+    ```
+    --NAT---------|--internet---------|------
+    user <--> A <-|-> broker <--> B <-|-> app
+    -confidential-|-------------------|------
+    ```
 
 Report tunnel bugs to 95813422(at)qq.com.
