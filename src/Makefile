@@ -1,3 +1,8 @@
+CXX = g++
+STRIP = strip
+LIB_DIR =
+CXXFLAGS +=
+
 install: tunnel_broker tunnel_agent build
 	cp tunnel_broker tunnel_agent ../build/
 
@@ -7,16 +12,18 @@ build:
 tunnel_broker: tunnel_broker.cpp endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp utils.cpp frame.h clean
 	$(CXX) endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp tunnel_broker.cpp utils.cpp frame.h \
 	-std=c++11 \
-	-Os  -fno-rtti -fno-exceptions \
+	$(LIB_DIR) $(LDFLAGS) \
+	-Os -fno-rtti -fno-exceptions \
 	-o tunnel_broker
-	strip tunnel_broker
+	$(STRIP) tunnel_broker
 
 tunnel_agent: tunnel_agent.cpp endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp utils.cpp frame.h clean
 	$(CXX) endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp tunnel_agent.cpp utils.cpp frame.h \
 	-std=c++11 \
-	-Os  -fno-rtti -fno-exceptions \
+	$(LIB_DIR) $(LDFLAGS) \
+	-Os -fno-rtti -fno-exceptions \
 	-o tunnel_agent
-	strip tunnel_agent
+	$(STRIP) tunnel_agent
 
 clean:
 	if [ -f tunnel_broker ]; then rm tunnel_broker; fi

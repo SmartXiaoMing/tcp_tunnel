@@ -337,7 +337,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
 int main(int argc, char** argv) {
   const char* dBrokerHost = "127.0.0.1";
   int dBrokerPort = 8120;
-  const char* dServerIp = "127.0.0.1";
+  const char* dServerIp = "0.0.0.0";
   int dServerPort = 0;
   const char* dName = "anonymous";
   int dLevel = 0;
@@ -374,7 +374,7 @@ int main(int argc, char** argv) {
       printf("usage: %s [options]\n\n", argv[0]);
       printf("  --brokerHost domain.com  the server host, default %s\n", dBrokerHost);
       printf("  --brokerPort (0~65535)   the server port, default %d\n", dBrokerPort);
-      printf("  --serverIp 0.0.0.0       the server ip, default disabled\n");
+      printf("  --serverIp 0.0.0.0       the server ip, default %s\n", dServerIp);
       printf("  --serverPort (0~65535)   the server port, default disabled\n");
       printf("  --name name              the name, default %s\n", dName);
       printf("  --targetAddress ip:port  the name, default %s\n", dTargetAddress);
