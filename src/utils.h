@@ -20,12 +20,25 @@ extern int logLevel;
 #define ERROR(fmt, args...) do{if(logLevel>0){fprintf(stdout, fmt "\n", ##args);fflush(stdout);}}while(0)
 
 typedef struct Addr {
-  uint8_t b[7];
+  uint32_t tid;
+  uint8_t b[6];
+  Addr(): tid(0) {}
+  Addr(uint32_t id): tid(id) {
+    memset(b, 0, sizeof(b));
+  }
   bool operator < (const Addr& that) const {
-    return memcmp((const char*)b, (const char*)that.b, 7) < 0;
+    int d = tid - that.tid;
+    if (d != 0) {
+      return d;
+    }
+    return memcmp((const char*)b, (const char*)that.b, 6) < 0;
   }
   bool operator == (const Addr& that) const {
-    return memcmp((const char*)b, (const char*)that.b, 7) == 0;
+    int d = tid - that.tid;
+    if (d != 0) {
+      return false;
+    }
+    return memcmp((const char*)b, (const char*)that.b, 6) == 0;
   }
 } Addr;
 

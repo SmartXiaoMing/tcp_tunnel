@@ -30,7 +30,7 @@ public:
 class Manager {
 public:
   Manager(): tunnel(NULL), firstConnection(true) {}
-  void prepare(const char* host, int port, const char* name) {
+  void prepare(const char* host, int port, const char* name, const char* peerName) {
     while (tunnel == NULL) {
       if (!firstConnection) {
         ERROR("[Manager] prepare and wait 30 seoncds ...");
@@ -55,7 +55,8 @@ public:
         sleep(30);
       } else {
         char data[256];
-        int size = sprintf(data, "%s", name);
+        int size = sprintf(data, "name=%s&peerName=%s", name, peerName);
+        INFO("[Tunnel] login message:%s", data);
         tunnel->sendData(STATE_LOGIN, NULL, data, size);
       }
     }
@@ -76,8 +77,8 @@ public:
     if (strncmp(data, "SSH-", 4) == 0) {
       string target = "127.0.0.1:22";
       INFO("[traffic %s] guess the proto=SSH, make the target: %s", addrToStr(traffic->addr.b), target.c_str());
-      tunnel->sendData(STATE_CONNECT, traffic->addr.b, target.data(), target.size());
-      tunnel->sendData(STATE_DATA, traffic->addr.b, data, size);
+      tunnel->sendData(STATE_CONNECT, &traffic->addr, target.data(), target.size());
+      tunnel->sendData(STATE_DATA, &traffic->addr, data, size);
       traffic->popReadData(size);
       traffic->addReadableSize(size);
       return true;
@@ -154,16 +155,16 @@ public:
     string host(hostStart, hostEnd);
     INFO("[traffic %s] guess the proto=HTTP, parse the method=%s, target=%s",
          addrToStr(traffic->addr.b), method.c_str(), host.c_str());
-    tunnel->sendData(STATE_CONNECT, traffic->addr.b, host.data(), host.size());
+    tunnel->sendData(STATE_CONNECT, &traffic->addr, host.data(), host.size());
     if (method == "CONNECT") {
       if (size > headerSize > 0) {
-        tunnel->sendData(STATE_DATA, traffic->addr.b, data + headerSize, size - headerSize);
+        tunnel->sendData(STATE_DATA, &traffic->addr, data + headerSize, size - headerSize);
         INFO("[traffic %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size - headerSize);
       }
       string response = "HTTP/1.1 200 Connection Established\r\n\r\n";
       traffic->writeData(response.data(), response.size());
     } else {
-      tunnel->sendData(STATE_DATA, traffic->addr.b, data, size);
+      tunnel->sendData(STATE_DATA, &traffic->addr, data, size);
       INFO("[traffic %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size);
     }
     traffic->popReadData(size);
@@ -171,12 +172,16 @@ public:
     return true;
   }
 
-  void resetTraffic() {
+  void resetTraffic(Addr* addr) {
     map<Addr, EndpointClientTraffic*>::iterator it = trafficMap.begin();
-    for (; it != trafficMap.end(); ++it) {
-      it->second->writeData(NULL, 0);
+    for (; it != trafficMap.end();) {
+      if (addr == NULL || addr->tid == it->second->addr.tid) {
+        it->second->writeData(NULL, 0);
+        trafficMap.erase(it++);
+      } else {
+        it++;
+      }
     }
-    trafficMap.clear();
   }
   EndpointClientTunnel* tunnel;
   string targetAddress;
@@ -202,7 +207,7 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
   if (event == EVENT_ERROR || event == EVENT_CLOSED) {
     INFO("[traffic %s] error=%d, so", addrToStr(traffic->addr.b), event);
     INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(traffic->addr.b));
-    manager.tunnel->sendData(STATE_CLOSE, traffic->addr.b, NULL, 0);
+    manager.tunnel->sendData(STATE_CLOSE, &traffic->addr, NULL, 0);
     manager.trafficMap.erase(traffic->addr);
     return;
   }
@@ -212,9 +217,9 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
       if (traffic->firstData) {
         traffic->firstData = false;
         if (!manager.targetAddress.empty()) {
-          manager.tunnel->sendData(STATE_CONNECT, traffic->addr.b,
+          manager.tunnel->sendData(STATE_CONNECT, &traffic->addr,
             manager.targetAddress.data(), manager.targetAddress.size());
-          manager.tunnel->sendData(STATE_DATA, traffic->addr.b, data, size);
+          manager.tunnel->sendData(STATE_DATA, &traffic->addr, data, size);
           INFO("[tunnel %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size);
           traffic->popReadData(size);
         } else {
@@ -229,13 +234,13 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
           }
         }
       } else {
-        manager.tunnel->sendData(STATE_DATA, traffic->addr.b, data, size);
+        manager.tunnel->sendData(STATE_DATA, &traffic->addr, data, size);
         INFO("[tunnel %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size);
         traffic->popReadData(size);
       }
     } else { // size == 0, read eof
       INFO("[traffic %s] read EOF, so", addrToStr(traffic->addr.b));
-      manager.tunnel->sendData(STATE_CLOSE, traffic->addr.b, NULL, 0);
+      manager.tunnel->sendData(STATE_CLOSE, &traffic->addr, NULL, 0);
       INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(traffic->addr.b));
     }
     return;
@@ -243,7 +248,7 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
   if (event == EVENT_WRITTEN) {
     char b[20];
     int len = sprintf(b, "%d", size) + 1;
-    manager.tunnel->sendData(STATE_ACK, traffic->addr.b, b, len);
+    manager.tunnel->sendData(STATE_ACK, &traffic->addr, b, len);
     INFO("[traffic %s] write dataSize=%d", addrToStr(traffic->addr.b), size);
     INFO("[tunnel %s] send frame, state=ACK, size=%d", addrToStr(traffic->addr.b), size);
     return;
@@ -253,7 +258,7 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
 void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int size) {
   if (event == EVENT_ERROR || event == EVENT_CLOSED) {
     INFO("[Manager] tunnel disconnected");
-    manager.resetTraffic();
+    manager.resetTraffic(NULL);
     manager.tunnel = NULL;
     return;
   }
@@ -263,7 +268,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
     while (tunnel->parseFrame(frame) > 0) {
       if (frame.state == STATE_RESET) {
         INFO("[tunnel %s] recv frame, state=RESET, peer is broken, so reset all traffic", addrToStr(frame.addr.b));
-        manager.resetTraffic();
+        manager.resetTraffic(&frame.addr);
         continue;
       }
       if (frame.state == STATE_CONNECT) {
@@ -275,7 +280,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
           if (selectIp(host, ip, 29) == NULL) {
             INFO("[traffic %s] failed to resove host=%s, so", addrToStr(frame.addr.b), host);
             INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(frame.addr.b));
-            tunnel->sendData(STATE_CLOSE, frame.addr.b, NULL, 0);
+            tunnel->sendData(STATE_CLOSE, &frame.addr, NULL, 0);
             break;
           }
           INFO("[traffic %s] connect to %s:%d", addrToStr(frame.addr.b), ip, port);
@@ -291,12 +296,12 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
           } else {
             INFO("[traffic %s] failed to connect %s:%d, so", addrToStr(frame.addr.b), ip, port);
             INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(frame.addr.b));
-            tunnel->sendData(STATE_CLOSE, frame.addr.b, NULL, 0);
+            tunnel->sendData(STATE_CLOSE, &frame.addr, NULL, 0);
           }
         } else {
           INFO("[traffic %s] failed to parse host=%s, so", addrToStr(frame.addr.b), frame.message.c_str());
           INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(frame.addr.b));
-          tunnel->sendData(STATE_CLOSE, frame.addr.b, NULL, 0);
+          tunnel->sendData(STATE_CLOSE, &frame.addr, NULL, 0);
         }
         continue;
       }
@@ -305,7 +310,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
         if (frame.state == STATE_DATA) {
           INFO("[tunnel %s] recv frame, state=DATA, addr does not exists, so", addrToStr(frame.addr.b));
           INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(frame.addr.b));
-          tunnel->sendData(STATE_CLOSE, frame.addr.b, NULL, 0);
+          tunnel->sendData(STATE_CLOSE, &frame.addr, NULL, 0);
         } else {
           INFO("[tunnel %s] recv frame, state=%s, addr does not exists, so skip it",
                addrToStr(frame.addr.b), Frame::stateToStr(frame.state));
@@ -340,6 +345,7 @@ int main(int argc, char** argv) {
   const char* dServerIp = "0.0.0.0";
   int dServerPort = 0;
   const char* dName = "anonymous";
+  const char* dPeerName = "proxy";
   int dLevel = 0;
   const char* dTargetAddress = "guess";
 
@@ -348,6 +354,7 @@ int main(int argc, char** argv) {
   const char* serverIp = dServerIp;
   int serverPort = dServerPort;
   const char* name = dName;
+  const char* peerName = dPeerName;
   const char* targetAddress = dTargetAddress;
   logLevel = dLevel;
 
@@ -364,6 +371,8 @@ int main(int argc, char** argv) {
       targetAddress = argv[i + 1];
     } else if (strcmp(argv[i], "--name") == 0 && i + 1 < argc) {
       name = argv[i + 1];
+    } else if (strcmp(argv[i], "--peerName") == 0 && i + 1 < argc) {
+      peerName = argv[i + 1];
     } else if (strncmp(argv[i], "--v", 3) == 0) {
       logLevel = atoi(argv[i + 1]);
     } else {
@@ -377,6 +386,7 @@ int main(int argc, char** argv) {
       printf("  --serverIp 0.0.0.0       the server ip, default %s\n", dServerIp);
       printf("  --serverPort (0~65535)   the server port, default disabled\n");
       printf("  --name name              the name, default %s\n", dName);
+      printf("  --peerName peerName      the name, default %s\n", dPeerName);
       printf("  --targetAddress ip:port  the name, default %s\n", dTargetAddress);
       printf("  --v [0-5]                set log level, 0-5 means OFF, ERROR, WARN, INFO, DEBUG, default %d\n", dLevel);
       printf("  --help                   show the usage then exit\n");
@@ -395,12 +405,13 @@ int main(int argc, char** argv) {
   if (serverPort > 0 && manager.createTrafficServer(serverIp, serverPort) == NULL) {
     exit(1);
   }
-  int startTime = time(0);
+  time_t startTime = time(0);
   while (true) {
-    manager.prepare(brokerHost, brokerPort, name);
+    manager.prepare(brokerHost, brokerPort, name, peerName);
     Endpoint::loop();
-    int now = time(0);
-    if (now - startTime > 120 || now - startTime < 0) {
+    time_t now = time(0);
+    int elapse = now - startTime;
+    if (elapse > 120 || elapse < 0) {
       manager.tunnel->sendData(STATE_NONE, NULL, NULL, 0);
       startTime = now;
     }

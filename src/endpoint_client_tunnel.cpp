@@ -7,7 +7,7 @@
 #include "frame.h"
 
 void
-EndpointClientTunnel::sendData(uint8_t state, const uint8_t* addr, const char* data, int size) {
+EndpointClientTunnel::sendData(uint8_t state, const Addr* addr, const char* data, int size) {
   string buffer;
   Frame::encodeTo(buffer, state, addr, data, size);
   writeData(buffer.data(), buffer.size());

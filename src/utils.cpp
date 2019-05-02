@@ -223,6 +223,9 @@ Addr sockFdToAddr(int sockfd) {
   addr.b[4] = ((port >> 8) & 0xff);
   addr.b[5] = (port & 0xff);
   addr.b[6] = 0;
+  addr.b[7] = 0;
+  addr.b[8] = 0;
+  addr.b[9] = 0;
   return addr;
 }
 

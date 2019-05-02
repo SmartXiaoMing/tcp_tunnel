@@ -14,14 +14,19 @@
 
 using namespace std;
 
+int gTunnelId = 1;
 void onNewClientTunnel(EndpointServer* endpoint, int acfd);
 void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int size);
 
 class EndpointClientTunnelPeer: public EndpointClientTunnel {
 public:
-  EndpointClientTunnelPeer(int fd): EndpointClientTunnel(fd, onTunnelChanged), name(), peer(NULL) {
+  EndpointClientTunnelPeer(int fd): EndpointClientTunnel(fd, onTunnelChanged), name(), peerTunnel(NULL) {
     fdToPeerAddr(fd, remoteAddr);
     time(&lastTs);
+    id = gTunnelId;
+    ++gTunnelId;
+    readSize = 0;
+    writtenSize = 0;
   }
   ~EndpointClientTunnelPeer() {}
   char* getLastTime() {
@@ -29,10 +34,15 @@ public:
     return lastTime;
   }
   string name;
-  EndpointClientTunnelPeer* peer;
+  string peerName;
+  EndpointClientTunnelPeer* peerTunnel;
+  map<int, EndpointClientTunnelPeer*> sourceTunnelMap;
   time_t lastTs;
+  int readSize;
+  int writtenSize;
   char lastTime[64];
   char remoteAddr[30];
+  int id;
 };
 
 class Manager {
@@ -48,22 +58,63 @@ public:
     }
     EndpointServer* tunnelServer = new EndpointServer(fd, onNewClientTunnel);
   }
-  void showStatus(time_t t) {
-    time(&t);
-    char nowStr[64];
-    strftime(nowStr, sizeof(nowStr), "%Y-%m-%d %H:%M:%S", localtime(&t));
-    ERROR("\nTIME\t %s", nowStr);
-    ERROR("LISTENING\t%s:%d", serverIp, serverPort);
+
+  void cleanTunnel(time_t now) {
     map<string, EndpointClientTunnelPeer*>::iterator it = tunnelPeerMap.begin();
     for (; it != tunnelPeerMap.end(); ++it) {
-      if (it->second->peer == NULL) {
-        ERROR("%s\t%s[%s] <- ", it->first.c_str(), it->second->remoteAddr, it->second->getLastTime());
-      } else {
-        ERROR("%s\t%s[%s] <-> %s[%s]", it->first.c_str(), it->second->remoteAddr, it->second->getLastTime(),
-          it->second->peer->remoteAddr, it->second->peer->getLastTime());
+      if (it->second->lastTs - now > 300) {
+        it->second->writeData(NULL, 0);
+        ERROR("[tunnel] clean %s\t%s[%s] <- ", it->first.c_str(), it->second->remoteAddr, it->second->getLastTime());
       }
     }
   }
+
+  void showStatus(time_t now, int elapse) {
+    char nowStr[64];
+    strftime(nowStr, sizeof(nowStr), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    ERROR("\nTIME\t %s", nowStr);
+    ERROR("LISTENING\t%s:%d", serverIp, serverPort);
+    ERROR("Rule\t%zd", tunnelPeerMap.size());
+    map<string, EndpointClientTunnelPeer*>::iterator it = tunnelPeerMap.begin();
+    for (; it != tunnelPeerMap.end(); ++it) {
+      EndpointClientTunnelPeer *tunnel = it->second;
+      if (tunnel->peerTunnel != NULL) {
+        ERROR("%s ---> %s", tunnel->name.c_str(), tunnel->peerName.c_str());
+      } else {
+        ERROR("%s -x-> %s", tunnel->name.c_str(), tunnel->peerName.c_str());
+      }
+    }
+    ERROR("Follower");
+     it = tunnelPeerMap.begin();
+    for (; it != tunnelPeerMap.end(); ++it) {
+      EndpointClientTunnelPeer* tunnel = it->second;
+      ERROR("%s[%zd]: %s %s elapse:%d, read:%d, write:%d",
+            tunnel->name.c_str(), tunnel->sourceTunnelMap.size(), tunnel->remoteAddr, tunnel->getLastTime(),
+            elapse, tunnel->readSize, tunnel->writtenSize);
+      tunnel->readSize = 0;
+      tunnel->writtenSize = 0;
+      map<int, EndpointClientTunnelPeer*>::iterator srcIt = tunnel->sourceTunnelMap.begin();
+      for (int i = 0; srcIt != tunnel->sourceTunnelMap.end(); ++i, ++srcIt) {
+        const char* lineStart = i < tunnel->sourceTunnelMap.size() - 1 ? "├─" : "└─";
+        EndpointClientTunnelPeer* srcTunnel = srcIt->second;
+        ERROR(" %s %s: %s %s", lineStart, srcTunnel->name.c_str(), srcTunnel->remoteAddr, srcTunnel->getLastTime());
+      }
+    }
+  }
+
+  string getBetween(const string& message, const string& startStr, const string& endStr) {
+    int p1 = message.find(startStr);
+    if (p1 < 0) {
+      return "";
+    }
+    p1 += startStr.size();
+    int p2 = message.find(endStr, p1);
+    if (p2 < 0) {
+      p2 = message.size();
+    }
+    return message.substr(p1, p2 - p1);
+  }
+
   map<string, EndpointClientTunnelPeer*> tunnelPeerMap;
   const char* serverIp;
   int serverPort;
@@ -85,56 +136,95 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
     if (it == manager.tunnelPeerMap.end()) {
       return;
     }
-    it->second = tunnel->peer;
-    if (it->second != NULL) {
-      it->second->sendData(STATE_RESET, NULL, NULL, 0);
-      it->second->peer = NULL;
-      tunnel->peer = NULL;
-    } else {
-      manager.tunnelPeerMap.erase(it);
+    Addr tunnelAddr(tunnel->id);
+    if (tunnel->peerTunnel != NULL) {
+      tunnel->peerTunnel->sendData(STATE_RESET, &tunnelAddr, NULL, 0);
+      tunnel->peerTunnel->sourceTunnelMap.erase(tunnel->id);
+      tunnel->peerTunnel = NULL;
     }
+    if (!tunnel->sourceTunnelMap.empty()) {
+      map<int, EndpointClientTunnelPeer*>::iterator it2 = tunnel->sourceTunnelMap.begin();
+      for (; it2 != tunnel->sourceTunnelMap.end(); ++it2) {
+        it2->second->sendData(STATE_RESET, &tunnelAddr, NULL, 0);
+        it2->second->peerTunnel = NULL;
+      }
+      tunnel->sourceTunnelMap.clear();
+    }
+    manager.tunnelPeerMap.erase(it);
     return;
   }
   if (event == EVENT_READ) {
+    tunnel->readSize += size;
+    time(&tunnel->lastTs);
     Frame frame;
     while (tunnel->parseFrame(frame) > 0) {
       if (frame.state == STATE_LOGIN) {
-        INFO("[tunnel] recv frame, state=LOGIN, name=%s, addr=%s, time=%s",
-             frame.message.c_str(), tunnel->remoteAddr, tunnel->getLastTime());
-        string& name = frame.message;
+        INFO("[tunnel] recv frame, name=%s, state=LOGIN, message=%s, addr=%s, time=%s",
+             tunnel->name.c_str(), frame.message.c_str(), tunnel->remoteAddr, tunnel->getLastTime());
+        string name = manager.getBetween(frame.message, "name=", "&");
+        string peerName = manager.getBetween(frame.message, "peerName=", "&");
+        INFO("[tunnel] parse message, name:%s, peerName:%s", name.c_str(), peerName.c_str());
         map<string, EndpointClientTunnelPeer *>::iterator it = manager.tunnelPeerMap.find(name);
         if (it == manager.tunnelPeerMap.end()) {
           tunnel->name = name;
+          tunnel->peerName = peerName;
+          map<string, EndpointClientTunnelPeer *>::iterator targetIt = manager.tunnelPeerMap.find(peerName);
+          if (targetIt != manager.tunnelPeerMap.end()) {
+            tunnel->peerTunnel = targetIt->second;
+            targetIt->second->sourceTunnelMap[tunnel->id] = tunnel;
+            INFO("[tunnel %s] --> %s", name.c_str(), tunnel->peerTunnel->name.c_str());
+          }
+          map<string, EndpointClientTunnelPeer*>::iterator sourceIt = manager.tunnelPeerMap.begin();
+          for (; sourceIt != manager.tunnelPeerMap.end(); ++sourceIt) {
+            EndpointClientTunnelPeer* sourceTunnel = sourceIt->second;
+            if (sourceTunnel->peerTunnel == NULL && sourceTunnel->peerName == name) {
+              sourceTunnel->peerTunnel = tunnel;
+              tunnel->sourceTunnelMap[sourceTunnel->id] = sourceTunnel;
+              INFO("[tunnel %s] --> %s", sourceTunnel->name.c_str(), tunnel->name.c_str());
+            }
+          }
           manager.tunnelPeerMap[name] = tunnel;
-        } else if (it->second->peer == NULL) {
-          it->second->peer = tunnel;
-          tunnel->peer = it->second;
-          tunnel->name = name;
         } else {
           // ERROR
           tunnel->writeData(NULL, 0); // close the tunnel client
           return;
         }
       } else if (frame.state == STATE_NONE) {
-        time(&tunnel->lastTs);
-        INFO("[tunnel] recv frame, state=NONE, name=%s, addr=%s, time=%s",
+        INFO("[tunnel %s] recv frame, state=NONE, addr=%s, time=%s",
              tunnel->name.c_str(), tunnel->remoteAddr, tunnel->getLastTime());
         continue;
       } else {
-        INFO("[tunnel %s] recv frame, state=%s", addrToStr(frame.addr.b), Frame::stateToStr(frame.state));
-        if (tunnel->peer == NULL) {
-          tunnel->sendData(STATE_CLOSE, frame.addr.b, NULL, 0);
-          INFO("[tunnel %s] send frame, state=CLOSE", addrToStr(frame.addr.b));
-          continue;
+        INFO("[tunnel %s %s] recv frame, state=%s, dataSize=%zd, tid:%d, peerTunnel:%p",
+             tunnel->name.c_str(), addrToStr(frame.addr.b), Frame::stateToStr(frame.state), frame.message.size(), frame.addr.tid, tunnel->peerTunnel);
+        if (frame.addr.tid == 0) { // link started from that
+          if (tunnel->peerTunnel == NULL) {
+            tunnel->sendData(STATE_CLOSE, &frame.addr, NULL, 0);
+            INFO("[tunnel %s %s] send frame, state=CLOSE", tunnel->name.c_str(), addrToStr(frame.addr.b));
+          } else {
+            Addr addr = frame.addr;
+            addr.tid = tunnel->id;
+            tunnel->peerTunnel->sendData(frame.state, &addr, frame.message.data(), frame.message.size());
+            INFO("[tunnel %s %s] send frame, state=%s, dataSize=%d", tunnel->peerTunnel->name.c_str(),
+                 addrToStr(frame.addr.b), Frame::stateToStr(frame.state), (int) frame.message.size());
+          }
         } else {
-          frame.addr.b[6] = 1 - frame.addr.b[6]; // NOTE haha, make a reverse
-          tunnel->peer->sendData(frame.state, frame.addr.b, frame.message.data(), frame.message.size());
-          INFO("[tunnel %s] send frame, state=%s, dataSize=%d",
-               addrToStr(frame.addr.b), Frame::stateToStr(frame.state), (int) frame.message.size());
+          map<int, EndpointClientTunnelPeer*>::iterator tunnelIt = tunnel->sourceTunnelMap.find(frame.addr.tid);
+          if (tunnelIt == tunnel->sourceTunnelMap.end()) {
+            tunnel->sendData(STATE_CLOSE, &frame.addr, NULL, 0);
+            INFO("[tunnel %s %s] send frame, state=CLOSE", tunnel->name.c_str(), addrToStr(frame.addr.b));
+          } else {
+            Addr addr = frame.addr;
+            addr.tid = 0;
+            tunnelIt->second->sendData(frame.state, &addr, frame.message.data(), frame.message.size());
+            INFO("[tunnel %s %s] send frame, state=%s, dataSize=%d", tunnel->peerTunnel->name.c_str(),
+                 addrToStr(frame.addr.b), Frame::stateToStr(frame.state), (int) frame.message.size());
+          }
         }
       }
     }
     return;
+  } else if (event == EVENT_WRITTEN) {
+    tunnel->writtenSize += size;
   }
 }
 
@@ -169,12 +259,16 @@ int main(int argc, char** argv) {
   }
   Endpoint::init();
   manager.prepare(serverIp, serverPort);
-  int startTime = time(0);
+  time_t startTime = time(0);
   while (true) {
     Endpoint::loop();
-    int now = time(0);
-    if (now - startTime > 60 || now - startTime < 0) {
-      manager.showStatus(now);
+    time_t now = time(0);
+    int elapse = now - startTime;
+    if (now - startTime > 60) {
+      manager.cleanTunnel(now);
+      manager.showStatus(now, elapse);
+      startTime = now;
+    } else if (elapse < 0) {
       startTime = now;
     }
   }

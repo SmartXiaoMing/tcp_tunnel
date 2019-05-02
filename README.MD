@@ -9,8 +9,8 @@ We can visit a machine behind a NAT or firewall.
     ./tunnel_broker --port 8120
 
     # start tunel agent peers
-    ./tunnel_agent --brokerPort 8120 --serverPort 9000 --targetAddress 127.0.0.1:22 --name jack
-    ./tunnel_agent --brokerPort 8120 --name jack
+    ./tunnel_agent --brokerPort 8120 --serverPort 9000 --targetAddress 127.0.0.1:22 --name alice --peerName bob
+    ./tunnel_agent --brokerPort 8120 --name bob
 
     # try below
     ssh 127.0.0.1:9000

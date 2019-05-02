@@ -1,7 +1,12 @@
 CXX = g++
 STRIP = strip
 LIB_DIR =
-CXXFLAGS +=
+CXXFLAGS += -ggdb
+
+# release version, use the options
+# -Os -fno-rtti -fno-exceptions and (STRIP) tunnel_agent
+# instead of
+# -ggdb
 
 install: tunnel_broker tunnel_agent build
 	cp tunnel_broker tunnel_agent ../build/
@@ -13,17 +18,13 @@ tunnel_broker: tunnel_broker.cpp endpoint.cpp endpoint_server.cpp endpoint_clien
 	$(CXX) endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp tunnel_broker.cpp utils.cpp frame.h \
 	-std=c++11 \
 	$(LIB_DIR) $(LDFLAGS) \
-	-Os -fno-rtti -fno-exceptions \
 	-o tunnel_broker
-	$(STRIP) tunnel_broker
 
 tunnel_agent: tunnel_agent.cpp endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp utils.cpp frame.h clean
 	$(CXX) endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp tunnel_agent.cpp utils.cpp frame.h \
 	-std=c++11 \
 	$(LIB_DIR) $(LDFLAGS) \
-	-Os -fno-rtti -fno-exceptions \
 	-o tunnel_agent
-	$(STRIP) tunnel_agent
 
 clean:
 	if [ -f tunnel_broker ]; then rm tunnel_broker; fi

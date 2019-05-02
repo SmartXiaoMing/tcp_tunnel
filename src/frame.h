@@ -13,7 +13,7 @@
 
 using namespace std;
 
-const int FrameHeadSize = 10;
+const int FrameHeadSize = 13;
 const int FrameMaxDataSize = 4096;
 
 enum FrameState {
@@ -30,10 +30,10 @@ enum FrameState {
 class Frame {
 public:
   uint8_t state;
-  Addr addr;
+  Addr addr; // TODO
   string message;
 
-  static int encodeTo(string& buffer, uint8_t state, const uint8_t* addr, const char* data, int size) {
+  static int encodeTo(string& buffer, uint8_t state, const Addr* addr, const char* data, int size) {
     do {
       buffer.push_back(state);
       if (addr == NULL) {
@@ -44,14 +44,20 @@ public:
         buffer.push_back(0);
         buffer.push_back(0);
         buffer.push_back(0);
+        buffer.push_back(0);
+        buffer.push_back(0);
+        buffer.push_back(0);
       } else {
-        buffer.push_back(addr[0]);
-        buffer.push_back(addr[1]);
-        buffer.push_back(addr[2]);
-        buffer.push_back(addr[3]);
-        buffer.push_back(addr[4]);
-        buffer.push_back(addr[5]);
-        buffer.push_back(addr[6]);
+        buffer.push_back(addr->b[0]);
+        buffer.push_back(addr->b[1]);
+        buffer.push_back(addr->b[2]);
+        buffer.push_back(addr->b[3]);
+        buffer.push_back(addr->b[4]);
+        buffer.push_back(addr->b[5]);
+        buffer.push_back((addr->tid >> 24) & 0xff);
+        buffer.push_back((addr->tid >> 16) & 0xff);
+        buffer.push_back((addr->tid >> 8) & 0xff);
+        buffer.push_back(addr->tid & 0xff);
       }
       if (size <= FrameMaxDataSize) {
         char two[2];
@@ -76,7 +82,7 @@ public:
     if (bufferSize < FrameHeadSize) {
       return 0;
     }
-    int size = bytesToInt(buffer + 8, 2);
+    int size = bytesToInt(buffer + FrameHeadSize - 2, 2);
     if (size < 0 || size > FrameMaxDataSize) {
       ERROR("invalid frame with size:%d\n", size);
       return -1;
@@ -92,7 +98,10 @@ public:
     frame.addr.b[3] = buffer[4];
     frame.addr.b[4] = buffer[5];
     frame.addr.b[5] = buffer[6];
-    frame.addr.b[6] = buffer[7];
+    frame.addr.tid = (((buffer[7] << 24) & 0xff000000)
+                     | ((buffer[8] << 16) & 0xff0000)
+                     | ((buffer[9] << 8) & 0xff00)
+                     | (buffer[10]& 0xff));
     frame.message.assign(buffer + FrameHeadSize, buffer + frameSize);
     return frameSize;
   }

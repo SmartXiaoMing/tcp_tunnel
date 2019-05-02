@@ -16,7 +16,7 @@ class EndpointClientTunnel: public EndpointClient {
 public:
   EndpointClientTunnel(int fd, EndpointClientCallback callback): EndpointClient(fd, callback) {}
   ~EndpointClientTunnel() {}
-  void sendData(uint8_t state, const uint8_t* addr, const char* data, int size);
+  void sendData(uint8_t state, const Addr* addr, const char* data, int size);
   int parseFrame(Frame& frame);
   void processTrafficFrame(Frame& frame);
 };
