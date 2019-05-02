@@ -345,7 +345,7 @@ int main(int argc, char** argv) {
   const char* dServerIp = "0.0.0.0";
   int dServerPort = 0;
   const char* dName = "anonymous";
-  const char* dPeerName = "proxy";
+  const char* dPeerName = "";
   int dLevel = 0;
   const char* dTargetAddress = "guess";
 

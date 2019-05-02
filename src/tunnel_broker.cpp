@@ -159,8 +159,8 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
     Frame frame;
     while (tunnel->parseFrame(frame) > 0) {
       if (frame.state == STATE_LOGIN) {
-        INFO("[tunnel] recv frame, name=%s, state=LOGIN, message=%s, addr=%s, time=%s",
-             tunnel->name.c_str(), frame.message.c_str(), tunnel->remoteAddr, tunnel->getLastTime());
+        INFO("[tunnel] recv frame, state=LOGIN, message=%s, addr=%s, time=%s",
+             frame.message.c_str(), tunnel->remoteAddr, tunnel->getLastTime());
         string name = manager.getBetween(frame.message, "name=", "&");
         string peerName = manager.getBetween(frame.message, "peerName=", "&");
         INFO("[tunnel] parse message, name:%s, peerName:%s", name.c_str(), peerName.c_str());
