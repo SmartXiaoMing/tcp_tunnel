@@ -1,7 +1,7 @@
 CXX = g++
 STRIP = strip
 LIB_DIR =
-CXXFLAGS += -ggdb
+CXXFLAGS += -std=c++11 -ggdb -g
 
 # release version, use the options
 # -Os -fno-rtti -fno-exceptions and (STRIP) tunnel_agent
@@ -16,13 +16,13 @@ build:
 
 tunnel_broker: tunnel_broker.cpp endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp utils.cpp frame.h clean
 	$(CXX) endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp tunnel_broker.cpp utils.cpp frame.h \
-	-std=c++11 \
+	$(CXXFLAGS) \
 	$(LIB_DIR) $(LDFLAGS) \
 	-o tunnel_broker
 
 tunnel_agent: tunnel_agent.cpp endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp utils.cpp frame.h clean
 	$(CXX) endpoint.cpp endpoint_server.cpp endpoint_client.cpp endpoint_client_tunnel.cpp tunnel_agent.cpp utils.cpp frame.h \
-	-std=c++11 \
+	$(CXXFLAGS) \
 	$(LIB_DIR) $(LDFLAGS) \
 	-o tunnel_agent
 

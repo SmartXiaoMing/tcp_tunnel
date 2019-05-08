@@ -62,7 +62,7 @@ public:
   void cleanTunnel(time_t now) {
     map<string, EndpointClientTunnelPeer*>::iterator it = tunnelPeerMap.begin();
     for (; it != tunnelPeerMap.end(); ++it) {
-      if (it->second->lastTs - now > 300) {
+      if (now - it->second->lastTs > 300) {
         it->second->writeData(NULL, 0);
         ERROR("[tunnel] clean %s\t%s[%s] <- ", it->first.c_str(), it->second->remoteAddr, it->second->getLastTime());
       }
@@ -215,8 +215,9 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
           } else {
             Addr addr = frame.addr;
             addr.tid = 0;
-            tunnelIt->second->sendData(frame.state, &addr, frame.message.data(), frame.message.size());
-            INFO("[tunnel %s %s] send frame, state=%s, dataSize=%d", tunnel->peerTunnel->name.c_str(),
+            EndpointClientTunnelPeer* tunnelPeer = tunnelIt->second;
+            tunnelPeer->sendData(frame.state, &addr, frame.message.data(), frame.message.size());
+            INFO("[tunnel %s %s] send frame, state=%s, dataSize=%d", tunnelPeer->name.c_str(),
                  addrToStr(frame.addr.b), Frame::stateToStr(frame.state), (int) frame.message.size());
           }
         }
