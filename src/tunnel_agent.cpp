@@ -21,10 +21,10 @@ void onNewClientTraffic(EndpointServer* endpoint, int acfd);
 
 class EndpointClientTraffic: public EndpointClient {
 public:
-  EndpointClientTraffic(int fd): EndpointClient(fd, onTrafficChanged), firstData(true) {}
-  EndpointClientTraffic(): EndpointClient(onTrafficChanged), firstData(true) {}
+  EndpointClientTraffic(int fd): EndpointClient(fd, onTrafficChanged), packageNumber(0) {}
+  EndpointClientTraffic(): EndpointClient(onTrafficChanged), packageNumber(0) {}
   Addr addr;
-  bool firstData;
+  bool packageNumber;
 };
 
 class Manager {
@@ -113,8 +113,9 @@ public:
       return false;
     }
     int protoSize = protoEnd - data;
-    if (memmem(offset, protoSize, "HTTP/", 5) == NULL) {
-      INFO("no proto HTTP/, exit");
+    const char* uriEnd = (const char* )memmem(offset, protoSize, " HTTP/", 6);
+    if (uriEnd == NULL) {
+      INFO("no proto HTTP/ found, exit");
       return false;
     }
     const char* methodStart = offset;
@@ -123,39 +124,36 @@ public:
       INFO("no proto method, %.*s, offset:%d, protoSize:%d", 20, methodStart, (int)(offset - data), protoSize);
       return false;
     }
-
-    offset = protoEnd + 2;
-    leftSize -= offset - data;
-    const char* hostStart = (const char* )memmem(offset, leftSize, "Host:", 5);
+    const char* uriStart = methodEnd + 1;
+    while (*uriStart == ' ' && uriStart < uriEnd) {
+      uriStart++;
+    }
+    while (uriEnd > uriStart && *(uriEnd - 1) == ' ') {
+      uriEnd--;
+    }
+    int uriSize = uriEnd - uriStart;
+    string port = "80";
+    const char* hostStart = (const char* )memmem(uriStart, uriSize, "://", 3);
+    const char* hostEnd = uriEnd;
     if (hostStart == NULL) {
-      INFO("no proto host");
-      return false;
+      hostStart = uriStart;
+    } else {
+      hostStart += 3;
     }
-    hostStart += 5;
-    offset = hostStart;
-    leftSize -= offset - data;
-
-    const char* hostEnd = (const char* )memmem(offset, leftSize, "\r\n", 2);
-    if (hostEnd == NULL) {
-      INFO("no proto host, %.*s, offset:%d, protoSize:%d", 20, hostStart, (int)(offset - data), protoSize);
-      return false;
+    const char* portStart = (const char* )memmem(uriStart, uriSize, ":", 1);
+    if (portStart != NULL) {
+      port = string(portStart + 1, uriEnd - portStart - 1);
+      hostEnd = portStart;
+    } else {
+      if (memmem(uriStart, uriSize, "https://", 7) != NULL) {
+        port = "443";
+      }
     }
-    // trim host(hostStart, hostEnd)
-    while (hostStart < hostEnd && *hostStart == ' ') {
-      ++hostStart;
-    }
-    while (hostStart < hostEnd && *(hostEnd - 1) == ' ') {
-      --hostEnd;
-    }
-    if (hostStart >= hostEnd) {
-      return false;
-    }
-
     string method(methodStart, methodEnd);
-    string host(hostStart, hostEnd);
+    string host = string(hostStart, hostEnd) + ":" + port;
     INFO("[traffic %s] guess the proto=HTTP, parse the method=%s, target=%s",
          addrToStr(traffic->addr.b), method.c_str(), host.c_str());
-    tunnel->sendData(STATE_CONNECT, &traffic->addr, host.data(), host.size());
+    tunnel->sendData(STATE_CONNECT, &traffic->addr, host.data(), host.size()); //
     if (method == "CONNECT") {
       if (size > headerSize > 0) {
         tunnel->sendData(STATE_DATA, &traffic->addr, data + headerSize, size - headerSize);
@@ -214,8 +212,10 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
   if (event == EVENT_READ) {
     if (size > 0) {
       INFO("[traffic %s] read dataSize=%d", addrToStr(traffic->addr.b), size);
-      if (traffic->firstData) {
-        traffic->firstData = false;
+      if (traffic->packageNumber == 0) {
+        INFO("[traffic %s] read 0th package, dataSize=%d, data=%.*s",
+             addrToStr(traffic->addr.b), size, size, data);
+        traffic->packageNumber = 1;
         if (!manager.targetAddress.empty()) {
           manager.tunnel->sendData(STATE_CONNECT, &traffic->addr,
             manager.targetAddress.data(), manager.targetAddress.size());
@@ -291,7 +291,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
           EndpointClientTraffic* endpointTraffic = new EndpointClientTraffic();
           if (endpointTraffic->createClient(ip, port)) {
             endpointTraffic->addr = frame.addr;
-            endpointTraffic->firstData = false;
+            endpointTraffic->packageNumber = 1;
             manager.trafficMap[frame.addr] = endpointTraffic;
           } else {
             INFO("[traffic %s] failed to connect %s:%d, so", addrToStr(frame.addr.b), ip, port);
