@@ -18,7 +18,6 @@ EndpointServer::create(int fd) {
   ev_.data.ptr = this;
   ev_.events = (EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLHUP | EPOLLERR);
   epoll_ctl(Endpoint::epollFd, EPOLL_CTL_ADD, fd_, &ev_);
-  char str[30];
 }
 
 void
@@ -30,7 +29,6 @@ EndpointServer::handleEvent(int events) {
     if (acfd < 0) {
       return;
     }
-    char s1[30], s2[30];
     callback_(this, acfd);
   }
 }

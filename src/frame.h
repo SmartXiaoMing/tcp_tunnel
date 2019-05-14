@@ -30,7 +30,7 @@ enum FrameState {
 class Frame {
 public:
   uint8_t state;
-  Addr addr; // TODO
+  Addr addr;
   string message;
 
   static int encodeTo(string& buffer, uint8_t state, const Addr* addr, const char* data, int size) {
