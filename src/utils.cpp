@@ -11,6 +11,7 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "utils.h"
 
@@ -67,6 +68,7 @@ int
 createClient(const char *ip, int port) {
   int fd = socket(PF_INET, SOCK_STREAM, 0);
   if (fd < 0) {
+    ERROR("failed to socket: %s:%d", ip, port);
     return fd;
   }
   struct sockaddr_in saddr;
@@ -75,6 +77,8 @@ createClient(const char *ip, int port) {
   saddr.sin_addr.s_addr = inet_addr(ip);
   saddr.sin_port = htons(port);
   if (connect(fd, (struct sockaddr *) &saddr, sizeof(struct sockaddr)) < 0) {
+    ERROR("failed to connect: %s:%d", ip, port);
+    close(fd);
     return -1;
   }
   return fd;
