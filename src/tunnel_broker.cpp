@@ -59,12 +59,34 @@ public:
     EndpointServer* tunnelServer = new EndpointServer(fd, onNewClientTunnel);
   }
 
+  void breakTunnel(EndpointClientTunnelPeer* tunnel) {
+    Addr tunnelAddr(tunnel->id);
+    if (tunnel->peerTunnel != NULL) {
+      tunnel->peerTunnel->sendData(STATE_RESET, &tunnelAddr, NULL, 0);
+      tunnel->peerTunnel->sourceTunnelMap.erase(tunnel->id);
+      tunnel->peerTunnel = NULL;
+    }
+    if (!tunnel->sourceTunnelMap.empty()) {
+      map<int, EndpointClientTunnelPeer*>::iterator it2 = tunnel->sourceTunnelMap.begin();
+      for (; it2 != tunnel->sourceTunnelMap.end(); ++it2) {
+        it2->second->sendData(STATE_RESET, &tunnelAddr, NULL, 0);
+        it2->second->peerTunnel = NULL;
+      }
+      tunnel->sourceTunnelMap.clear();
+    }
+  }
+
   void cleanTunnel(time_t now) {
     map<string, EndpointClientTunnelPeer*>::iterator it = tunnelPeerMap.begin();
-    for (; it != tunnelPeerMap.end(); ++it) {
+    for (; it != tunnelPeerMap.end(); ) {
       if (now - it->second->lastTs > 300) {
-        it->second->writeData(NULL, 0);
+        EndpointClientTunnelPeer* tunnel = it->second;
+        tunnel->writeData(NULL, 0);
+        breakTunnel(tunnel);
+        tunnelPeerMap.erase(it++);
         ERROR("[tunnel] clean %s\t%s[%s] <- ", it->first.c_str(), it->second->remoteAddr, it->second->getLastTime());
+      } else {
+        it++;
       }
     }
   }
@@ -85,7 +107,7 @@ public:
       }
     }
     ERROR("Follower");
-     it = tunnelPeerMap.begin();
+    it = tunnelPeerMap.begin();
     for (; it != tunnelPeerMap.end(); ++it) {
       EndpointClientTunnelPeer* tunnel = it->second;
       ERROR("%s[%zd]: %s %s elapse:%d, read:%d, write:%d",
@@ -136,20 +158,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
     if (it == manager.tunnelPeerMap.end()) {
       return;
     }
-    Addr tunnelAddr(tunnel->id);
-    if (tunnel->peerTunnel != NULL) {
-      tunnel->peerTunnel->sendData(STATE_RESET, &tunnelAddr, NULL, 0);
-      tunnel->peerTunnel->sourceTunnelMap.erase(tunnel->id);
-      tunnel->peerTunnel = NULL;
-    }
-    if (!tunnel->sourceTunnelMap.empty()) {
-      map<int, EndpointClientTunnelPeer*>::iterator it2 = tunnel->sourceTunnelMap.begin();
-      for (; it2 != tunnel->sourceTunnelMap.end(); ++it2) {
-        it2->second->sendData(STATE_RESET, &tunnelAddr, NULL, 0);
-        it2->second->peerTunnel = NULL;
-      }
-      tunnel->sourceTunnelMap.clear();
-    }
+    manager.breakTunnel(tunnel);
     manager.tunnelPeerMap.erase(it);
     return;
   }
@@ -187,6 +196,7 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
         } else {
           // ERROR
           tunnel->writeData(NULL, 0); // close the tunnel client
+          manager.tunnelPeerMap.erase(it);
           return;
         }
       } else if (frame.state == STATE_NONE) {

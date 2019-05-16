@@ -61,6 +61,7 @@ public:
       }
     }
   }
+
   EndpointServer* createTrafficServer(const char* ip, int port) {
     int fd = createServer(ip, port, 10000);
     if (fd < 0) {
@@ -70,6 +71,7 @@ public:
     EndpointServer* trafficServer = new EndpointServer(fd, onNewClientTraffic);
     return trafficServer;
   }
+
   bool handleSshProto(EndpointClientTraffic* traffic, const char* data, int size) {
     if (tunnel == NULL) {
       return false;
@@ -105,31 +107,54 @@ public:
     }
     int headerSize = headerEnd - data + 4;
 
-    const char* offset = data;
+    const char* protoStart = data;
     int leftSize = headerSize - 2; // one \r\n left
-    const char* protoEnd = (const char* )memmem(offset, leftSize, "\r\n", 2);
+    const char* protoEnd = (const char* )memmem(protoStart, leftSize, "\r\n", 2);
     if (protoEnd == NULL) {
       INFO("no proto end, exit");
       return false;
     }
-    int protoSize = protoEnd - data;
-    const char* uriEnd = (const char* )memmem(offset, protoSize, " HTTP/", 6);
-    if (uriEnd == NULL) {
-      INFO("no proto HTTP/ found, exit");
-      return false;
-    }
-    const char* methodStart = offset;
-    const char* methodEnd = (const char* )memmem(offset, protoSize, " ", 1);
-    if (methodEnd == NULL) {
-      INFO("no proto method, %.*s, offset:%d, protoSize:%d", 20, methodStart, (int)(offset - data), protoSize);
+    int protoSize = protoEnd - protoStart;
+    const char* methodEnd = (const char* )memmem(protoStart, protoEnd - protoStart, " ", 1);
+    if (methodEnd < 0) {
+      INFO("no method found, exit: %.*s", protoSize, protoStart);
       return false;
     }
     const char* uriStart = methodEnd + 1;
-    while (*uriStart == ' ' && uriStart < uriEnd) {
-      uriStart++;
+    while (*uriStart == ' ' && uriStart < protoEnd) {
+      ++uriStart;
     }
-    while (uriEnd > uriStart && *(uriEnd - 1) == ' ') {
-      uriEnd--;
+    const char* uriEnd = (const char* )memmem(uriStart, protoEnd - uriStart, " ", 1);
+    if (uriEnd < 0) {
+      INFO("no uri found, exit: %.*s", protoSize, protoStart);
+      return false;
+    }
+    const char* versionStart = uriEnd + 1;
+    while (*versionStart == ' ' && versionStart < protoEnd) {
+      ++versionStart;
+    }
+    if (memcmp(versionStart, "HTTP/", 5) != 0) {
+      INFO("no version found, exit: %.*s", protoSize, protoStart);
+    }
+
+    string proto(data, protoEnd - 2);
+    int methodEnd = proto.find(' ');
+    if (methodEnd < 0) {
+      INFO("no method found, exit: %s", proto.c_str());
+      return false;
+    }
+    string uriEnd = proto.find(' ', methodEnd);
+    if (uriEnd < 0) {
+      INFO("no uri found, exit: %s", proto.c_str());
+      return false;
+    }
+    string method(proto.begin(), proto.begin() + methodEnd);
+    string uri(proto.begin() + methodEnd + 1, proto.begin() + uriEnd);
+    string version(proto.begin() + uriEnd + 1, proto.end());
+    INFO("parse result, method:%s, uri:%s, version:%s", method.c_str(), uri.c_str(), version.c_str());
+    if (version.size() < 5 || version.substr(0, 5) != "HTTP/") {
+      INFO("invalid version found, exit: %s", version.c_str());
+      return false;
     }
     int uriSize = uriEnd - uriStart;
     string port = "80";
