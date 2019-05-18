@@ -7,6 +7,7 @@
 #include <time.h>
 #include <map>
 
+#include "constr.h"
 #include "endpoint.h"
 #include "endpoint_client.h"
 #include "endpoint_client_tunnel.h"
@@ -21,10 +22,33 @@ void onNewClientTraffic(EndpointServer* endpoint, int acfd);
 
 class EndpointClientTraffic: public EndpointClient {
 public:
-  EndpointClientTraffic(int fd): EndpointClient(fd, onTrafficChanged), packageNumber(0) {}
-  EndpointClientTraffic(): EndpointClient(onTrafficChanged), packageNumber(0) {}
+  static const int ProtoUnknown = 0;
+  static const int ProtoSsh = 1;
+  static const int ProtoHttp = 2;
+  static const int ProtoHttpTunnel = 3; // CONNECT home.netscape.com:443 HTTP/1.0 see https://tools.ietf.org/html/draft-luotonen-web-proxy-tunneling-01
+
+  EndpointClientTraffic(int fd): EndpointClient(fd, onTrafficChanged), packageNumber(0), proto(ProtoUnknown) {}
+  EndpointClientTraffic(): EndpointClient(onTrafficChanged), packageNumber(0), proto(ProtoUnknown) {}
+  static int guessProto(const char* data, int size) {
+    Constr content(data, size);
+    if (content.startsWith("CONNECT ")) {
+      return ProtoHttpTunnel;
+    }
+    if (content.startsWith("SSH-")) {
+      return ProtoSsh;
+    }
+    if (content.startsWith("GET ")
+        || content.startsWith("POST ")
+        || content.startsWith("PUT ")
+        || content.startsWith("DELETE ")
+        || content.startsWith("HEAD ")) {
+      return ProtoHttp;
+    }
+    return ProtoUnknown;
+  }
   Addr addr;
   bool packageNumber;
+  int proto;
 };
 
 class Manager {
@@ -72,24 +96,77 @@ public:
     return trafficServer;
   }
 
-  bool handleSshProto(EndpointClientTraffic* traffic, const char* data, int size) {
+  bool handleProtoSsh(EndpointClientTraffic* traffic, const char* data, int size) {
     if (tunnel == NULL) {
       return false;
     }
-    if (strncmp(data, "SSH-", 4) == 0) {
-      string target = "127.0.0.1:22";
-      INFO("[traffic %s] guess the proto=SSH, make the target: %s", addrToStr(traffic->addr.b), target.c_str());
-      tunnel->sendData(STATE_CONNECT, &traffic->addr, target.data(), target.size());
-      tunnel->sendData(STATE_DATA, &traffic->addr, data, size);
-      traffic->popReadData(size);
-      traffic->addReadableSize(size);
-      return true;
-    }
-    return false;
+    string target = "127.0.0.1:22";
+    INFO("[traffic %s] guess the proto=SSH, make the target: %s", addrToStr(traffic->addr.b), target.c_str());
+    tunnel->sendData(STATE_CONNECT, &traffic->addr, target.data(), target.size());
+    tunnel->sendData(STATE_DATA, &traffic->addr, data, size);
+    traffic->popReadData(size);
+    traffic->addReadableSize(size);
+    return true;
   }
 
-  bool handleHttpProto(EndpointClientTraffic* traffic, const char* data, int size) {
+  bool handleProtoHttpTunnel(EndpointClientTraffic* traffic, const char* data, int size) {
     /*
+     * see https://tools.ietf.org/html/draft-luotonen-web-proxy-tunneling-01
+         CONNECT home.netscape.com:443 HTTP/1.0
+         User-agent: Mozilla/4.0
+         Proxy-authorization: basic dGVzdDp0ZXN0
+    */
+    // INFO("guess data:%.*s", size, data);
+    if (tunnel == NULL) { // TODO
+      return false;
+    }
+    static Constr headerEnd("\r\n\r\n");
+    Constr content(data, size);
+    int headerEndPos = content.indexOf(headerEnd);
+    if (headerEndPos < 0) {
+      ERROR("invalid http tunnel proto:%.*s, exit", content.size, content.data);
+      return false;
+    }
+    Constr requestLine;
+    content.readUtil("\r\n", requestLine);
+    if (requestLine.size == 0) {
+      ERROR("invalid http tunnel proto:%.*s, no requestLine, exit", content.size, content.data);
+      return false;
+    }
+    INFO("parse proto:%.*s", requestLine.size, requestLine.data);
+    Constr three[3];
+    if (requestLine.split(" ", three, 3) < 3) {
+      INFO("invalid proto:%.*s, exit", requestLine.size, requestLine.data);
+      return false;
+    }
+    Constr& method = three[0];
+    Constr& host = three[1];
+    Constr& version = three[2];
+    if (!version.startsWith("HTTP/")) {
+      INFO("invalid http tunnel proto, httpVersion:%.*s, exit", version.size, version.data);
+      return false;
+    }
+    INFO("[traffic %s] proto=httpTunnel, parse the method=%.*s, target=%.*s",
+         addrToStr(traffic->addr.b), method.size, method.data, host.size, host.data);
+    tunnel->sendData(STATE_CONNECT, &traffic->addr, host.data, host.size);
+    int leftSize = size - headerEndPos - headerEnd.size;
+    if (leftSize > 0) {
+      tunnel->sendData(STATE_DATA, &traffic->addr, data + size - leftSize, leftSize);
+      INFO("[traffic %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), leftSize);
+    }
+    string response = "HTTP/1.1 200 Connection Established\r\n\r\n";
+    traffic->writeData(response.data(), response.size());
+    traffic->popReadData(size);
+    traffic->addReadableSize(size);
+    return true;
+  }
+
+  bool handleProtoHttp(EndpointClientTraffic* traffic, const char* data, int size) {
+    /* see https://tools.ietf.org/html/rfc2616#page-46
+     * The absoluteURI form is REQUIRED when the request is being made to a
+     * proxy. The proxy is requested to forward the request or service it
+     * from a valid cache, and return the response. Note that the proxy MAY
+     * forward the request on to another proxy or directly to the server
         > GET http://www.baidu.com/ HTTP/1.1
         > Host: www.baidu.com
         > User-Agent: curl/7.61.1
@@ -100,96 +177,44 @@ public:
     if (tunnel == NULL) { // TODO
       return false;
     }
-    const char* headerEnd = (const char*) memmem(data, size, "\r\n\r\n", 4);
-    if (headerEnd == NULL) {
-      INFO("no header end, exit");
+    Constr content(data, size);
+    static Constr lineEnd("\r\n");
+    Constr requestLine;
+    content.readUtil(lineEnd, requestLine);
+    if (requestLine.size == 0) {
+      INFO("not http proto, exit");
       return false;
     }
-    int headerSize = headerEnd - data + 4;
-
-    const char* protoStart = data;
-    int leftSize = headerSize - 2; // one \r\n left
-    const char* protoEnd = (const char* )memmem(protoStart, leftSize, "\r\n", 2);
-    if (protoEnd == NULL) {
-      INFO("no proto end, exit");
+    INFO("parse proto:%.*s", requestLine.size, requestLine.data);
+    Constr three[3];
+    if (requestLine.split(" ", three, 3) < 3) {
+      INFO("invalid proto:%.*s, exit", requestLine.size, requestLine.data);
       return false;
     }
-    int protoSize = protoEnd - protoStart;
-    const char* methodEnd = (const char* )memmem(protoStart, protoEnd - protoStart, " ", 1);
-    if (methodEnd < 0) {
-      INFO("no method found, exit: %.*s", protoSize, protoStart);
+    Constr& method = three[0];
+    Constr& url = three[1];
+    Constr& version = three[2];
+    if (!version.startsWith("HTTP/")) {
+      INFO("invalid httpVersion:%.*s, exit", version.size, version.data);
       return false;
     }
-    const char* uriStart = methodEnd + 1;
-    while (*uriStart == ' ' && uriStart < protoEnd) {
-      ++uriStart;
+    Constr httpsSchema("https://");
+    Constr schema("://");
+    int schemaPos = url.indexOf(schema);
+    if (schemaPos >= 0) {
+      url.popFront(schemaPos + schema.size);
     }
-    const char* uriEnd = (const char* )memmem(uriStart, protoEnd - uriStart, " ", 1);
-    if (uriEnd < 0) {
-      INFO("no uri found, exit: %.*s", protoSize, protoStart);
+    int slashPos = url.indexOf("/");
+    if (slashPos < 0) {
+      INFO("invalid proto:%.*s, exit", url.size, url.data);
       return false;
     }
-    const char* versionStart = uriEnd + 1;
-    while (*versionStart == ' ' && versionStart < protoEnd) {
-      ++versionStart;
-    }
-    if (memcmp(versionStart, "HTTP/", 5) != 0) {
-      INFO("no version found, exit: %.*s", protoSize, protoStart);
-    }
-
-    string proto(data, protoEnd - 2);
-    int methodEnd = proto.find(' ');
-    if (methodEnd < 0) {
-      INFO("no method found, exit: %s", proto.c_str());
-      return false;
-    }
-    string uriEnd = proto.find(' ', methodEnd);
-    if (uriEnd < 0) {
-      INFO("no uri found, exit: %s", proto.c_str());
-      return false;
-    }
-    string method(proto.begin(), proto.begin() + methodEnd);
-    string uri(proto.begin() + methodEnd + 1, proto.begin() + uriEnd);
-    string version(proto.begin() + uriEnd + 1, proto.end());
-    INFO("parse result, method:%s, uri:%s, version:%s", method.c_str(), uri.c_str(), version.c_str());
-    if (version.size() < 5 || version.substr(0, 5) != "HTTP/") {
-      INFO("invalid version found, exit: %s", version.c_str());
-      return false;
-    }
-    int uriSize = uriEnd - uriStart;
-    string port = "80";
-    const char* hostStart = (const char* )memmem(uriStart, uriSize, "://", 3);
-    const char* hostEnd = uriEnd;
-    if (hostStart == NULL) {
-      hostStart = uriStart;
-    } else {
-      hostStart += 3;
-    }
-    const char* portStart = (const char* )memmem(uriStart, uriSize, ":", 1);
-    if (portStart != NULL) {
-      port = string(portStart + 1, uriEnd - portStart - 1);
-      hostEnd = portStart;
-    } else {
-      if (memmem(uriStart, uriSize, "https://", 7) != NULL) {
-        port = "443";
-      }
-    }
-    string method(methodStart, methodEnd);
-    string host = string(hostStart, hostEnd) + ":" + port;
-    INFO("[traffic %s] guess the proto=HTTP, parse the method=%s, target=%s",
-         addrToStr(traffic->addr.b), method.c_str(), host.c_str());
-    tunnel->sendData(STATE_CONNECT, &traffic->addr, host.data(), host.size()); //
-    if (method == "CONNECT") {
-      if (size > headerSize > 0) {
-        tunnel->sendData(STATE_DATA, &traffic->addr, data + headerSize, size - headerSize);
-        INFO("[traffic %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size - headerSize);
-      }
-      string response = "HTTP/1.1 200 Connection Established\r\n\r\n";
-      traffic->writeData(response.data(), response.size());
-    } else {
-      tunnel->sendData(STATE_DATA, &traffic->addr, data, size);
-      INFO("[traffic %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size);
-    }
+    Constr host(url.data, slashPos);;
+    INFO("[traffic %s] proto=http, parse the method=%.*s, target=%.*s",
+         addrToStr(traffic->addr.b), method.size, method.data, host.size, host.data);
+    tunnel->sendData(STATE_CONNECT, &traffic->addr, host.data, host.size);
+    tunnel->sendData(STATE_DATA, &traffic->addr, data, size);
+    INFO("[traffic %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size);
     traffic->popReadData(size);
     traffic->addReadableSize(size);
     return true;
@@ -248,9 +273,14 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
           INFO("[tunnel %s] send frame, state=DATA, dataSize=%d", addrToStr(traffic->addr.b), size);
           traffic->popReadData(size);
         } else {
-          bool success = manager.handleSshProto(traffic, data, size);
-          if (!success) {
-            success = manager.handleHttpProto(traffic, data, size);
+          int proto = EndpointClientTraffic::guessProto(data, size);
+          bool success = false;
+          if (proto == EndpointClientTraffic::ProtoSsh) {
+            success = manager.handleProtoSsh(traffic, data, size);
+          } else if (proto == EndpointClientTraffic::ProtoHttpTunnel) {
+            success = manager.handleProtoHttpTunnel(traffic, data, size);
+          } else if (proto == EndpointClientTraffic::ProtoHttp) {
+            success = manager.handleProtoHttp(traffic, data, size);
           }
           if (!success) {
             INFO("[traffic %s] guess proto failed, so close it", addrToStr(traffic->addr.b));
