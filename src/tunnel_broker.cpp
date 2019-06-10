@@ -81,10 +81,10 @@ public:
     for (; it != tunnelPeerMap.end(); ) {
       if (now - it->second->lastTs > 300) {
         EndpointClientTunnelPeer* tunnel = it->second;
+        ERROR("[tunnel] clean %s\t%s[%s] <- ", it->first.c_str(), it->second->remoteAddr, it->second->getLastTime());
         tunnel->writeData(NULL, 0);
         breakTunnel(tunnel);
         tunnelPeerMap.erase(it++);
-        ERROR("[tunnel] clean %s\t%s[%s] <- ", it->first.c_str(), it->second->remoteAddr, it->second->getLastTime());
       } else {
         it++;
       }
