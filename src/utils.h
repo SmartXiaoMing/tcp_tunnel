@@ -19,29 +19,6 @@ extern int logLevel;
 #define WARN(fmt, args...) do{if(logLevel>1){fprintf(stdout, fmt "\n", ##args);fflush(stdout);}}while(0)
 #define ERROR(fmt, args...) do{if(logLevel>0){fprintf(stdout, fmt "\n", ##args);fflush(stdout);}}while(0)
 
-typedef struct Addr {
-  uint8_t b[6];
-  uint32_t tid;
-  Addr(): tid(0) {}
-  Addr(uint32_t id): tid(id) {
-    memset(b, 0, sizeof(b));
-  }
-  bool operator < (const Addr& that) const {
-    int d = tid - that.tid;
-    if (d != 0) {
-      return d;
-    }
-    return memcmp((const char*)b, (const char*)that.b, 6) < 0;
-  }
-  bool operator == (const Addr& that) const {
-    int d = tid - that.tid;
-    if (d != 0) {
-      return false;
-    }
-    return memcmp((const char*)b, (const char*)that.b, 6) == 0;
-  }
-} Addr;
-
 bool isGoodCode();
 
 bool isIpV4(const char* ip);
@@ -54,7 +31,6 @@ uint32_t bytesToInt(const char* b, int size);
 const char* intToBytes(int v, char* b, int size);
 bool parseIpPort(const string& buffer, char* ip, int* port);
 
-Addr sockFdToAddr(int sockfd);
 char* fdToLocalAddr(int sockfd, char* addr);
 char* fdToPeerAddr(int sockfd, char* addr);
 

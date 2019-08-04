@@ -13,51 +13,72 @@
 
 using namespace std;
 
-const int FrameHeadSize = 13;
+const int MinFrameSize = 11;
 const int FrameMaxDataSize = 4096;
 
 enum FrameState {
   STATE_NONE = 0,
-  STATE_LOGIN = 1,
-  STATE_CONNECT = 2,
-  STATE_DATA = 3,
-  STATE_ACK = 4,
-  STATE_CLOSE = 5,
-  STATE_RESET = 6,
+  STATE_TUNNEL_LOGIN = 1,
+  STATE_TUNNEL_ERROR = 2,
+  STATE_TRAFFIC_CONNECT = 3,
+  STATE_TRAFFIC_DATA = 4,
+  STATE_TRAFFIC_ACK = 5,
+  STATE_TRAFFIC_CLOSE = 6,
   STATE_SIZE
 };
 
 class Frame {
 public:
+  /*
+   * totalMinSize = 1 + 1 + 4 + 1 + 1 + 2 = 10
+   *
+   * state: 1 byte
+   * stream: 1 byte
+   * session: 4 byte
+   * from: 1 byte + fromSize
+   * to: 1 byte + toSize
+   * message: 2 byte + messageSize   *
+   */
+  static const uint8_t StreamRequest = 0;
+  static const uint8_t StreamResponse = 1;
   uint8_t state;
-  Addr addr;
+  uint8_t stream;
+  int session;
+  string from;
+  string to;
   string message;
 
-  static int encodeTo(string& buffer, uint8_t state, const Addr* addr, const char* data, int size) {
+  static int encodeTo(string& buffer, const Frame& frame) {
+    return encodeTo(buffer, frame.state, frame.stream, frame.session, &frame.from, &frame.to, frame.message);
+  }
+
+  static int encodeTo(string& buffer, uint8_t state, uint8_t stream, uint32_t session,
+                      const string* from, const string* to, const string& data) {
+    return encodeTo(buffer, state, stream, session, from, to, data.c_str(), data.size());
+  }
+
+  static int encodeTo(string& buffer, uint8_t state, uint8_t stream, uint32_t session,
+                      const string* from, const string* to, const char* data, int size) {
     do {
+      INFO("state:%d, stream:%d, session:%d, from:%s, to:%s, data[%d]:%.*s", state, stream, session, from->c_str(), to->c_str(), size, size, data);
       buffer.push_back(state);
-      if (addr == NULL) {
-        buffer.push_back(0);
-        buffer.push_back(0);
-        buffer.push_back(0);
-        buffer.push_back(0);
-        buffer.push_back(0);
-        buffer.push_back(0);
-        buffer.push_back(0);
-        buffer.push_back(0);
-        buffer.push_back(0);
+      buffer.push_back(stream);
+      buffer.push_back((session >> 24) & 0xff);
+      buffer.push_back((session >> 16) & 0xff);
+      buffer.push_back((session >> 8) & 0xff);
+      buffer.push_back(session & 0xff);
+
+      if (from == NULL) {
         buffer.push_back(0);
       } else {
-        buffer.push_back(addr->b[0]);
-        buffer.push_back(addr->b[1]);
-        buffer.push_back(addr->b[2]);
-        buffer.push_back(addr->b[3]);
-        buffer.push_back(addr->b[4]);
-        buffer.push_back(addr->b[5]);
-        buffer.push_back((addr->tid >> 24) & 0xff);
-        buffer.push_back((addr->tid >> 16) & 0xff);
-        buffer.push_back((addr->tid >> 8) & 0xff);
-        buffer.push_back(addr->tid & 0xff);
+        buffer.push_back((uint8_t)from->size());
+        buffer.append(from->begin(), from->end());
+      }
+      if (to == NULL) {
+        buffer.push_back(0);
+      } else {
+        buffer.push_back((uint8_t)to->size());
+        buffer.append(to->begin(), to->end());
       }
       if (size <= FrameMaxDataSize) {
         char two[2];
@@ -75,40 +96,64 @@ public:
         size -= FrameMaxDataSize;
       }
     } while (size > 0);
-    return FrameHeadSize + size;
+    return buffer.size();
   }
 
   static int parse(Frame& frame, const char* buffer, int bufferSize) {
-    if (bufferSize < FrameHeadSize) {
+    if (bufferSize < 5) {
       return 0;
     }
-    int size = bytesToInt(buffer + FrameHeadSize - 2, 2);
-    if (size < 0 || size > FrameMaxDataSize) {
-      ERROR("invalid frame with size:%d\n", size);
+
+    frame.state = buffer[0];
+    frame.stream = buffer[1];
+    int v1 = (buffer[2] & 0xff) << 24;
+    int v2 = (buffer[3] & 0xff) << 16;
+    int v3 = (buffer[4] & 0xff) << 8;
+    int v4 = (buffer[5] & 0xff);
+    frame.session = (v1 | v2 | v3 | v4);
+    INFO("state:%d, stream:%d, session:%d", frame.state, frame.stream, frame.session);
+    int fromSize = buffer[6];
+    int offset = 7;
+    if (fromSize > 0) {
+      if (fromSize + offset > bufferSize) {
+        return 0;
+      }
+      frame.from.assign(buffer + offset, buffer + offset + fromSize);
+      offset += fromSize;
+    }
+    if (offset + 1 > bufferSize) {
+      return 0;
+    }
+    int toSize = buffer[offset];
+    offset++;
+    if (toSize > 0) {
+      if (toSize + offset > bufferSize) {
+        return 0;
+      }
+      frame.to.assign(buffer + offset, buffer + offset + toSize);
+      offset += toSize;
+    }
+    if (offset + 2 > bufferSize) {
+      return 0;
+    }
+    INFO("fromSize:%d, toSize:%d, name:%s, peer:%s", fromSize, toSize, frame.from.c_str(), frame.to.c_str());
+    int messageSize = bytesToInt(buffer + offset, 2);
+    if (messageSize < 0 || messageSize > FrameMaxDataSize) {
+      ERROR("invalid frame with size:%d", messageSize);
       return -1;
     }
-    int frameSize =  size + FrameHeadSize;
-    if (bufferSize < frameSize) {
+    offset += 2;
+    INFO("offset:%d, messageSize:%d, bufferSize:%d, message:%.*s", offset, messageSize, bufferSize, messageSize, buffer + offset);
+    if (offset + messageSize > bufferSize) {
       return 0;
     }
-    frame.state = buffer[0];
-    frame.addr.b[0] = buffer[1];
-    frame.addr.b[1] = buffer[2];
-    frame.addr.b[2] = buffer[3];
-    frame.addr.b[3] = buffer[4];
-    frame.addr.b[4] = buffer[5];
-    frame.addr.b[5] = buffer[6];
-    frame.addr.tid = (((buffer[7] << 24) & 0xff000000)
-                     | ((buffer[8] << 16) & 0xff0000)
-                     | ((buffer[9] << 8) & 0xff00)
-                     | (buffer[10]& 0xff));
-    frame.message.assign(buffer + FrameHeadSize, buffer + frameSize);
-    return frameSize;
+    frame.message.assign(buffer + offset, buffer + offset + messageSize);
+    INFO("messageSize:%d, message:%s", messageSize, frame.message.c_str());
+    return offset + messageSize;
   }
 
-  void reset() {
+  void reset() { // TODO
     state = STATE_NONE;
-    memset(&addr, 0, sizeof(addr));
   }
 
   const char* stateToStr() {
@@ -129,6 +174,23 @@ public:
       return table[state];
     }
     return "UNKNOWN";
+  }
+
+  void setReply(uint8_t state, const string& message) {
+    this->state = state;
+    this->stream = 1 - this->stream;
+    this->message = message;
+    const string& from = this->from;
+    this->from = this->to;
+    this->to = from;
+  }
+
+  const char* streamStr() {
+    if (stream == StreamRequest) {
+      return ">";
+    } else {
+      return ">>";
+    }
   }
 };
 

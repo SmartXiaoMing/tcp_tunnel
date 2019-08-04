@@ -22,6 +22,8 @@ EndpointServer::create(int fd) {
 
 void
 EndpointServer::handleEvent(int events) {
+
+  INFO("enter onNewClientTraffic, events:%d", events);
   if (events & EPOLLIN) {
     struct sockaddr_in addr;
     socklen_t len = sizeof(sockaddr_in);

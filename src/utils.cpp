@@ -98,9 +98,11 @@ createServer(const char *ip, int port, int connectionCount) {
   int opt = 1;
   setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&opt, sizeof(opt));
   if (bind(fd, (struct sockaddr *) &saddr, sizeof(saddr)) < 0) {
+    close(fd);
     return -1;
   }
   if (listen(fd, connectionCount) < 0) {
+    close(fd);
     return -1;
   }
   return fd;
@@ -211,26 +213,6 @@ parseIpPort(const string &buffer, char *ip, int *port) {
     }
   }
   return true;
-}
-
-Addr sockFdToAddr(int sockfd) {
-  struct sockaddr_in peeraddr;
-  socklen_t len = sizeof(struct sockaddr);
-  getpeername(sockfd, (struct sockaddr *) &peeraddr, &len);
-  int port = ntohs(peeraddr.sin_port);
-  unsigned char *data = (unsigned char *) &peeraddr.sin_addr;
-  Addr addr;
-  addr.b[0] = data[0];
-  addr.b[1] = data[1];
-  addr.b[2] = data[2];
-  addr.b[3] = data[3];
-  addr.b[4] = ((port >> 8) & 0xff);
-  addr.b[5] = (port & 0xff);
-  addr.b[6] = 0;
-  addr.b[7] = 0;
-  addr.b[8] = 0;
-  addr.b[9] = 0;
-  return addr;
 }
 
 char* fdToLocalAddr(int sockfd, char* str) {
