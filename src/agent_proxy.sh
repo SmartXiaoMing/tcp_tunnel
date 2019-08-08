@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./tunnel_agent \
+nohup ./tunnel_agent \
 --brokerHost 127.0.0.1 \
 --brokerPort 8122 \
 --name proxy \
@@ -8,4 +8,4 @@
 --targetAddress guess \
 --serverIp 0.0.0.0 \
 --serverPort  9003 \
---v 5
+--v 5 > agent_proxy.txt &

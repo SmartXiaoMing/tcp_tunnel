@@ -1,11 +1,11 @@
 #!/bin/bash
 
-./tunnel_agent \
---brokerHost 127.0.0.1 \
+nohup ./tunnel_agent \
+--brokerHost 202.182.99.55 \
 --brokerPort 8122 \
 --name home \
 --peerName proxy \
 --targetAddress guess \
 --serverIp 0.0.0.0 \
---serverPort  9002 \
---v 5
+--serverPort  9001 \
+--v 5 > agent_local.log &

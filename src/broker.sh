@@ -1,5 +1,5 @@
 #!/bin/bash
 
-./tunnel_broker \
+nohup ./tunnel_broker \
 --port 8122 \
---v 9
+--v 9 > broker.txt &

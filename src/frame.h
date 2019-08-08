@@ -33,36 +33,35 @@ public:
    * totalMinSize = 1 + 1 + 4 + 1 + 1 + 2 = 10
    *
    * state: 1 byte
-   * stream: 1 byte
+   * owner: 1 byte
    * session: 4 byte
    * from: 1 byte + fromSize
    * to: 1 byte + toSize
    * message: 2 byte + messageSize   *
    */
-  static const uint8_t StreamRequest = 0;
-  static const uint8_t StreamResponse = 1;
+  static const uint8_t OwnerMe = 0;
+  static const uint8_t OwnerPeer = 1;
   uint8_t state;
-  uint8_t stream;
+  uint8_t owner;
   int session;
   string from;
   string to;
   string message;
 
   static int encodeTo(string& buffer, const Frame& frame) {
-    return encodeTo(buffer, frame.state, frame.stream, frame.session, &frame.from, &frame.to, frame.message);
+    return encodeTo(buffer, frame.state, frame.owner, frame.session, &frame.from, &frame.to, frame.message);
   }
 
-  static int encodeTo(string& buffer, uint8_t state, uint8_t stream, uint32_t session,
+  static int encodeTo(string& buffer, uint8_t state, uint8_t owner, uint32_t session,
                       const string* from, const string* to, const string& data) {
-    return encodeTo(buffer, state, stream, session, from, to, data.c_str(), data.size());
+    return encodeTo(buffer, state, owner, session, from, to, data.c_str(), data.size());
   }
 
-  static int encodeTo(string& buffer, uint8_t state, uint8_t stream, uint32_t session,
+  static int encodeTo(string& buffer, uint8_t state, uint8_t owner, uint32_t session,
                       const string* from, const string* to, const char* data, int size) {
     do {
-      INFO("state:%d, stream:%d, session:%d, from:%s, to:%s, data[%d]:%.*s", state, stream, session, from->c_str(), to->c_str(), size, size, data);
       buffer.push_back(state);
-      buffer.push_back(stream);
+      buffer.push_back(owner);
       buffer.push_back((session >> 24) & 0xff);
       buffer.push_back((session >> 16) & 0xff);
       buffer.push_back((session >> 8) & 0xff);
@@ -105,13 +104,12 @@ public:
     }
 
     frame.state = buffer[0];
-    frame.stream = buffer[1];
+    frame.owner = buffer[1];
     int v1 = (buffer[2] & 0xff) << 24;
     int v2 = (buffer[3] & 0xff) << 16;
     int v3 = (buffer[4] & 0xff) << 8;
     int v4 = (buffer[5] & 0xff);
     frame.session = (v1 | v2 | v3 | v4);
-    INFO("state:%d, stream:%d, session:%d", frame.state, frame.stream, frame.session);
     int fromSize = buffer[6];
     int offset = 7;
     if (fromSize > 0) {
@@ -136,19 +134,16 @@ public:
     if (offset + 2 > bufferSize) {
       return 0;
     }
-    INFO("fromSize:%d, toSize:%d, name:%s, peer:%s", fromSize, toSize, frame.from.c_str(), frame.to.c_str());
     int messageSize = bytesToInt(buffer + offset, 2);
     if (messageSize < 0 || messageSize > FrameMaxDataSize) {
       ERROR("invalid frame with size:%d", messageSize);
       return -1;
     }
     offset += 2;
-    INFO("offset:%d, messageSize:%d, bufferSize:%d, message:%.*s", offset, messageSize, bufferSize, messageSize, buffer + offset);
     if (offset + messageSize > bufferSize) {
       return 0;
     }
     frame.message.assign(buffer + offset, buffer + offset + messageSize);
-    INFO("messageSize:%d, message:%s", messageSize, frame.message.c_str());
     return offset + messageSize;
   }
 
@@ -168,7 +163,7 @@ public:
 
   static const char* stateToStr(int state) {
     static const char* table[] {
-        "NONE", "LOGIN", "CONNECT", "DATA", "ACK", "CLOSE"
+        "NONE", "TUNNEL_LOGIN", "TUNNEL_ERROR", "TRAFFIC_DATA", "TRAFFIC_ACK", "TRAFFIC_CLOSE"
     };
     if (0 <= state && state < STATE_SIZE) {
       return table[state];
@@ -178,20 +173,11 @@ public:
 
   void setReply(uint8_t state, const string& message) {
     this->state = state;
-    this->stream = 1 - this->stream;
+    this->owner = 1 - this->owner;
     this->message = message;
-    const string& from = this->from;
+    string from = this->from;
     this->from = this->to;
     this->to = from;
   }
-
-  const char* streamStr() {
-    if (stream == StreamRequest) {
-      return ">";
-    } else {
-      return ">>";
-    }
-  }
 };
-
 #endif //TCP_TUNNEL_FRAME_HPP

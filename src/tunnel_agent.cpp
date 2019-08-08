@@ -30,7 +30,7 @@ struct Addr {
   bool operator < (const Addr& addr) const {
     int d = session - addr.session;
     if (d != 0) {
-      return d;
+      return d < 0;
     }
     return name < addr.name;
   }
@@ -46,17 +46,19 @@ public:
   static const int ProtoHttp = 2;
   static const int ProtoHttpTunnel = 3; // CONNECT home.netscape.com:443 HTTP/1.0 see https://tools.ietf.org/html/draft-luotonen-web-proxy-tunneling-01
 
-  EndpointClientTraffic(const string& name, int fd): EndpointClient(fd, onTrafficChanged), packageNumber(0), proto(ProtoUnknown), stream(Frame::StreamRequest) {
+  EndpointClientTraffic(const string& name, int fd, const string& peerName): EndpointClient(fd, onTrafficChanged),
+      packageNumber(0), proto(ProtoUnknown), owner(Frame::OwnerMe) {
     gSession++;
     addr.session = gSession;
     addr.name = name;
     this->name = name;
-    INFO("[traffic create] traffic %s#%d come from local", addr.name.c_str(), addr.session);
+    INFO("[%s#%d -> %s] create new traffic come from local", addr.name.c_str(), addr.session, peerName.c_str());
   }
-  EndpointClientTraffic(const string& name, const Addr& addr): EndpointClient(onTrafficChanged), packageNumber(0), proto(ProtoUnknown), stream(Frame::StreamResponse) {
+  EndpointClientTraffic(const string& name, const Addr& addr, const string& peerName): EndpointClient(onTrafficChanged),
+      packageNumber(0), proto(ProtoUnknown), owner(Frame::OwnerPeer) {
     this->addr = addr;
     this->name = name;
-    INFO("[traffic create] traffic %s#%d come from tunnel", addr.name.c_str(), addr.session);
+    INFO("[%s <- %s#%d] create new traffic come from remote", addr.name.c_str(), peerName.c_str(), addr.session);
   }
   static int guessProto(const char* data, int size) {
     Constr content(data, size);
@@ -78,7 +80,7 @@ public:
   Addr addr;
   bool packageNumber;
   int proto;
-  int stream;
+  int owner;
   string name;
 };
 
@@ -112,7 +114,8 @@ public:
         char data[256];
         int size = sprintf(data, "name=%s&peerName=%s", name, peerName);
         string message(data, size);
-        INFO("[tunnel login] %s > %s, message: %s", name, peerName, message.c_str());
+        INFO("[%s -> %s] send login, message[%zd]: %s",
+             name, peerName, message.size(), message.c_str());
         Frame frame = makeFrame(NULL, STATE_TUNNEL_LOGIN, message);
         tunnel->sendData(frame);
       }
@@ -134,15 +137,11 @@ public:
       return false;
     }
     string target = "127.0.0.1:22";
-    INFO("[traffic proto] %s guess the proto=SSH, make the target: %s", traffic->addr.name.c_str(), target.c_str());
-
     Frame frame = makeFrame(traffic, STATE_TRAFFIC_CONNECT, target);
-    INFO("[traffic connect] %s#%d > %s, dataSize: %zd",
-         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
+    INFO("[%s#%d -> %s] guess proto = SSH, send connect, message[%zd]: %s",
+         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
     tunnel->sendData(frame);
     frame = makeFrame(traffic, STATE_TRAFFIC_DATA, string(data, size));
-    INFO("[traffic data] %s#%d > %s, dataSize: %zd~~~",
-         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
     tunnel->sendData(frame);
     traffic->popReadData(size);
     traffic->addReadableSize(size);
@@ -186,15 +185,16 @@ public:
       INFO("invalid http tunnel proto, httpVersion:%.*s, exit", version.size, version.data);
       return false;
     }
+
     Frame frame = makeFrame(traffic, STATE_TRAFFIC_CONNECT, string(host.data, host.size));
-    INFO("[traffic connect] %s#%d > %s, dataSize: %zd~~~",
-         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
+    INFO("[%s#%d -> %s] guess proto = https, send connect, message[%zd]: %s",
+         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
     tunnel->sendData(frame);
     int leftSize = size - headerEndPos - headerEnd.size;
     if (leftSize > 0) {
       frame = makeFrame(traffic, STATE_TRAFFIC_DATA, string(data + size - leftSize, leftSize));
-      INFO("[traffic data] %s#%d > %s, dataSize: %zd~~~",
-           frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
+      INFO("[%s#%d -> %s] send data, message[%zd]: %s",
+           frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
       tunnel->sendData(frame);
     }
     string response = "HTTP/1.1 200 Connection Established\r\n\r\n";
@@ -254,12 +254,12 @@ public:
     }
     Constr host(url.data, slashPos);;
     Frame frame = makeFrame(traffic, STATE_TRAFFIC_CONNECT, string(host.data, host.size));
-    INFO("[traffic connect] %s#%d > %s, dataSize: %zd~~~",
-         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
+    INFO("[%s#%d -> %s] guess proto = http, send connect, message[%zd]: %s",
+         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
     tunnel->sendData(frame);
     frame = makeFrame(traffic, STATE_TRAFFIC_DATA, string(data, size));
-    INFO("[traffic data] %s#%d > %s, dataSize: %zd~~~",
-         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
+    INFO("[%s#%d -> %s] send data, message[%zd]: %s",
+         frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
     tunnel->sendData(frame);
     traffic->popReadData(size);
     traffic->addReadableSize(size);
@@ -296,12 +296,12 @@ public:
     if (traffic != NULL) {
       frame.from = traffic->addr.name;
       frame.to = peerName;
-      frame.stream = traffic->stream;
+      frame.owner = traffic->owner;
       frame.session = traffic->addr.session;
     } else {
       frame.from = "";
       frame.to = "";
-      frame.stream = Frame::StreamRequest;
+      frame.owner = Frame::OwnerMe;
       frame.session = 0;
     }
     frame.state = state;
@@ -325,7 +325,7 @@ Manager manager;
 
 void onNewClientTraffic(EndpointServer* endpoint, int acfd) {
   EndpointServer* serverTraffic = (EndpointServer*) endpoint;
-  EndpointClientTraffic* traffic = new EndpointClientTraffic(manager.name, acfd);
+  EndpointClientTraffic* traffic = new EndpointClientTraffic(manager.name, acfd, manager.peerName);
   map<uint32_t, EndpointClientTraffic*>::iterator it = manager.requestTrafficMap.find(traffic->addr.session);
   if (it != manager.requestTrafficMap.end()) {
     ERROR("!!!!! addr exists %s, session:%d", traffic->addr.name.c_str(), traffic->addr.session);
@@ -351,16 +351,18 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
         if (!manager.targetAddress.empty() && manager.targetAddress != "guess") {
           Frame frame = manager.makeFrame(traffic, STATE_TRAFFIC_CONNECT, manager.targetAddress);
           manager.tunnel->sendData(frame);
-          INFO("[traffic local connect] %s#%d > %s, dataSize: %zd",
-               frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
+          INFO("[%s#%d -> %s] send connect, message[%zd]: %s", frame.from.c_str(), frame.session, frame.to.c_str(),
+               frame.message.size(), frame.message.c_str());
           frame = manager.makeFrame(traffic, STATE_TRAFFIC_DATA, string(data, size));
           manager.tunnel->sendData(frame);
-          INFO("[traffic local data] %s#%d > %s, dataSize: %d",
-               frame.from.c_str(), frame.session, frame.to.c_str(), size);
+          INFO("[%s#%d -> %s] send data, message[%zd]",
+               frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
           traffic->popReadData(size);
         } else {
           int proto = EndpointClientTraffic::guessProto(data, size);
-          INFO("guess proto:%d, for dataSize=%d, data=%.*s", proto, size, size, data);
+          INFO("[%s#%d -> %s] guess proto:%d for data[%d]: %.*s",
+               traffic->addr.name.c_str(), traffic->addr.session, manager.peerName.c_str(),
+               proto, size, size, data);
           bool success = false;
           if (proto == EndpointClientTraffic::ProtoSsh) {
             success = manager.handleProtoSsh(traffic, data, size);
@@ -370,40 +372,56 @@ void onTrafficChanged(EndpointClient* endpoint, int event, const char* data, int
             success = manager.handleProtoHttp(traffic, data, size);
           }
           if (!success) {
-            INFO("[traffic local parse] failed to guess proto");
+            INFO("[%s#%d -> %s] failed to guess proto, close local traffic",
+                 traffic->addr.name.c_str(), traffic->addr.session, manager.peerName.c_str());
             traffic->writeData(NULL, 0);
             manager.requestTrafficMap.erase(traffic->addr.session);
           }
         }
       } else {
         Frame frame = manager.makeFrame(traffic, STATE_TRAFFIC_DATA, string(data, size));
-        INFO("[traffic local data] %s#%d > %s, dataSize: %d",
-            frame.from.c_str(), frame.session, frame.to.c_str(), size);
+        if (frame.owner == Frame::OwnerMe) {
+          INFO("[%s#%d -> %s] send data, message[%zd]",
+               frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
+        } else {
+          INFO("[%s <- %s#%d] send data, message[%zd]", frame.from.c_str(), frame.to.c_str(), frame.session,
+               frame.message.size());
+        }
         manager.tunnel->sendData(frame);
         traffic->popReadData(size);
       }
     } else { // size == 0, read eof
       Frame frame = manager.makeFrame(traffic, STATE_TRAFFIC_CLOSE, "read EOF");
-      INFO("[traffic local eof] %s#%d > %s, read EOF",
-          frame.from.c_str(), frame.session, frame.to.c_str());
+      if (frame.owner == Frame::OwnerMe) {
+        INFO("[%s#%d -> %s] read EOF, send data, message[%zd]: %s", frame.from.c_str(),
+             frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
+      } else {
+        INFO("[%s <- %s#%d] read EOF, send data, message[%zd]: %s", frame.from.c_str(),
+             frame.to.c_str(), frame.session, frame.message.size(), frame.message.c_str());
+      }
       manager.tunnel->sendData(frame);
     }
     return;
   }
-  if (event == EVENT_WRITTEN) {
+  if (event == EVENT_WRITTEN && size > 0) {
     char b[20];
     int len = sprintf(b, "%d", size) + 1;
     Frame frame = manager.makeFrame(traffic, STATE_TRAFFIC_ACK, b);
     manager.tunnel->sendData(frame);
-    INFO("[traffic local ack] %s#%d > %s, dataSize: %d",
-         frame.from.c_str(), frame.session, frame.to.c_str(), size);
+    if (frame.owner == Frame::OwnerMe) {
+      INFO("[%s#%d -> %s] send ack, message[%zd]: %s", frame.from.c_str(),
+           frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
+    } else {
+      INFO("[%s <- %s#%d] send ack, message[%zd]: %s", frame.from.c_str(),
+           frame.to.c_str(), frame.session, frame.message.size(), frame.message.c_str());
+    }
     return;
   }
 }
 
 void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int size) {
   if (event == EVENT_ERROR || event == EVENT_CLOSED) {
-    INFO("[tunnel local error] tunnel disconnected");
+    INFO("[tunnel] tunnel error local, reset all connections");
     manager.resetAllTraffic();
     manager.tunnel = NULL;
     return;
@@ -413,134 +431,146 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
     Frame frame;
     while (tunnel->parseFrame(frame) > 0) {
       if (frame.state == STATE_TUNNEL_ERROR) {
-        ERROR("[tunnel remote error] %s#%d > %s, dataSize: %d",
-             frame.from.c_str(), frame.session, frame.to.c_str(), size);
+        ERROR("[tunnel] tunnel %s error, message:%s, reset all relation connections",
+             frame.from.c_str(), frame.message.c_str());
         manager.resetResponseTraffic(frame.from);
         continue;
       }
       if (frame.state == STATE_TRAFFIC_CONNECT) {
-        INFO("[traffic remote connect] %s#%d > %s, message: %s",
-             frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.c_str());
+        INFO("[%s <- %s#%d] recv connect, message[%zd]: %s", frame.from.c_str(),
+             frame.to.c_str(), frame.session, frame.message.size(), frame.message.c_str());
         char host[frame.message.size() + 1];
         int port = 80;
         if (parseIpPort(frame.message, host, &port)) {
           char ip[30];
           if (selectIp(host, ip, 29) == NULL) {
-            frame.setReply(STATE_TRAFFIC_CLOSE, "failed to resolve host");
-            ERROR("[traffic remote connect] %s#%d > %s, failed to resolve host:%s",
-                 frame.from.c_str(), frame.session, frame.to.c_str(), host);
+            INFO("[%s <- %s#%d] failed to resolve host:%s", frame.from.c_str(),
+                 frame.to.c_str(), frame.session, host);
+            string message("failed to resolve host");
+            INFO("[%s <- %s#%d] send close, message[%zd]: %s", frame.from.c_str(),
+                 frame.to.c_str(), frame.session, message.size(), message.c_str());
+            frame.setReply(STATE_TRAFFIC_CLOSE, message);
             tunnel->sendData(frame);
             break;
           } else {
-            INFO("[traffic remote connect] %s#%d > %s, success to resolve host:%s, ip:%s, port:%d",
-                 frame.from.c_str(), frame.session, frame.to.c_str(), host, ip, port);
+            INFO("[%s <- %s#%d] success to resolve host:%s, ip:%s, port:%d", frame.from.c_str(),
+                 frame.to.c_str(), frame.session, host, ip, port);
           }
-          Addr addr(frame.from, frame.session);
+          Addr addr(frame.to, frame.session);
           map<Addr, EndpointClientTraffic*>::iterator it2 = manager.responseTrafficMap.find(addr);
           if (it2 != manager.responseTrafficMap.end()) {
-            INFO("[traffic error] %s > %s#%d, error, the session exists already!!!",
-                 frame.from.c_str(), frame.to.c_str(), frame.session);
+            INFO("[%s <- %s#%d] error, the session exists already!!!", frame.from.c_str(),
+                 frame.to.c_str(), frame.session);
           }
-          EndpointClientTraffic* endpointTraffic = new EndpointClientTraffic(manager.name, addr);
+          EndpointClientTraffic* endpointTraffic = new EndpointClientTraffic(manager.name, addr, manager.peerName);
           if (endpointTraffic->createClient(ip, port)) {
-            endpointTraffic->addr = addr; // TODO
             endpointTraffic->packageNumber = 1;
             manager.responseTrafficMap[addr] = endpointTraffic;
-            INFO("[traffic connect] %s > %s, session: %d, success to make a connection host:%s, ip:%s, port:%d",
-                 frame.from.c_str(), frame.to.c_str(), frame.session, host, ip, port);
+            INFO("[%s <- %s#%d] success to make a connection to host:%s, ip:%s, port:%d", frame.from.c_str(),
+                 frame.to.c_str(), frame.session, host, ip, port);
           } else {
+            string message("failed to conenct");
+            INFO("[%s <- %s#%d] send close, message[%zd]: %s", frame.from.c_str(),
+                 frame.to.c_str(), frame.session, message.size(), message.c_str());
             frame.setReply(STATE_TRAFFIC_CLOSE, "failed to connect");
-            INFO("[traffic connect] %s >> %s, session: %d, failed to connect host:%s, ip:%s, port:%d",
-                 frame.from.c_str(), frame.to.c_str(), frame.session, host, ip, port);
             tunnel->sendData(frame);
           }
         } else {
+          string message("invalid config");
+          INFO("[%s <- %s#%d] send close, message[%zd]: %s", frame.from.c_str(),
+               frame.to.c_str(), frame.session, message.size(), message.c_str());
           frame.setReply(STATE_TRAFFIC_CLOSE, "invalid config");
-          INFO("[traffic connect] %s >> %s, session: %d, invalid config: %s",
-               frame.from.c_str(), frame.to.c_str(), frame.session, frame.message.c_str());
           tunnel->sendData(frame);
         }
         continue;
       }
-      if (frame.stream == Frame::StreamRequest) {
-        Addr addr(frame.from, frame.session);
+      if (frame.owner == Frame::OwnerMe) {
         if (frame.state == STATE_TRAFFIC_DATA) {
-          map<Addr, EndpointClientTraffic*>::iterator it = manager.responseTrafficMap.find(addr);
-          INFO("[traffic data] %s#%d > %s, dataSize: %zd",
+          INFO("[%s#%d -> %s] recv data, message[%zd]",
                frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size());
-          if (it != manager.responseTrafficMap.end()) {
-            it->second->writeData(frame.message.data(), frame.message.size());
-          } else {
-            frame.setReply(STATE_TRAFFIC_CLOSE, "failed to handle data, traffic not exists");
-            INFO("[traffic error] %s >> %s, session: %d, dataSize: %zd, failed to handle data, traffic not exists",
-                 frame.from.c_str(), frame.to.c_str(), frame.session, frame.message.size());
-            tunnel->sendData(frame);
-          }
-        } else if (frame.state == STATE_TRAFFIC_ACK) {
-          map<Addr, EndpointClientTraffic*>::iterator it = manager.responseTrafficMap.find(addr);
-          int size = 0;
-          sscanf(frame.message.c_str(), "%d", &size);
-          INFO("[traffic ack] %s > %s, session: %d, ack: %d",
-               frame.from.c_str(), frame.to.c_str(), frame.session, size);
-          if (it != manager.responseTrafficMap.end()) {
-            it->second->addReadableSize(size);
-          } else {
-            frame.setReply(STATE_TRAFFIC_CLOSE, "failed to handle ack, traffic not exists");
-            INFO("[traffic error] %s >> %s, session: %d, ack: %d, failed to handle ack, traffic not exists",
-                 frame.from.c_str(), frame.to.c_str(), frame.session, size);
-            tunnel->sendData(frame);
-          }
-        } else if (frame.state == STATE_TRAFFIC_CLOSE) {
-          map<Addr, EndpointClientTraffic*>::iterator it = manager.responseTrafficMap.find(addr);
-          int size = 0;
-          sscanf(frame.message.c_str(), "%d", &size);
-          if (it != manager.responseTrafficMap.end()) {
-            INFO("[traffic close] %s > %s, session: %d", frame.from.c_str(), frame.to.c_str(), frame.session);
-            it->second->writeData(NULL, 0);
-            manager.responseTrafficMap.erase(it);
-          } else {
-            INFO("[traffic close] %s > %s, session: %d, but traffic not exists, skip.",
-                 frame.from.c_str(), frame.to.c_str(), frame.session);
-          }
-        }
-      } else { // StreamResponse
-        if (frame.state == STATE_TRAFFIC_DATA) {
           map<uint32_t, EndpointClientTraffic*>::iterator it = manager.requestTrafficMap.find(frame.session);
-          INFO("[traffic data] %s >> %s, session: %d, dataSize: %zd",
-               frame.from.c_str(), frame.to.c_str(), frame.session, frame.message.size());
           if (it != manager.requestTrafficMap.end()) {
             it->second->writeData(frame.message.data(), frame.message.size());
           } else {
+            string message("failed to handle data, traffic not exists");
+            INFO("[%s#%d -> %s] send close, message[%zd]: %s", frame.from.c_str(),
+                 frame.session, frame.to.c_str(), message.size(), message.c_str());
             frame.setReply(STATE_TRAFFIC_CLOSE, "failed to handle data, traffic not exists");
-            INFO("[traffic error] %s > %s, session: %d, dataSize: %zd, failed to handle data, traffic not exists",
-                 frame.from.c_str(), frame.to.c_str(), frame.session, frame.message.size());
             tunnel->sendData(frame);
           }
         } else if (frame.state == STATE_TRAFFIC_ACK) {
+          INFO("[%s#%d -> %s] recv ack, message[%zd]: %s",
+               frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
           map<uint32_t, EndpointClientTraffic*>::iterator it = manager.requestTrafficMap.find(frame.session);
           int size = 0;
           sscanf(frame.message.c_str(), "%d", &size);
-          INFO("[traffic ack] %s >> %s, session: %d, ack: %d",
-               frame.from.c_str(), frame.to.c_str(), frame.session, size);
           if (it != manager.requestTrafficMap.end()) {
             it->second->addReadableSize(size);
           } else {
-            frame.setReply(STATE_TRAFFIC_CLOSE, "failed to handle ack, traffic not exists");
-            INFO("[traffic error] %s > %s, session: %d, ack: %d, failed to handle ack, traffic not exists",
-                 frame.from.c_str(), frame.to.c_str(), frame.session, size);
+            string message("failed to handle ack, traffic not exists");
+            INFO("[%s#%d -> %s] send close, message[%zd]: %s", frame.from.c_str(),
+                 frame.session, frame.to.c_str(), message.size(), message.c_str());
+            frame.setReply(STATE_TRAFFIC_CLOSE, "failed to handle data, traffic not exists");
             tunnel->sendData(frame);
           }
         } else if (frame.state == STATE_TRAFFIC_CLOSE) {
+          INFO("[%s#%d -> %s] recv close, message[%zd]: %s",
+               frame.from.c_str(), frame.session, frame.to.c_str(), frame.message.size(), frame.message.c_str());
           map<uint32_t, EndpointClientTraffic*>::iterator it = manager.requestTrafficMap.find(frame.session);
-          int size = 0;
-          sscanf(frame.message.c_str(), "%d", &size);
           if (it != manager.requestTrafficMap.end()) {
-            INFO("[traffic close] %s >> %s, session: %d", frame.from.c_str(), frame.to.c_str(), frame.session);
+            INFO("[%s#%d -> %s] try to erase the local traffic", frame.from.c_str(),
+                 frame.session, frame.to.c_str());
             it->second->writeData(NULL, 0);
             manager.requestTrafficMap.erase(it);
           } else {
-            INFO("[traffic close] %s >> %s, session: %d, but traffic not exists, skip.",
-                 frame.from.c_str(), frame.to.c_str(), frame.session);
+            INFO("[%s#%d -> %s] traffic not exists, do nothing", frame.from.c_str(),
+                 frame.session, frame.to.c_str());
+          }
+        }
+      } else { // Peer
+        Addr addr(frame.to, frame.session);
+        if (frame.state == STATE_TRAFFIC_DATA) {
+          map<Addr, EndpointClientTraffic*>::iterator it = manager.responseTrafficMap.find(addr);
+          INFO("[%s <- %s#%d] recv data, message[%zd]",
+               frame.from.c_str(), frame.to.c_str(), frame.session, frame.message.size());
+          if (it != manager.responseTrafficMap.end()) {
+            it->second->writeData(frame.message.data(), frame.message.size());
+          } else {
+            string message("failed to handle data, traffic not exists");
+            INFO("[%s <- %s#%d] send close, message[%zd]: %s", frame.from.c_str(),
+                 frame.to.c_str(), frame.session, message.size(), message.c_str());
+            frame.setReply(STATE_TRAFFIC_CLOSE, message);
+            tunnel->sendData(frame);
+          }
+        } else if (frame.state == STATE_TRAFFIC_ACK) {
+          INFO("[%s <- %s#%d] recv ack, message[%zd]: %s",
+               frame.from.c_str(), frame.to.c_str(), frame.session, frame.message.size(), frame.message.c_str());
+          map<Addr, EndpointClientTraffic*>::iterator it = manager.responseTrafficMap.find(addr);
+          int size = 0;
+          sscanf(frame.message.c_str(), "%d", &size);
+          if (it != manager.responseTrafficMap.end()) {
+            it->second->addReadableSize(size);
+          } else {
+            string message("failed to handle ack, traffic not exists");
+            INFO("[%s <- %s#%d] send close, message[%zd]: %s", frame.from.c_str(),
+                 frame.to.c_str(), frame.session, message.size(), message.c_str());
+            map<Addr, EndpointClientTraffic*>::iterator it2 = manager.responseTrafficMap.begin();
+            for (; it2 != manager.responseTrafficMap.end(); ++it2) {
+              INFO("key, %s#%d", it2->first.name.c_str(), it2->first.session);
+            }
+            frame.setReply(STATE_TRAFFIC_CLOSE, message);
+            tunnel->sendData(frame);
+          }
+        } else if (frame.state == STATE_TRAFFIC_CLOSE) {
+          INFO("[%s <- %s#%d] recv close, message[%zd]: %s",
+               frame.from.c_str(), frame.to.c_str(), frame.session, frame.message.size(), frame.message.c_str());
+          map<Addr, EndpointClientTraffic*>::iterator it = manager.responseTrafficMap.find(addr);
+          if (it != manager.responseTrafficMap.end()) {
+            INFO("[%s <- %s#%d] try to erase the local traffic", frame.from.c_str(), frame.to.c_str(), frame.session);
+            it->second->writeData(NULL, 0);
+            manager.responseTrafficMap.erase(it);
+          } else {
+            INFO("[%s <- %s#%d] traffic not exists, do nothing", frame.from.c_str(), frame.to.c_str(), frame.session);
           }
         }
       }
@@ -630,7 +660,7 @@ int main(int argc, char** argv) {
     Endpoint::loop();
     time_t now = time(0);
     int elapse = now - startTime;
-    if (elapse > 1000 || elapse < 0) {
+    if (elapse > 120 || elapse < 0) {
       Frame frame = manager.makeFrame(NULL, STATE_NONE, "");
       manager.tunnel->sendData(frame);
       startTime = now;

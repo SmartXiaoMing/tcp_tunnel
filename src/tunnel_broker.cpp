@@ -70,7 +70,7 @@ public:
   void cleanTunnel(time_t now) {
     map<string, EndpointClientTunnelPeer*>::iterator it = tunnelPeerMap.begin();
     for (; it != tunnelPeerMap.end(); ) {
-      if (now - it->second->lastTs > 3000) {
+      if (now - it->second->lastTs > 600) {
         EndpointClientTunnelPeer* tunnel = it->second;
         ERROR("[tunnel error] timeout for %s, addr: %s, last time: %s, so send close to %s",
               it->first.c_str(), it->second->remoteAddr, it->second->getLastTime(), it->first.c_str());
@@ -159,9 +159,10 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
         } else {
           INFO("[tunnel login] failed to login, %s exist already", tunnel->name.c_str());
           frame.state = STATE_TUNNEL_ERROR;
-          const string& from = frame.from;
+          frame.owner = 1 - frame.owner;
+          string from = frame.from;
           frame.from = frame.to;
-          frame.to = frame.from;
+          frame.to = from;
           frame.message = "the tunnel exists with name " + name;
           tunnel->sendData(frame);
           tunnel->writeData(NULL, 0); // close the tunnel client
@@ -171,14 +172,19 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
         map<string, EndpointClientTunnelPeer *>::iterator targetIt = manager.tunnelPeerMap.find(frame.to);
         if (targetIt == manager.tunnelPeerMap.end()) {
           frame.state = STATE_TUNNEL_ERROR;
-          const string& from = frame.from;
+          string from = frame.from;
+          frame.owner = 1 - frame.owner;
           frame.from = frame.to;
-          frame.to = frame.from;
+          frame.to = from;
           frame.message = "target tunnel is not exist";
           INFO("[tunnel traffic] %s > null, state: %s, size: %zd, so send close to %s",
                tunnel->name.c_str(), Frame::stateToStr(frame.state), frame.message.size(), tunnel->name.c_str()); // TOOD
           tunnel->sendData(frame);
         } else {
+          string from = frame.from;
+          frame.owner = 1 - frame.owner;
+          frame.from = frame.to;
+          frame.to = from;
           targetIt->second->sendData(frame);
           INFO("[tunnel traffic] %s > %s, state: %s, size: %zd",
                tunnel->name.c_str(), tunnel->peerName.c_str(), Frame::stateToStr(frame.state), frame.message.size());
@@ -227,7 +233,7 @@ int main(int argc, char** argv) {
     Endpoint::loop();
     time_t now = time(0);
     int elapse = now - startTime;
-    if (now - startTime > 20) {
+    if (now - startTime > 60) {
       manager.cleanTunnel(now);
       manager.showStatus(now, elapse);
       startTime = now;
