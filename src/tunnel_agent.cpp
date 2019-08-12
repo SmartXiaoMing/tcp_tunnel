@@ -58,7 +58,7 @@ public:
       packageNumber(0), proto(ProtoUnknown), owner(Frame::OwnerPeer) {
     this->addr = addr;
     this->name = name;
-    INFO("[%s <- %s#%d] create new traffic come from remote", addr.name.c_str(), peerName.c_str(), addr.session);
+    INFO("[%s <- %s#%d] create new traffic come from remote", name.c_str(), peerName.c_str(), addr.session);
   }
   static int guessProto(const char* data, int size) {
     Constr content(data, size);
@@ -314,7 +314,7 @@ public:
         INFO("[%s <- %s#%d] error, the session exists already!!!", frame.from.c_str(),
              frame.to.c_str(), frame.session);
       }
-      EndpointClientTraffic* endpointTraffic = new EndpointClientTraffic(name, addr, peerName);
+      EndpointClientTraffic* endpointTraffic = new EndpointClientTraffic(name, addr, frame.to);
       if (endpointTraffic->createClient(ip, port)) {
         endpointTraffic->packageNumber = 1;
         responseTrafficMap[addr] = endpointTraffic;
@@ -521,9 +521,13 @@ public:
     Frame frame;
     if (traffic != NULL) {
       frame.from = traffic->addr.name;
-      frame.to = peerName;
       frame.owner = traffic->owner;
       frame.session = traffic->addr.session;
+      if (frame.owner == Frame::OwnerMe) {
+        frame.to = peerName;
+      } else {
+        frame.to = traffic->addr.name;
+      }
     } else {
       frame.from = "";
       frame.to = "";

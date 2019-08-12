@@ -3,7 +3,7 @@
 nohup ./tunnel_agent \
 --brokerHost 202.182.99.55 \
 --brokerPort 8122 \
---name home \
+--name office \
 --peerName proxy \
 --targetAddress guess \
 --serverIp 0.0.0.0 \
