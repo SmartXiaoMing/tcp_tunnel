@@ -163,7 +163,7 @@ public:
 
   static const char* stateToStr(int state) {
     static const char* table[] {
-        "NONE", "TUNNEL_LOGIN", "TUNNEL_ERROR", "TRAFFIC_DATA", "TRAFFIC_ACK", "TRAFFIC_CLOSE"
+        "NONE", "TUNNEL_LOGIN", "TUNNEL_ERROR", "TRAFFIC_CONNECT", "TRAFFIC_DATA", "TRAFFIC_ACK", "TRAFFIC_CLOSE"
     };
     if (0 <= state && state < STATE_SIZE) {
       return table[state];

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# --brokerHost 202.182.99.55 \
 nohup ./tunnel_agent \
 --brokerHost 192.129.212.38 \
 --brokerPort 8122 \

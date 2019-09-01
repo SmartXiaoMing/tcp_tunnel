@@ -181,13 +181,18 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
                tunnel->name.c_str(), Frame::stateToStr(frame.state), frame.message.size(), tunnel->name.c_str()); // TOOD
           tunnel->sendData(frame);
         } else {
+          if (frame.owner == Frame::OwnerMe) {
+            INFO("[%s#%d > %s] state: %s, size: %zd",
+                 frame.from.c_str(), frame.session, frame.to.c_str(), Frame::stateToStr(frame.state), frame.message.size());
+          } else {
+            INFO("[%s > %s#%d] state: %s, size: %zd",
+                 frame.from.c_str(), frame.to.c_str(), frame.session, Frame::stateToStr(frame.state), frame.message.size());
+          }
           string from = frame.from;
           frame.owner = 1 - frame.owner;
           frame.from = frame.to;
           frame.to = from;
           targetIt->second->sendData(frame);
-          INFO("[tunnel traffic] %s > %s, state: %s, size: %zd",
-               tunnel->name.c_str(), tunnel->peerName.c_str(), Frame::stateToStr(frame.state), frame.message.size());
         }
       }
     }
