@@ -1,7 +1,7 @@
 #!/bin/bash
 
 nohup ./tunnel_agent \
---brokerHost 202.182.99.55 \
+--brokerHost 192.129.212.38 \
 --brokerPort 8122 \
 --name office \
 --peerName proxy \

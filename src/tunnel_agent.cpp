@@ -520,7 +520,7 @@ public:
   Frame makeFrame(EndpointClientTraffic* traffic, uint8_t state, const string& message) {
     Frame frame;
     if (traffic != NULL) {
-      frame.from = traffic->addr.name;
+      frame.from = traffic->name;
       frame.owner = traffic->owner;
       frame.session = traffic->addr.session;
       if (frame.owner == Frame::OwnerMe) {
