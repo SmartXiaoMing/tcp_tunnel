@@ -169,29 +169,41 @@ void onTunnelChanged(EndpointClient* endpoint, int event, const char* data, int 
           return;
         }
       } else {
-        map<string, EndpointClientTunnelPeer *>::iterator targetIt = manager.tunnelPeerMap.find(frame.to);
+        if (frame.owner == Frame::OwnerMe) {
+          if (frame.state == FrameState::STATE_TRAFFIC_ACK ||
+              frame.state == FrameState::STATE_TRAFFIC_CLOSE ||
+              frame.state == FrameState::STATE_TRAFFIC_CONNECT) {
+            INFO("[%s#%d > %s] up frame, %s, message[%zd]: %s", frame.from.c_str(), frame.session, frame.to.c_str(),
+                 Frame::stateToStr(frame.state), frame.message.size(), frame.message.c_str());
+          } else {
+            INFO("[%s#%d > %s] up frame, %s, message[%zd]", frame.from.c_str(), frame.session, frame.to.c_str(),
+                 Frame::stateToStr(frame.state), frame.message.size());
+          }
+        } else {
+          if (frame.state == FrameState::STATE_TRAFFIC_ACK ||
+              frame.state == FrameState::STATE_TRAFFIC_CLOSE ||
+              frame.state == FrameState::STATE_TRAFFIC_CONNECT) {
+            INFO("[%s#%d > %s] down frame, %s, message[%zd]: %s", frame.from.c_str(), frame.session, frame.to.c_str(),
+                 Frame::stateToStr(frame.state), frame.message.size(), frame.message.c_str());
+          } else {
+            INFO("[%s#%d > %s] down frame, %s, message[%zd]", frame.from.c_str(), frame.session, frame.to.c_str(),
+                 Frame::stateToStr(frame.state), frame.message.size());
+          }
+        }
+        map<string, EndpointClientTunnelPeer *>::iterator targetIt;
+        if (frame.owner == Frame::OwnerMe) {
+          targetIt = manager.tunnelPeerMap.find(frame.to);
+        } else {
+          targetIt = manager.tunnelPeerMap.find(frame.from);
+        }
         if (targetIt == manager.tunnelPeerMap.end()) {
           frame.state = STATE_TUNNEL_ERROR;
-          string from = frame.from;
           frame.owner = 1 - frame.owner;
-          frame.from = frame.to;
-          frame.to = from;
           frame.message = "target tunnel is not exist";
-          INFO("[tunnel traffic] %s > null, state: %s, size: %zd, so send close to %s",
-               tunnel->name.c_str(), Frame::stateToStr(frame.state), frame.message.size(), tunnel->name.c_str()); // TOOD
+          INFO("[tunnel error] %s is not exist, so send tunnel error to %s", frame.to.c_str(), frame.from.c_str());
           tunnel->sendData(frame);
         } else {
-          if (frame.owner == Frame::OwnerMe) {
-            INFO("[%s#%d > %s] state: %s, size: %zd",
-                 frame.from.c_str(), frame.session, frame.to.c_str(), Frame::stateToStr(frame.state), frame.message.size());
-          } else {
-            INFO("[%s > %s#%d] state: %s, size: %zd",
-                 frame.from.c_str(), frame.to.c_str(), frame.session, Frame::stateToStr(frame.state), frame.message.size());
-          }
-          string from = frame.from;
           frame.owner = 1 - frame.owner;
-          frame.from = frame.to;
-          frame.to = from;
           targetIt->second->sendData(frame);
         }
       }

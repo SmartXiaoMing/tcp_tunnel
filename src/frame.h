@@ -171,13 +171,9 @@ public:
     return "UNKNOWN";
   }
 
-  void setReply(uint8_t state, const string& message) {
+  void setReply(uint8_t state, const string& message) { // TODO
     this->state = state;
-    this->owner = 1 - this->owner;
     this->message = message;
-    string from = this->from;
-    this->from = this->to;
-    this->to = from;
   }
 };
 #endif //TCP_TUNNEL_FRAME_HPP
