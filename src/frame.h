@@ -103,6 +103,7 @@ public:
 
   static int parse(Frame& frame, const char* buffer, int bufferSize) {
     if (bufferSize < 5) {
+      WARN("failed to parse frame, bufferSize:%d is too short", bufferSize);
       return 0;
     }
 
@@ -117,24 +118,32 @@ public:
     int offset = 7;
     if (fromSize > 0) {
       if (fromSize + offset > bufferSize) {
+        WARN("failed to parse frame, bufferSize:%d, fromSize:%d, offset:%d", 
+          bufferSize, fromSize, offset);
         return 0;
       }
       frame.from.assign(buffer + offset, buffer + offset + fromSize);
       offset += fromSize;
     }
     if (offset + 1 > bufferSize) {
+      WARN("failed to parse frame, bufferSize:%d, offset:%d", 
+          bufferSize, offset);
       return 0;
     }
     int toSize = buffer[offset];
     offset++;
     if (toSize > 0) {
       if (toSize + offset > bufferSize) {
+        WARN("failed to parse frame, bufferSize:%d, toSize:%d, offset:%d", 
+          bufferSize, toSize, offset);
         return 0;
       }
       frame.to.assign(buffer + offset, buffer + offset + toSize);
       offset += toSize;
     }
     if (offset + 2 > bufferSize) {
+      WARN("failed to parse frame no message length, bufferSize:%d ,offset:%d", 
+          bufferSize, offset);
       return 0;
     }
     int messageSize = bytesToInt(buffer + offset, 2);
@@ -144,6 +153,8 @@ public:
     }
     offset += 2;
     if (offset + messageSize > bufferSize) {
+      WARN("failed to parse frame no message, bufferSize:%d, offset:%d, messageSize:%d", 
+        bufferSize, offset, messageSize);
       return 0;
     }
     frame.message.assign(buffer + offset, buffer + offset + messageSize);

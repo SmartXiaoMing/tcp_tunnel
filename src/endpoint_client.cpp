@@ -68,6 +68,7 @@ EndpointClient::handleEvent(int events) {
     int len = recv(fd_, buf, bufSize, 0);
     if (len == 0) {
       if (bufferRead.size() > 0) {
+        INFO("read eof:%d", len);
         callback_(this, EVENT_READ, bufferRead.data(), bufferRead.size());
       }
       discard();
@@ -76,7 +77,8 @@ EndpointClient::handleEvent(int events) {
       return;
     } else if (len > 0) {
       bufferRead.append(buf, len);
-      readableSize_ -= len;
+      readableSize_ -= len;      
+      INFO("bufferRead.append:%d", len);
       callback_(this, EVENT_READ, bufferRead.data(), bufferRead.size());
     } else if (len < 0) {
       if (!isGoodCode()) {
