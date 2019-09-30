@@ -33,5 +33,6 @@ bool parseIpPort(const string& buffer, char* ip, int* port);
 
 char* fdToLocalAddr(int sockfd, char* addr);
 char* fdToPeerAddr(int sockfd, char* addr);
+void mask(char* buffer, int size);
 
 #endif //TCP_TUNNEL_UTILS_H

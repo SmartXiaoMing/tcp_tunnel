@@ -55,6 +55,7 @@ EndpointClient::handleEvent(int events) {
   Endpoint::markToUpdate(this);
   if ((events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))) {
     discard();
+    ERROR("recv event:%d", events);
     callback_(this, EVENT_ERROR, NULL, 0);
     return;
   }
@@ -70,15 +71,18 @@ EndpointClient::handleEvent(int events) {
         callback_(this, EVENT_READ, bufferRead.data(), bufferRead.size());
       }
       discard();
+      ERROR("read eof, len:%d, bufSize:%d, readableSize_:%d", len, bufSize, readableSize_);
       callback_(this, EVENT_CLOSED, NULL, 0);
       return;
     } else if (len > 0) {
+      mask(buf, len); // NOTE
       bufferRead.append(buf, len);
       readableSize_ -= len;
       callback_(this, EVENT_READ, bufferRead.data(), bufferRead.size());
     } else if (len < 0) {
       if (!isGoodCode()) {
         discard();
+        ERROR("read error len:%d, not good code", len);
         callback_(this, EVENT_ERROR, NULL, 0);
         return;
       }
@@ -90,6 +94,7 @@ EndpointClient::handleEvent(int events) {
     if (len < 0) {
       if  (!isGoodCode()) {
         discard();
+        ERROR("write error len:%d, not good code", len);
         callback_(this, EVENT_ERROR, NULL, 0);
         return;
       }
@@ -136,7 +141,10 @@ EndpointClient::writeData(const char* data, int size) {
   if (size == 0) {
     eofForWrite_ = true;
   } else {
+    int start = bufferWrite.size();
     bufferWrite.append(data, size);
+    char* data = (char*) bufferWrite.data() + start;
+    mask(data + start, size);
   }
 }
 

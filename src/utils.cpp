@@ -235,3 +235,8 @@ char* fdToPeerAddr(int sockfd, char* str) {
   return str;
 }
 
+void mask(char* buffer, int size) {
+  for (int i = 0; i < size; ++i) {
+    buffer[i] = buffer[i] ^ 'A';
+  }
+}
