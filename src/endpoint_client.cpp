@@ -75,7 +75,6 @@ EndpointClient::handleEvent(int events) {
       callback_(this, EVENT_CLOSED, NULL, 0);
       return;
     } else if (len > 0) {
-      mask(buf, len); // NOTE
       bufferRead.append(buf, len);
       readableSize_ -= len;
       callback_(this, EVENT_READ, bufferRead.data(), bufferRead.size());
@@ -141,10 +140,7 @@ EndpointClient::writeData(const char* data, int size) {
   if (size == 0) {
     eofForWrite_ = true;
   } else {
-    int start = bufferWrite.size();
     bufferWrite.append(data, size);
-    char* data = (char*) bufferWrite.data() + start;
-    mask(data + start, size);
   }
 }
 

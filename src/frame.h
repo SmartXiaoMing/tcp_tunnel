@@ -85,6 +85,7 @@ public:
         buffer.push_back(two[0]);
         buffer.push_back(two[1]);
         buffer.append(data, size);
+        mask((char*) buffer.data() + buffer.size() - size, size);
         break;
       } else {
         char two[2];
@@ -92,6 +93,8 @@ public:
         buffer.push_back(two[0]);
         buffer.push_back(two[1]);
         buffer.append(data, FrameMaxDataSize);
+        mask((char*) buffer.data() + buffer.size() - FrameMaxDataSize, 
+          FrameMaxDataSize);
         size -= FrameMaxDataSize;
       }
     } while (size > 0);
@@ -144,6 +147,7 @@ public:
       return 0;
     }
     frame.message.assign(buffer + offset, buffer + offset + messageSize);
+    mask((char*) frame.message.data(), frame.message.size());
     return offset + messageSize;
   }
 
