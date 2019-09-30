@@ -15,8 +15,10 @@ EndpointClientTunnel::sendData(const Frame& frame) {
 
 int
 EndpointClientTunnel::parseFrame(Frame& frame) {
+  if (bufferRead.size() == 0) {
+    return 0;
+  }
   int size = Frame::parse(frame, bufferRead.data(), bufferRead.size());
-  INFO("parseFrame:%zd, parsedSize:%d", bufferRead.size(), size);
   if (size > 0) {
     addReadableSize(size);
     popReadData(size);

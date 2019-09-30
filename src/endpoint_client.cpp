@@ -53,6 +53,7 @@ EndpointClient::handleEvent(int events) {
     return;
   }
   Endpoint::markToUpdate(this);
+  INFO("handleEvent recv event:%d", events); 
   if ((events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))) {
     discard();
     ERROR("recv event:%d", events);
@@ -92,6 +93,7 @@ EndpointClient::handleEvent(int events) {
   }
   if ((events & EPOLLOUT) && bufferWrite.size() > 0) {
     int len = send(fd_, bufferWrite.data(), bufferWrite.size(), MSG_NOSIGNAL);
+    INFO("try to send data:%zd, in fact:%d", bufferWrite.size(), len);
     if (len < 0) {
       if  (!isGoodCode()) {
         discard();
@@ -120,6 +122,7 @@ EndpointClient::updateEvent() {
   if (readableSize_ > 0) {
     newEvent |= EPOLLIN;
   } else {
+    INFO("readableSize_:%d, close the EPOLLIN", readableSize_)
     newEvent &= ~EPOLLIN;
   }
   if (bufferWrite.size() > 0 || eofForWrite_) {
